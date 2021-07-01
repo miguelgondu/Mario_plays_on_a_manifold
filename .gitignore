@@ -1,16 +1,6 @@
 .DS_Store
 .vscode/
-data/level_images/
-data/loss_images/
-data/samples/
-data/interpolation/
-data/latent_spaces/
-data/simulations/
-data/missing_data_imputation/
-data/probability_plots/
-data/playability_experiment/
-data/testing_training_levels/
-data/random_walks/
+data/processed/
 data/sim_results.png
 simulator_experiment/
 models/

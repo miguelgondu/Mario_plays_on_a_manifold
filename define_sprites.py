@@ -12,8 +12,10 @@ from pathlib import Path
 with open("./encoding.json") as fp:
     encoding = json.load(fp)
 
+
 def absolute(path_str):
     return str(Path(path_str).absolute())
+
 
 sprites = {
     encoding["X"]: absolute("./sprites/stone.png"),
@@ -26,7 +28,6 @@ sprites = {
     encoding["["]: absolute("./sprites/left_pipe.png"),
     encoding["]"]: absolute("./sprites/right_pipe.png"),
     encoding["o"]: absolute("./sprites/coin.png"),
-    encoding["P"]: absolute("./sprites/mario.png")
 }
 
 with open("./sprites.json", "w") as fp:

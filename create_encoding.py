@@ -20,7 +20,6 @@ marioGAN_encoding = {
     "[": 8,
     "]": 9,
     "o": 10,
-    "P": 11    
 }
 
 with open(Path("./encoding.json"), "w") as fp:
