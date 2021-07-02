@@ -1,8 +1,11 @@
 .DS_Store
 .vscode/
-data/processed/
+data/processed/text
+data/processed/*.npz
 data/reconstructions/
 data/samples/
+data/testing_training_levels/
+data/training_results/
 simulator_experiment/
 models/
 models_backup/
@@ -12,6 +15,7 @@ src/
 *.code-workspace
 MarioGANNoCap.jar
 MarioGANOld.jar
+# !data/processed/playable_levels_idxs.json
 
 # Simulator
 # MarioGAN.jar
