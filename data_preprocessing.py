@@ -10,6 +10,8 @@ from typing import List
 
 import numpy as np
 
+from mario_utils.levels import levels_to_onehot
+
 
 def create_level_array_from_rows(strings: List[str]):
     """
@@ -28,6 +30,8 @@ def array_to_string_rows(level: np.ndarray):
 def process():
     """
     Slices all levels into 14x14 chunks.
+
+    Saves .npzs with all the levels.
     """
     data_path = Path("./data")
     raw_level_paths = (data_path / "raw").glob("*.txt")
@@ -62,8 +66,13 @@ def process():
     for text, enc in encoding.items():
         level_slices[level_slices == text] = str(enc)
 
+    # Saving as classes
     level_slices = level_slices.astype(int)
     np.savez(data_path / "processed" / "all_levels_encoded.npz", levels=level_slices)
+
+    # Saving as onehot
+    level_slices = levels_to_onehot(level_slices, n_sprites=len(encoding.keys()))
+    np.savez(data_path / "processed" / "all_levels_onehot.npz", levels=level_slices)
 
 
 if __name__ == "__main__":

@@ -20,8 +20,6 @@ def simulate_level(i, level):
     print(f"Simulating level {i}.")
     for j in range(5):
         res = test_level_from_decoded_tensor(level, max_time=30)
-        # print(res)
-        # print(res["marioStatus"])
 
         with open(
             f"./data/testing_training_levels/level_{i:04d}_{j}.json",

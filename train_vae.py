@@ -29,7 +29,7 @@ def load_data(training_percentage=0.8, test_percentage=None, shuffle_seed=0):
     """Returns two tensors with training and testing data"""
     # Loading the data.
     # This data is structured [b, c, i, j], where c corresponds to the class.
-    data = np.load("./levels_onehot.npy")
+    data = np.load("./data/processed/all_levels_onehot.npz")["levels"]
     np.random.seed(shuffle_seed)
     np.random.shuffle(data)
 
@@ -207,7 +207,7 @@ def run(z_dim, h_dim, comment, max_epochs, batch_size, lr, seed, scale, save, ov
 
     print(h_dim)
     # Loading the model
-    w = h = 16
+    w = h = 14
     vae = VAEMario(w, h, z_dim, h_dims=h_dim)  # z_dim, h_dim come via click.
     optimizer = optim.Adam(vae.parameters())
     zs = torch.randn(4, z_dim)
@@ -262,16 +262,10 @@ def run(z_dim, h_dim, comment, max_epochs, batch_size, lr, seed, scale, save, ov
             print("Stopping early")
             break
 
-    # _, ax = plt.subplots(1, 1)
-    # ax.plot(np.arange(max_epochs), train_losses, "--r", label="Training loss")
-    # ax.plot(np.arange(max_epochs), test_losses, "b", label="Testing loss")
-    # plt.legend()
-    # plt.savefig(f"./data/loss_images/training_and_test_{comment}.png")
-
     results = {"train_losses": train_losses, "test_losses": test_losses}
     # upload_blob_from_dict("training_experiments", results, f"{comment}.json")
 
-    with open(f"./data/results/training_and_test_{comment}.json", "w") as fp:
+    with open(f"./data/training_results/training_and_test_{comment}.json", "w") as fp:
         json.dump(results, fp)
 
 

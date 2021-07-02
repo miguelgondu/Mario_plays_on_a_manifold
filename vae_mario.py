@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from mario_utils.levels import onehot_to_levels
 from mario_utils.plotting import get_img_from_level
 
+
 class View(nn.Module):
     def __init__(self, shape):
         super(View, self).__init__()
@@ -19,14 +20,16 @@ class View(nn.Module):
     def forward(self, x):
         return x.view(*self.shape)
 
+
 class VAEMario(nn.Module):
-    def __init__(self,
-                w: int,
-                h: int,
-                z_dim: int,
-                n_sprites: int = 12,
-                h_dims: List[int] = None,
-                comment: str = None):
+    def __init__(
+        self,
+        w: int,
+        h: int,
+        z_dim: int,
+        n_sprites: int = 11,
+        h_dims: List[int] = None,
+    ):
         super(VAEMario, self).__init__()
         self.w = w
         self.h = h
@@ -44,49 +47,33 @@ class VAEMario(nn.Module):
             if dim_1 == self.h_dims[0]:
                 modules.append(
                     nn.Sequential(
-                        View([-1, self.input_dim]),
-                        nn.Linear(dim_1, dim_2),
-                        nn.Tanh()
+                        View([-1, self.input_dim]), nn.Linear(dim_1, dim_2), nn.Tanh()
                     )
                 )
             else:
-                modules.append(
-                    nn.Sequential(
-                        nn.Linear(dim_1, dim_2),
-                        nn.Tanh()
-                    )
-                )
+                modules.append(nn.Sequential(nn.Linear(dim_1, dim_2), nn.Tanh()))
 
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Sequential(
-            nn.Linear(self.h_dims[-1], z_dim)
-        )
-        self.fc_var = nn.Sequential(
-            nn.Linear(self.h_dims[-1], z_dim)
-        )
+        self.fc_mu = nn.Sequential(nn.Linear(self.h_dims[-1], z_dim))
+        self.fc_var = nn.Sequential(nn.Linear(self.h_dims[-1], z_dim))
 
         dec_dims = self.h_dims.copy() + [z_dim]
         dec_dims.reverse()
         dec_modules = []
         for dim_1, dim_2 in zip(dec_dims[:-1], dec_dims[1:]):
             if dim_2 != dec_dims[-1]:
-                dec_modules.append(
-                    nn.Sequential(
-                        nn.Linear(dim_1, dim_2),
-                        nn.Tanh()
-                    )
-                )
+                dec_modules.append(nn.Sequential(nn.Linear(dim_1, dim_2), nn.Tanh()))
             else:
                 dec_modules.append(
                     nn.Sequential(
                         nn.Linear(dim_1, dim_2),
                         View([-1, self.n_sprites, self.h, self.w]),
-                        nn.LogSoftmax(dim=1)
+                        nn.LogSoftmax(dim=1),
                     )
                 )
 
         self.decoder = nn.Sequential(*dec_modules)
-        print(self)
+        # print(self)
 
     def encode(self, x: Tensor) -> List[Tensor]:
         result = self.encoder(x)
@@ -108,7 +95,7 @@ class VAEMario(nn.Module):
 
     def forward(self, x: Tensor) -> List[Tensor]:
         # Does a forward pass through the network.
-    
+
         mu, log_var = self.encode(x.view(-1, self.input_dim))
 
         # Sample z from p(z|x)
@@ -119,18 +106,22 @@ class VAEMario(nn.Module):
 
         return [x_prime, x, mu, log_var]
 
-    def report(self, writer: SummaryWriter, batch_id: int, KLD: float, CEL: float, zs: Tensor, epoch: int):
+    def report(
+        self,
+        writer: SummaryWriter,
+        batch_id: int,
+        KLD: float,
+        CEL: float,
+        zs: Tensor,
+        epoch: int,
+    ):
         writer.add_scalar("KLD", KLD, batch_id)
         writer.add_scalar("CEL", CEL, batch_id)
         writer.add_scalar("loss", KLD + CEL, batch_id)
 
         samples = self.decoder(zs)
-        samples = onehot_to_levels(
-            samples.detach().numpy()
-        )
-        samples = np.array(
-            [get_img_from_level(level) for level in samples]
-        )
+        samples = onehot_to_levels(samples.detach().numpy())
+        samples = np.array([get_img_from_level(level) for level in samples])
 
         writer.add_images(f"samples_{epoch}", samples, batch_id, dataformats="NHWC")
 
@@ -138,4 +129,3 @@ class VAEMario(nn.Module):
     #     BCE = F.binary_cross_entropy(x_prime.view(-1, 28*28), x.view(-1, 784), reduction="sum")
     #     KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
     #     return BCE + KLD
-    

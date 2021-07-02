@@ -23,7 +23,8 @@ def test_level_from_decoded_tensor(
     max_time: int = 30,
     visualize: bool = False,
 ) -> dict:
-    level = level.view(1, *level.shape)
+    if len(level.shape) < 4:
+        level = level.view(1, *level.shape)
     level = tensor_to_sim_level(level)[0]
     level = str(level)
 

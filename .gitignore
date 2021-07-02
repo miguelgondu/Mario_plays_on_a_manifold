@@ -1,7 +1,8 @@
 .DS_Store
 .vscode/
 data/processed/
-data/sim_results.png
+data/reconstructions/
+data/samples/
 simulator_experiment/
 models/
 models_backup/
