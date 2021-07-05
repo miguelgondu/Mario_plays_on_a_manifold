@@ -8,6 +8,7 @@ import pandas as pd
 
 from train_vae import load_data
 from mario_utils.levels import onehot_to_levels, tensor_to_sim_level
+from mario_utils.levels import levels_to_onehot
 from simulator import run_level, test_level_from_decoded_tensor
 
 sim_data = Path("./data/testing_training_levels")
@@ -35,20 +36,29 @@ for result in all_results:
 # print(len(rows))
 
 df = pd.DataFrame(rows)
-print(df)
+# print(df)
 
+playable_levels_idx = []
 playable_levels = []
 for idx in df["idx"].unique():
     df_idx = df[df["idx"] == idx]
-    # if len(df_idx["iteration"].unique()) < 5:
-    #     print(df_idx["iteration"].unique())
-    #     print(len(df_idx["iteration"].unique()))
+    level = json.loads(df_idx["level"].values[0])
+    level = np.array(level)[:, 1:]
+    # print("level", level, level.shape)
 
-    print(idx, df_idx["marioStatus"].mean())
+    # print(idx, df_idx["marioStatus"].mean())
     if df_idx["marioStatus"].mean() > 0:
-        playable_levels.append(int(idx))
+        playable_levels_idx.append(int(idx))
+        playable_levels.append(level)
 
 with open("./data/processed/playable_levels_idxs.json", "w") as fp:
-    json.dump(playable_levels, fp)
+    json.dump(playable_levels_idx, fp)
 
-print(all_levels[playable_levels])
+all_playable_levels = np.array(playable_levels, dtype=int)
+# print(all_levels[playable_levels_idx])
+print(all_levels[playable_levels_idx].shape)
+print(all_playable_levels)
+print(all_playable_levels.shape)
+
+all_playable_levels = levels_to_onehot(all_playable_levels, n_sprites=11)
+np.savez("./data/processed/all_playable_levels_onehot.npz", levels=all_playable_levels)

@@ -25,16 +25,33 @@ from torch.utils.tensorboard import SummaryWriter
 Tensor = torch.Tensor
 
 
-def load_data(training_percentage=0.8, test_percentage=None, shuffle_seed=0):
+def load_data(
+    training_percentage=0.8, test_percentage=None, shuffle_seed=0, only_playable=False
+):
     """Returns two tensors with training and testing data"""
     # Loading the data.
     # This data is structured [b, c, i, j], where c corresponds to the class.
-    data = np.load("./data/processed/all_levels_onehot.npz")["levels"]
+    if only_playable:
+        data = np.load("./data/processed/all_playable_levels_onehot.npz")["levels"]
+    else:
+        data = np.load("./data/processed/all_levels_onehot.npz")["levels"]
+
+    # if only_playable:
+    #     np.random.seed(0)
+    #     np.random.shuffle(data)
+
+    #     with open("./data/processed/playable_levels_idxs.json") as fp:
+    #         playable_level_idxs = json.load(fp)
+
+    #     data = data[playable_level_idxs]
+    # else:
+    #     np.random.seed(shuffle_seed)
+
     np.random.seed(shuffle_seed)
     np.random.shuffle(data)
 
     # Separating into training and test.
-    n_data, _, h, w = data.shape
+    n_data, _, _, _ = data.shape
     training_index = int(n_data * training_percentage)
     training_data = data[:training_index, :, :, :]
     testing_data = data[training_index:, :, :, :]
@@ -182,7 +199,7 @@ def run(z_dim, h_dim, comment, max_epochs, batch_size, lr, seed, scale, save, ov
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Loading the data.
-    training_tensors, test_tensors = load_data(shuffle_seed=seed)
+    training_tensors, test_tensors = load_data(shuffle_seed=seed, only_playable=True)
 
     # -----------------------------------------------------------------
     ## Overfitting test: check if we overfit to one batch.

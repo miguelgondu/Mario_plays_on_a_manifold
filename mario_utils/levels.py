@@ -20,7 +20,7 @@ def level_to_array(level_txt):
     return np.array(level_to_list(level_txt))
 
 
-def levels_to_onehot(levels: np.ndarray, n_sprites: int = 12) -> np.ndarray:
+def levels_to_onehot(levels: np.ndarray, n_sprites: int = 11) -> np.ndarray:
     batch_size, w, h = levels.shape
     y_onehot = np.zeros((batch_size, n_sprites, h, w))
     for b, level in enumerate(levels):
