@@ -20,7 +20,7 @@ from simulator import test_level_from_z
 from vae_mario import VAEMario
 from train_vae import load_data
 
-MODELS_PATH = "./models"
+MODELS_PATH = "./models_experiment"
 
 
 def process(i, z, z_dim, model_name):
@@ -54,46 +54,6 @@ def process(i, z, z_dim, model_name):
             json.dump(thing_to_save, fp)
 
     print(f"Processed z {z} for model {model_name}.")
-
-
-# def get_zs(model_name, z_dim):
-#     first_vae = VAEMario(16, 16, z_dim=z_dim)
-#     first_vae.load_state_dict(torch.load(f"{MODELS_PATH}/{model_name}.pt"))
-#     first_vae.eval()
-
-#     training_tensors, test_tensors = load_data()
-#     all_tensors = torch.cat((training_tensors, test_tensors))
-#     mu, _ = first_vae.encode(all_tensors)
-#     mu_mins = mu.min(axis=0).values.detach().numpy()
-#     mu_maxs = mu.max(axis=0).values.detach().numpy()
-#     # print(mu)
-#     # print(mu_mins)
-#     # print(mu_maxs)
-#     mu = mu.detach().numpy().tolist()
-#     for z in mu:
-#         z = list(map(float, z))
-
-#     cwd = Path(".")
-#     grid_specs = cwd / "grid_specs"
-#     grid_specs.mkdir(exist_ok=True)
-#     with open(grid_specs / f"{model_name}.json", "w") as fp:
-#         json.dump(
-#             {
-#                 "mu_mins": list(map(float, mu_mins.tolist())),
-#                 "mu_maxs": list(map(float, mu_maxs.tolist())),
-#                 "mu": mu,
-#             },
-#             fp,
-#         )
-
-
-# get_zs("mariovae_z_dim_2_overfitting_epoch_480", 2)
-# get_zs("mariovae_z_dim_2_seed_1_h_dims_256_128_final", 2)
-# get_zs("mariovae_z_dim_3_seed_4_h_dims_256_128_final", 3)
-# get_zs("mariovae_z_dim_8_seed_4_h_dims_256_128_final", 8)
-# get_zs("mariovae_z_dim_16_seed_1_h_dims_256_128_final", 16)
-# get_zs("mariovae_z_dim_32_seed_1_h_dims_256_128_final", 32)
-# get_zs("mariovae_z_dim_38_seed_2_h_dims_256_128_final", 38)
 
 
 @click.command()
