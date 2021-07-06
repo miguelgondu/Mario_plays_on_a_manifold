@@ -12,9 +12,7 @@ from mario_utils.levels import tensor_to_sim_level, clean_level
 
 Tensor = torch.Tensor
 
-JARFILE_PATH = (
-    "/Users/migd/Projects/mario_geometry_project/MarioVAE_simulation/MarioGAN.jar"
-)
+JARFILE_PATH = "/Users/migd/Projects/mario_geometry_project/MarioVAE/MarioGAN.jar"
 
 
 def test_level_from_decoded_tensor(
