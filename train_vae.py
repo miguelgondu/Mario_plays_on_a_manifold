@@ -185,7 +185,8 @@ def report(writer: SummaryWriter, comment: str, checkpoint: int, loss: float):
 @click.option("--scale", type=float, default=1.0)
 @click.option("--save", type=int, default=20)
 @click.option("--overfit/--no-overfit", default=False)
-def run(z_dim, h_dim, comment, max_epochs, batch_size, lr, seed, scale, save, overfit):
+@click.option("--playable/--no-playable", default=False)
+def run(z_dim, h_dim, comment, max_epochs, batch_size, lr, seed, scale, save, overfit, playable):
     # Setting up the seeds
     torch.manual_seed(seed)
 
@@ -199,7 +200,7 @@ def run(z_dim, h_dim, comment, max_epochs, batch_size, lr, seed, scale, save, ov
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Loading the data.
-    training_tensors, test_tensors = load_data(shuffle_seed=seed, only_playable=True)
+    training_tensors, test_tensors = load_data(shuffle_seed=seed, only_playable=playable)
 
     # -----------------------------------------------------------------
     ## Overfitting test: check if we overfit to one batch.
