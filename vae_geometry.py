@@ -44,9 +44,9 @@ class VAEGeometry(VAEMario):
         data and take it from there. Define the cluster
         centers myself.
         """
-        playable_points = np.load(f"data/processed/playable_clusters_{model_name}.npz")[
-            "clusters"
-        ]
+        # playable_points = np.load(f"data/processed/playable_clusters_{model_name}.npz")[
+        #     "clusters"
+        # ]
         # self.kmeans = KMeans(n_clusters=50)
         # self.kmeans.fit(playable_points)
         # print(cluster_centers)
@@ -54,12 +54,7 @@ class VAEGeometry(VAEMario):
         self.cluster_centers = torch.from_numpy(cluster_centers).type(torch.float32)
         self.translated_sigmoid = TranslatedSigmoid(beta=beta)
         training_tensors, _ = load_data(only_playable=only_playable)
-        self.encodings = torch.Tensor(
-            [
-                [-4.0, 3.0],
-                [-4.0, -4.0],
-            ]
-        )
+        self.encodings = torch.from_numpy(cluster_centers).type(torch.float)
 
     def min_distance(self, z: torch.Tensor) -> torch.Tensor:
         """
