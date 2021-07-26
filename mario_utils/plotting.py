@@ -2,8 +2,10 @@
 This script defines some functions that
 plot levels.
 """
+from mario_utils.levels import onehot_to_levels
 import os
 import json
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import PIL
@@ -12,6 +14,8 @@ import PIL
 # ENCODING_PATH = os.environ.get("ENCODING_PATH")
 SPRITES_PATH = "/Users/migd/Projects/mario_geometry_project/MarioVAE/sprites.json"
 ENCODING_PATH = "/Users/migd/Projects/mario_geometry_project/MarioVAE/encoding.json"
+
+Tensor = torch.Tensor
 
 with open(SPRITES_PATH) as fp:
     sprites = json.load(fp)
@@ -64,3 +68,12 @@ def get_img_from_level(level: np.ndarray):
     image = np.vstack([np.asarray(row) for row in image])
 
     return image
+
+
+def plot_level_from_decoded_tensor(dec: Tensor, ax):
+    """
+    Plots decoded tensor as level in ax.
+    Expects {dec} to have a batch component.
+    """
+    level = onehot_to_levels(dec.detach().numpy())[0]
+    plot_level_from_array(ax, level)

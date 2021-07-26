@@ -32,6 +32,7 @@ class VAEGeometry(VAEMario):
         self.encodings = None
 
     def theoretical_KL(self, p: Categorical, q: Categorical) -> torch.Tensor:
+        # TODO: change this to take the mean of the whole array.
         return torch.distributions.kl_divergence(p, q).mean(dim=0)
 
     def update_cluster_centers(
@@ -87,8 +88,8 @@ class VAEGeometry(VAEMario):
         dec_x = dec_x.view(batch_size, h * w * n_classes)
         # I think we're expecting this to be flat?
 
-        # similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-        similarity = 1 - self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
+        similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
+        # similarity = 1 - self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
 
         res = (1 - similarity) * dec_x + similarity * (
             (1 / self.n_sprites) * torch.ones_like(dec_x)
@@ -145,7 +146,7 @@ class VAEGeometry(VAEMario):
             kl = self.KL_by_sampling(cat1, cat2, n_samples=10000).abs()
         # -------------------------------------------
 
-        return 10.0 * (kl.sqrt() * dt).sum()
+        return 1000.0 * (kl.sqrt() * dt).sum()
 
     def plot_latent_space(self, ax=None):
         """
