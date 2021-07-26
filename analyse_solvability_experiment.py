@@ -72,6 +72,16 @@ def plot_latent_space(model, training_data, ax, x_lim, y_lim):
     ax.legend()
 
 
+def get_playable_clusters(df: pd.DataFrame) -> np.ndarray:
+    """
+    Gets all the zs where marioStatus == 1.
+    """
+    winning = df[df["marioStatus"] == 1]
+    z1 = winning["z1"]
+    z2 = winning["z2"]
+    return np.vstack((z1, z2)).T
+
+
 if __name__ == "__main__":
     cwd = Path(".")
     model_names = (cwd / "data" / "playability_experiment").glob("mariovae_*")
@@ -102,6 +112,13 @@ if __name__ == "__main__":
             and not "Phys" in col
         )
         interesting_columns = [col for col in df.columns if interesting(col)]
+
+        clusters = get_playable_clusters(df)
+        print(clusters)
+        np.savez(
+            f"./data/processed/playable_clusters_{model_name}.npz", clusters=clusters
+        )
+        continue
 
         vae = VAEMario(14, 14, z_dim=2)
         vae.load_state_dict(torch.load(f"./models/{model_name}.pt"))
