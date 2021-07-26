@@ -80,7 +80,6 @@ class VAEMario(nn.Module):
         mu = self.fc_mu(result)
         log_var = self.fc_var(result)
 
-        # print(f"mu: {mu.shape}, log_var: {log_var.shape}")
         return [mu, log_var]
 
     def decode(self, z: Tensor) -> Tensor:

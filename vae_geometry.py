@@ -54,7 +54,7 @@ class VAEGeometry(VAEMario):
         x, y = np.cos(theta), np.sin(theta)
         cluster_centers = 3 * np.vstack((x, y)).T
         # cluster_centers = np.array(
-        #     [[np.cos(theta), -0.5] for k in np.linspace(-6, 1, 50)]
+        #     [[k, -0.5] for k in np.linspace(-6, 1, 50)]
         # )
         self.cluster_centers = torch.from_numpy(cluster_centers).type(torch.float32)
         self.translated_sigmoid = TranslatedSigmoid(beta=beta)
@@ -89,18 +89,22 @@ class VAEGeometry(VAEMario):
 
         # similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
         similarity = 1 - self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-        # similarity = self.translated_sigmoid(self.min_distance(z))
-        # print(similarity)
-        # print(similarity.shape)
-        # print(dec_x.shape)
 
         res = (1 - similarity) * dec_x + similarity * (
             (1 / self.n_sprites) * torch.ones_like(dec_x)
         )
 
         # Putting the classes in the last one.
-        res = res.view(batch_size, h, w, n_classes)
-        # res = res.transpose(1, 2).transpose(2, 3)
+        res = res.view(batch_size, n_classes, h, w)
+        # |res| = batch_size, n_classes, h, w
+        # res: Tensor
+        # print(res.shape)
+        # res = res.permute(0, 2, 3, 1)
+        # res = torch.transpose(res, 1, 2)
+        # print(res.shape)
+        # res = torch.transpose(res, 2, 3)
+        # print(res.shape)
+        # raise
 
         return [res]
 
@@ -122,9 +126,6 @@ class VAEGeometry(VAEMario):
         # -------------------------------------------
         #     CHANGE THIS DEPENDING ON THE DIST.
         log_probs = self.reweight(curve)[0]
-        # print(log_probs)
-        # print(log_probs.shape)
-        # raise
         log_probs.transpose(1, 3)
         c_size, n_classes, h, w = log_probs.shape
         log_probs = log_probs.view(c_size, n_classes, h * w)
@@ -144,7 +145,7 @@ class VAEGeometry(VAEMario):
             kl = self.KL_by_sampling(cat1, cat2, n_samples=10000).abs()
         # -------------------------------------------
 
-        return (kl.sqrt() * dt).sum()
+        return 10.0 * (kl.sqrt() * dt).sum()
 
     def plot_latent_space(self, ax=None):
         """
@@ -211,7 +212,7 @@ class VAEGeometry(VAEMario):
 
         self.plot_latent_space(ax=ax)
         # This plots the geodesics.
-        grid = [torch.linspace(-4, 4, 50), torch.linspace(-4, 4, 50)]
+        grid = [torch.linspace(-5, 5, 100), torch.linspace(-5, 5, 100)]
         Mx, My = torch.meshgrid(grid[0], grid[1])
         grid2 = torch.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
 
