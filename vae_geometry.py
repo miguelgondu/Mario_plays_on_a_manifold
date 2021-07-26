@@ -50,7 +50,12 @@ class VAEGeometry(VAEMario):
         # self.kmeans = KMeans(n_clusters=50)
         # self.kmeans.fit(playable_points)
         # print(cluster_centers)
-        cluster_centers = np.array([[k, -0.5] for k in np.linspace(-6, 1, 50)])
+        theta = 2 * np.pi * np.random.rand(50)
+        x, y = np.cos(theta), np.sin(theta)
+        cluster_centers = 3 * np.vstack((x, y)).T
+        # cluster_centers = np.array(
+        #     [[np.cos(theta), -0.5] for k in np.linspace(-6, 1, 50)]
+        # )
         self.cluster_centers = torch.from_numpy(cluster_centers).type(torch.float32)
         self.translated_sigmoid = TranslatedSigmoid(beta=beta)
         training_tensors, _ = load_data(only_playable=only_playable)
@@ -82,7 +87,8 @@ class VAEGeometry(VAEMario):
         dec_x = dec_x.view(batch_size, h * w * n_classes)
         # I think we're expecting this to be flat?
 
-        similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
+        # similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
+        similarity = 1 - self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
         # similarity = self.translated_sigmoid(self.min_distance(z))
         # print(similarity)
         # print(similarity.shape)
@@ -216,7 +222,7 @@ class VAEGeometry(VAEMario):
         # -------------------------------------------
         data = self.encodings
         N = data.shape[0]
-        for _ in range(10):
+        for _ in range(20):
             idx = torch.randint(N, (2,))
             c = DM.connecting_geodesic(data[idx[0]], data[idx[1]])
             c.plot(ax=ax, c="g", linewidth=0.5)
