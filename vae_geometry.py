@@ -2,7 +2,7 @@ from typing import List
 from pathlib import Path
 
 import torch
-from torch.distributions import Categorical
+from torch.distributions import Categorical, Dirichlet
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -91,9 +91,15 @@ class VAEGeometry(VAEMario):
         similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
         # similarity = 1 - self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
 
-        res = (1 - similarity) * dec_x + similarity * (
-            (1 / self.n_sprites) * torch.ones_like(dec_x)
-        )
+        # res = (1 - similarity) * dec_x + similarity * (
+        #     (1 / self.n_sprites) * torch.ones_like(dec_x)
+        # )
+
+        m = Dirichlet((1 / self.n_sprites) * torch.ones((batch_size, h, w, n_classes)))
+        params = m.sample()
+        params = params.transpose(1, 3)
+        params = torch.log(params.reshape(batch_size, h * w * n_classes))
+        res = (1 - similarity) * dec_x + similarity * (params)
 
         # Putting the classes in the last one.
         res = res.view(batch_size, n_classes, h, w)
@@ -146,7 +152,7 @@ class VAEGeometry(VAEMario):
             kl = self.KL_by_sampling(cat1, cat2, n_samples=10000).abs()
         # -------------------------------------------
 
-        return 1000.0 * (kl.sqrt() * dt).sum()
+        return (kl.sqrt() * dt).sum()
 
     def plot_latent_space(self, ax=None):
         """
@@ -179,8 +185,8 @@ class VAEGeometry(VAEMario):
 
         dist_ = Categorical(logits=self.reweight(zs)[0])
         entropy_ = dist_.entropy().mean(axis=1).mean(axis=1)
-        print(entropy_)
-        print(entropy_.shape)
+        # print(entropy_)
+        # print(entropy_.shape)
         if len(entropy_.shape) > 1:
             # In some distributions, we decode
             # to a higher dimensional space.

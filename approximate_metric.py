@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from vae_geometry import VAEGeometry
+from mario_utils.levels import onehot_to_levels
+from mario_utils.plotting import get_img_from_level
 from mario_utils.plotting import plot_level_from_array, plot_level_from_decoded_tensor
 
 Tensor = torch.Tensor
@@ -53,20 +55,45 @@ def local_KL(model: VAEGeometry, zs, eps=1e-2):
     return KLs
 
 
+def plot_grid_reweight(vae, ax, x_lims, y_lims, n_rows=10, n_cols=10, title=""):
+    z1 = np.linspace(*x_lims, n_cols)
+    z2 = np.linspace(*y_lims, n_rows)
+
+    zs = torch.Tensor([[a, b] for a in reversed(z1) for b in z2])
+    images = vae.reweight(zs)[0]
+    images = onehot_to_levels(images.detach().numpy())
+    images = np.array([get_img_from_level(im) for im in images])
+    zs = zs.detach().numpy()
+    # print(zs)
+    final_img = np.vstack(
+        [
+            np.hstack([im for im in row])
+            for row in images.reshape((n_cols, n_rows, 16 * 14, 16 * 14, 3))
+        ]
+    )
+    ax.imshow(final_img, extent=[*x_lims, *y_lims])
+    # ax.imshow(final_img)
+    # ax.set_title(f"Decoded samples ({title})")
+
+
 if __name__ == "__main__":
     model_name = "mariovae_z_dim_2_overfitting_epoch_100"
     vae = VAEGeometry()
     vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
     vae.update_cluster_centers(model_name, False, beta=-1.5)
 
-    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(7 * 2, 7))
+    _, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(7 * 3, 7))
 
-    # KLs = local_KL(vae, torch.Tensor([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]), eps=0.05)
-    # print(KLs)
-
-    n_x, n_y = 50, 50
+    print("Plotting grid of levels")
     x_lims = (-6, 6)
     y_lims = (-6, 6)
+    plot_grid_reweight(vae, ax1, x_lims, y_lims, n_rows=12, n_cols=12)
+
+    print("Plotting geodesics and latent space")
+    vae.plot_w_geodesics(ax=ax2)
+
+    print("Plotting Local KL approximation")
+    n_x, n_y = 50, 50
     z1 = torch.linspace(*x_lims, n_x)
     z2 = torch.linspace(*y_lims, n_x)
 
@@ -91,9 +118,16 @@ if __name__ == "__main__":
     #     c="w",
     #     edgecolors="k",
     # )
-    ax2.scatter(vae.cluster_centers[:, 0], vae.cluster_centers[:, 1], marker="x", c="k")
-    plot = ax2.imshow(KL_image, extent=[*x_lims, *y_lims], cmap="viridis")
-    plt.colorbar(plot, ax=ax2)
 
-    vae.plot_w_geodesics(ax=ax1)
+    ax3.scatter(vae.cluster_centers[:, 0], vae.cluster_centers[:, 1], marker="x", c="k")
+    plot = ax3.imshow(KL_image, extent=[*x_lims, *y_lims], cmap="viridis")
+    # plt.colorbar(plot, ax=ax3)
+
+    ax1.set_title("Decoded levels")
+    ax2.set_title("Latent space and geodesics")
+    ax3.set_title("Estimated metric volume")
+
+    plt.tight_layout()
+    plt.savefig("data/plots/geodesics.png")
+
     plt.show()

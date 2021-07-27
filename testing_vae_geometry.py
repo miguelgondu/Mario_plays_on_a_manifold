@@ -9,6 +9,6 @@ vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
 vae.update_cluster_centers(model_name, False, beta=-1.5)
 print(vae)
 
-# vae.plot_latent_space()
-vae.plot_w_geodesics()
+vae.plot_latent_space()
+# vae.plot_w_geodesics()
 plt.show()
