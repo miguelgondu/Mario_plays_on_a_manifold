@@ -3,10 +3,12 @@
 data/processed/text
 data/processed/*.npz
 data/processed/playability_experiment
+data/processed/interpolation_experiment
 data/reconstructions/
 data/samples/
 data/testing_training_levels/
 data/playability_experiment/
+data/interpolation_experiment
 data/training_results/
 data/compressed_results/
 data/plots/

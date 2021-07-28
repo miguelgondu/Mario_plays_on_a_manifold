@@ -36,7 +36,7 @@ def process(i, z, z_dim, model_name):
 
     # Create the folder for the data
     cwd = Path(".")
-    path_to_exp_folder = cwd / "data" / "playability_experiment" / model_name
+    path_to_exp_folder = cwd / "data" / "playability_experiment_test" / model_name
     path_to_exp_folder.mkdir(parents=True, exist_ok=True)
 
     # Test the level 5 times
