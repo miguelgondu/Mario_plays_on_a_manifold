@@ -72,7 +72,7 @@ def plot_latent_space(model, training_data, ax, x_lim, y_lim):
     ax.legend()
 
 
-def get_playable_clusters(df: pd.DataFrame) -> np.ndarray:
+def get_playable_points(df: pd.DataFrame) -> np.ndarray:
     """
     Gets all the zs where marioStatus == 1.
     """
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         )
         interesting_columns = [col for col in df.columns if interesting(col)]
 
-        clusters = get_playable_clusters(df)
+        clusters = get_playable_points(df)
         print(clusters)
         np.savez(
             f"./data/processed/playable_clusters_{model_name}.npz", clusters=clusters

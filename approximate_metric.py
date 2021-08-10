@@ -1,12 +1,10 @@
 import torch
-from torch.distributions import Distribution, Categorical
 import matplotlib.pyplot as plt
 import numpy as np
 
 from vae_geometry import VAEGeometry
 from mario_utils.levels import onehot_to_levels
 from mario_utils.plotting import get_img_from_level
-from mario_utils.plotting import plot_level_from_array, plot_level_from_decoded_tensor
 
 Tensor = torch.Tensor
 
@@ -77,10 +75,12 @@ def plot_grid_reweight(vae, ax, x_lims, y_lims, n_rows=10, n_cols=10, title=""):
 
 
 if __name__ == "__main__":
-    model_name = "mariovae_z_dim_2_overfitting_epoch_100"
+    model_name = "mariovae_z_dim_2_overfitting_epoch_480"
     vae = VAEGeometry()
     vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
+    print("Updating cluster centers")
     vae.update_cluster_centers(model_name, False, beta=-1.5)
+    # raise
 
     _, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(7 * 3, 7))
 
