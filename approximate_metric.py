@@ -57,7 +57,7 @@ def plot_grid_reweight(vae, ax, x_lims, y_lims, n_rows=10, n_cols=10, title=""):
     z1 = np.linspace(*x_lims, n_cols)
     z2 = np.linspace(*y_lims, n_rows)
 
-    zs = torch.Tensor([[a, b] for a in reversed(z1) for b in z2])
+    zs = torch.Tensor([[a, b] for b in reversed(z2) for a in z1])
     images = vae.reweight(zs)[0]
     images = onehot_to_levels(images.detach().numpy())
     images = np.array([get_img_from_level(im) for im in images])

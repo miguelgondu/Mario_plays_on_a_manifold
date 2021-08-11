@@ -36,7 +36,13 @@ class VAEGeometry(VAEMario):
         return torch.distributions.kl_divergence(p, q).mean(dim=0)
 
     def update_cluster_centers(
-        self, model_name: str, only_playable: bool, beta: float = -3.0
+        self,
+        model_name: str,
+        only_playable: bool,
+        beta: float = -3.0,
+        n_clusters: int = 50,
+        encodings: Tensor = None,
+        cluster_centers: Tensor = None,
     ):
         """
         Updates the cluster centers with the parts of latent space that are actually playable.
@@ -45,14 +51,20 @@ class VAEGeometry(VAEMario):
         data and take it from there. Define the cluster
         centers myself.
         """
-        training_tensors, _ = load_data(only_playable=only_playable)
-        latent_codes = self.encode(training_tensors)[0]
-        self.encodings = latent_codes
+        if encodings is None:
+            training_tensors, _ = load_data(only_playable=only_playable)
+            latent_codes = self.encode(training_tensors)[0]
+            self.encodings = latent_codes
+        else:
+            self.encodings = encodings.type(torch.float32)
 
-        self.kmeans = KMeans(n_clusters=50)
-        self.kmeans.fit(latent_codes.detach().numpy())
-        cluster_centers = self.kmeans.cluster_centers_
-        self.cluster_centers = torch.from_numpy(cluster_centers).type(torch.float32)
+        if cluster_centers is None:
+            self.kmeans = KMeans(n_clusters=n_clusters)
+            self.kmeans.fit(self.encodings.detach().numpy())
+            cluster_centers = self.kmeans.cluster_centers_
+            self.cluster_centers = torch.from_numpy(cluster_centers).type(torch.float32)
+        else:
+            self.cluster_centers = cluster_centers.type(torch.float32)
 
         self.translated_sigmoid = TranslatedSigmoid(beta=beta)
 
@@ -148,7 +160,7 @@ class VAEGeometry(VAEMario):
 
         return (kl.sqrt() * dt).sum()
 
-    def plot_latent_space(self, ax=None):
+    def plot_latent_space(self, ax=None, plot_points=True):
         """
         FOR DIMITRIS:
 
@@ -198,33 +210,33 @@ class VAEGeometry(VAEMario):
         #     c="w",
         #     edgecolors="k",
         # )
-        ax.scatter(
-            self.cluster_centers[:, 0], self.cluster_centers[:, 1], marker="x", c="k"
-        )
+        if plot_points:
+            ax.scatter(
+                self.cluster_centers[:, 0],
+                self.cluster_centers[:, 1],
+                marker="x",
+                c="k",
+            )
         plot = ax.imshow(entropy_K, extent=[*x_lims, *y_lims], cmap="Blues")
         # plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
         # cbar.ax.set_yticklabels([entropy_K.min(), entropy_K.max()])
         # ax.set_title(self.fig_title)
         # raise NotImplementedError
 
-    def plot_w_geodesics(self, ax=None):
+    def plot_w_geodesics(self, ax=None, plot_points=True, n_geodesics=20):
         if ax is None:
             _, ax = plt.subplots(1, 1)
 
-        self.plot_latent_space(ax=ax)
+        self.plot_latent_space(ax=ax, plot_points=plot_points)
         # This plots the geodesics.
-        grid = [torch.linspace(-5, 5, 100), torch.linspace(-5, 5, 100)]
+        grid = [torch.linspace(-5, 5, 50), torch.linspace(-5, 5, 50)]
         Mx, My = torch.meshgrid(grid[0], grid[1])
         grid2 = torch.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
 
-        # -------------------------------------------
-        #     CHANGE THIS DEPENDING ON THE DIST.
-        #           beta_params -> your_dist_params.
         DM = DiscretizedManifold(self, grid2, use_diagonals=True)
-        # -------------------------------------------
         data = self.encodings
         N = data.shape[0]
-        for _ in range(20):
+        for _ in range(n_geodesics):
             idx = torch.randint(N, (2,))
             c = DM.connecting_geodesic(data[idx[0]], data[idx[1]])
-            c.plot(ax=ax, c="g", linewidth=0.5)
+            c.plot(ax=ax, c="#FADADD", linewidth=2.5)
