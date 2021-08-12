@@ -19,7 +19,6 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
 
 from train_vae import load_data
-from mario_utils.levels import tensor_to_sim_level
 from approximate_metric import local_KL, plot_grid_reweight
 from vae_geometry import VAEGeometry
 
@@ -132,12 +131,12 @@ def geodesics_in_grid(model_name):
         cluster_centers=playable_points,
     )
 
-    _, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7 * 4, 7))
+    _, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(10 * 4, 10))
 
     print("Plotting grid of levels")
     x_lims = (-6, 6)
     y_lims = (-6, 6)
-    plot_grid_reweight(vae, ax1, x_lims, y_lims, n_rows=12, n_cols=12)
+    plot_grid_reweight(vae, ax1, x_lims, y_lims, n_rows=20, n_cols=20)
 
     print("Plotting geodesics and latent space")
     vae.plot_w_geodesics(ax=ax2, plot_points=False)
@@ -182,85 +181,91 @@ def geodesics_in_grid(model_name):
     plt.show()
 
 
+def fitting_GPC_on_training_levels(model_name):
+    df = pd.read_csv("./data/processed/training_levels_results.csv")
+
+    # Reduce the df to only include the mean marioStatus
+    playability = df.groupby("idx").mean()["marioStatus"]
+    playable_idxs = playability[playability > 0.0].index.values
+    non_playable_idxs = playability[playability == 0.0].index.values
+    print(playable_idxs)
+    print(non_playable_idxs)
+
+    training_tensors, test_tensors = load_data()
+    all_levels = torch.cat((training_tensors, test_tensors))
+
+    playable_levels = all_levels[playable_idxs]
+    non_playable_levels = all_levels[non_playable_idxs]
+
+    vae = VAEGeometry()
+    vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
+    # print("Updating cluster centers")
+    # vae.update_cluster_centers(model_name, False, beta=-1.5)
+
+    zs_playable = vae.encode(playable_levels)[0]
+    zs_non_playable = vae.encode(non_playable_levels)[0]
+
+    print(zs_playable)
+    print(zs_non_playable)
+
+    zs_p_numpy = zs_playable.detach().numpy()
+    zs_np_numpy = zs_non_playable.detach().numpy()
+
+    # _, ax = plt.subplots(1, 1)
+    # ax.scatter(zs_p_numpy[:, 0], zs_p_numpy[:, 1], marker="x", c="g")
+    # ax.scatter(zs_np_numpy[:, 0], zs_np_numpy[:, 1], marker="x", c="r")
+    # plt.show()
+
+    X = np.vstack((zs_p_numpy, zs_np_numpy))
+    y = np.concatenate((np.ones(zs_p_numpy.shape[0]), np.zeros(zs_np_numpy.shape[0])))
+
+    # X = np.vstack((playable_points, non_playable_points))
+    # y = np.concatenate(
+    #     (
+    #         np.ones((playable_points.shape[0],)),
+    #         np.zeros((non_playable_points.shape[0],)),
+    #     )
+    # )
+
+    x_lims = y_lims = [-6, 6]
+
+    k_means = KMeans(n_clusters=50)
+    k_means.fit(zs_p_numpy)
+
+    kernel = 1.0 * RBF(length_scale=[1.0, 1.0])
+    gpc = GaussianProcessClassifier(kernel=kernel)
+    gpc.fit(X, y)
+
+    n_x, n_y = 50, 50
+    z1 = torch.linspace(*x_lims, n_x)
+    z2 = torch.linspace(*y_lims, n_x)
+
+    class_image = np.zeros((n_y, n_x))
+    zs = np.array([[x, y] for x in z1 for y in z2])
+    positions = {
+        (x.item(), y.item()): (i, j)
+        for j, x in enumerate(z1)
+        for i, y in enumerate(reversed(z2))
+    }
+
+    classes = gpc.predict(zs)
+    for l, (x, y) in enumerate(zs):
+        i, j = positions[(x.item(), y.item())]
+        class_image[i, j] = classes[l]
+
+    _, ax = plt.subplots(1, 1)
+    ax.imshow(class_image, extent=[*x_lims, *y_lims], cmap="Blues")
+    # ax.scatter(zs_p_numpy[:, 0], zs_p_numpy[:, 1], marker="o", c="#FADADD")
+    # ax.scatter(zs_np_numpy[:, 0], zs_np_numpy[:, 1], marker="o", c="r")
+
+    plt.tight_layout()
+    plt.savefig("./data/plots/GPC_on_training_levels.png")
+    plt.show()
+
+
 if __name__ == "__main__":
     # create_table_training_levels()
 
     model_name = "mariovae_z_dim_2_overfitting_epoch_480"
-    geodesics_in_grid(model_name)
-
-    # df = pd.read_csv("./data/processed/training_levels_results.csv")
-
-    # # Reduce the df to only include the mean marioStatus
-    # playability = df.groupby("idx").mean()["marioStatus"]
-    # playable_idxs = playability[playability > 0.0].index.values
-    # non_playable_idxs = playability[playability == 0.0].index.values
-    # print(playable_idxs)
-    # print(non_playable_idxs)
-
-    # training_tensors, test_tensors = load_data()
-    # all_levels = torch.cat((training_tensors, test_tensors))
-
-    # playable_levels = all_levels[playable_idxs]
-    # non_playable_levels = all_levels[non_playable_idxs]
-
-    # vae = VAEGeometry()
-    # vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
-    # # print("Updating cluster centers")
-    # # vae.update_cluster_centers(model_name, False, beta=-1.5)
-
-    # zs_playable = vae.encode(playable_levels)[0]
-    # zs_non_playable = vae.encode(non_playable_levels)[0]
-
-    # print(zs_playable)
-    # print(zs_non_playable)
-
-    # zs_p_numpy = zs_playable.detach().numpy()
-    # zs_np_numpy = zs_non_playable.detach().numpy()
-
-    # # _, ax = plt.subplots(1, 1)
-    # # ax.scatter(zs_p_numpy[:, 0], zs_p_numpy[:, 1], marker="x", c="g")
-    # # ax.scatter(zs_np_numpy[:, 0], zs_np_numpy[:, 1], marker="x", c="r")
-    # # plt.show()
-
-    # X = np.vstack((zs_p_numpy, zs_np_numpy))
-    # y = np.concatenate((np.ones(zs_p_numpy.shape[0]), np.zeros(zs_np_numpy.shape[0])))
-
-    # # X = np.vstack((playable_points, non_playable_points))
-    # # y = np.concatenate(
-    # #     (
-    # #         np.ones((playable_points.shape[0],)),
-    # #         np.zeros((non_playable_points.shape[0],)),
-    # #     )
-    # # )
-
-    # x_lims = y_lims = [-6, 6]
-
-    # k_means = KMeans(n_clusters=50)
-    # k_means.fit(zs_p_numpy)
-
-    # kernel = 1.0 * RBF(length_scale=[1.0, 1.0])
-    # gpc = GaussianProcessClassifier(kernel=kernel)
-    # gpc.fit(X, y)
-
-    # n_x, n_y = 50, 50
-    # z1 = torch.linspace(*x_lims, n_x)
-    # z2 = torch.linspace(*y_lims, n_x)
-
-    # class_image = np.zeros((n_y, n_x))
-    # zs = np.array([[x, y] for x in z1 for y in z2])
-    # positions = {
-    #     (x.item(), y.item()): (i, j)
-    #     for j, x in enumerate(z1)
-    #     for i, y in enumerate(reversed(z2))
-    # }
-
-    # classes = gpc.predict(zs)
-    # for l, (x, y) in enumerate(zs):
-    #     i, j = positions[(x.item(), y.item())]
-    #     class_image[i, j] = classes[l]
-
-    # _, ax = plt.subplots(1, 1)
-    # ax.imshow(class_image, extent=[*x_lims, *y_lims], cmap="Blues")
-    # ax.scatter(zs_p_numpy[:, 0], zs_p_numpy[:, 1], marker="o", c="y")
-    # ax.scatter(zs_np_numpy[:, 0], zs_np_numpy[:, 1], marker="o", c="r")
-    # plt.show()
+    # geodesics_in_grid(model_name)
+    fitting_GPC_on_training_levels(model_name)

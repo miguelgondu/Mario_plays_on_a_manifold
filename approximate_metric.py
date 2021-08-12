@@ -62,7 +62,6 @@ def plot_grid_reweight(vae, ax, x_lims, y_lims, n_rows=10, n_cols=10, title=""):
     images = onehot_to_levels(images.detach().numpy())
     images = np.array([get_img_from_level(im) for im in images])
     zs = zs.detach().numpy()
-    # print(zs)
     final_img = np.vstack(
         [
             np.hstack([im for im in row])
