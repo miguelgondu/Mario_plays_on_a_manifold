@@ -3,6 +3,7 @@ This script grabs a list of levels
 (presented in the scheme of List[dict["z", "level"]])
 and runs it with the simulator.
 """
+from typing import List
 import os
 import json
 from pathlib import Path
@@ -14,12 +15,49 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from random_interpolation import random_interpolation_experiment
+# from random_interpolation import random_interpolation_experiment
 from simulator import test_level_from_z
 from vae_mario import VAEMario
 from vae_geometry import VAEGeometry
 
 MODELS_PATH = "./models_experiment"
+
+
+def random_interpolation_experiment(
+    n_pairs: int,
+    x_lims: List[float],
+    y_lims: List[float],
+    n_points_in_line: int = 20,
+):
+    """
+    This function selects n_pairs of points
+    between x_lims and y_lims, interpolates
+    them with a line and returns a list of levels
+    in between.
+    """
+    # If you load this here, torch locks in multiprocessing
+    # afterward. SO WEIRD.
+    # vae = VAEGeometry()
+    # vae.load_state_dict(torch.load(f"models_experiment/{model_name}.pt"))
+    # vae.eval()
+
+    lower = torch.Tensor([x_lims[0], y_lims[0]])
+    upper = torch.Tensor([x_lims[1], y_lims[1]])
+
+    lines_of_zs = []
+
+    for n_pair in range(n_pairs):
+        z1 = lower + (upper - lower) * torch.rand((1, 2))
+        z2 = lower + (upper - lower) * torch.rand((1, 2))
+
+        # print(z1, z2)
+        t = torch.linspace(0, 1, n_points_in_line).unsqueeze(-1)
+        line = (1 - t) * z1 + t * z2
+        # levels = vae.decode(line)
+        for z in line:
+            lines_of_zs.append({"n_line": n_pair, "z": z})
+
+    return lines_of_zs
 
 
 def process(i, z, n_line, model_name):

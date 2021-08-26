@@ -15,9 +15,9 @@ class BaseInterpolation:
         # self.zs_prime = zs_prime
         self.n_points = n_points
 
-    def interpolate(self, z: Tensor, z_prime: Tensor) -> List[Tensor]:
+    def interpolate(self, z: Tensor, z_prime: Tensor) -> Tensor:
         """
-        This function returns a list of zs in latent space that
+        This function returns a tensor of zs in latent space that
         interpolate between z and z_prime.
         """
         raise NotImplementedError

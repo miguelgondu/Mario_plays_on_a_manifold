@@ -107,7 +107,7 @@ class VAEGeometry(VAEMario):
         params = torch.log(params.reshape(batch_size, h * w * n_classes))
         res = (1 - similarity) * dec_x + similarity * (params)
 
-        # Putting the classes in the last one.
+        # Putting the classes in the last one. (not necessary, curve length does it)
         res = res.view(batch_size, n_classes, h, w)
         # |res| = batch_size, n_classes, h, w
         # res: Tensor
