@@ -1,0 +1,23 @@
+"""
+Implements a base interpolation that all
+the interpolation experiments inherit from.
+"""
+from typing import List
+import torch
+
+# Tensor type.
+Tensor = torch.Tensor
+
+
+class BaseInterpolation:
+    def __init__(self, n_points: int = 10):
+        # self.zs = zs
+        # self.zs_prime = zs_prime
+        self.n_points = n_points
+
+    def interpolate(self, z: Tensor, z_prime: Tensor) -> List[Tensor]:
+        """
+        This function returns a list of zs in latent space that
+        interpolate between z and z_prime.
+        """
+        raise NotImplementedError
