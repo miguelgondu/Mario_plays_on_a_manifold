@@ -28,10 +28,7 @@ Tensor = torch.Tensor
 
 def plot_column(df, column_name, x_lims=None, y_lims=None, ax=None):
     col = df.groupby(["z1", "z2"]).mean()[column_name]
-    # print(col)
-    # print(col.index)
     zs = np.array([z for z in col.index])
-    # print(zs)
     z1 = sorted(list(set(zs[:, 0])))
     z2 = sorted(list(set(zs[:, 1])), reverse=True)
 
@@ -263,9 +260,37 @@ def fitting_GPC_on_training_levels(model_name):
     plt.show()
 
 
+def show_multiple_betas(model_name):
+    playable_points = get_playable_points(model_name)
+    playable_points = torch.from_numpy(playable_points)
+
+    x_lims = (-6, 6)
+    y_lims = (-6, 6)
+
+    for beta in [-5.5, -6.5]:
+        vae = VAEGeometry()
+        vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
+        print("Updating cluster centers")
+        vae.update_cluster_centers(
+            model_name,
+            False,
+            beta=beta,
+            n_clusters=playable_points.shape[0],
+            encodings=playable_points,
+            cluster_centers=playable_points,
+        )
+
+        fig, ax = plt.subplots(1, 1)
+        vae.plot_w_geodesics(ax=ax, plot_points=False)
+        ax.set_title(f"beta: {beta}")
+        fig.savefig(f"./data/plots/multiple_betas/{str(beta).replace('.', '_')}.png")
+        plt.close()
+
+
 if __name__ == "__main__":
     # create_table_training_levels()
 
     model_name = "mariovae_z_dim_2_overfitting_epoch_480"
     # geodesics_in_grid(model_name)
-    fitting_GPC_on_training_levels(model_name)
+    # fitting_GPC_on_training_levels(model_name)
+    show_multiple_betas(model_name)
