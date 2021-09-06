@@ -207,8 +207,8 @@ if __name__ == "__main__":
     # print((6.0, -6.0), as_interpolation.positions[(6.0, -6.0)])
     # print((6.0, 6.0), as_interpolation.positions[(6.0, 6.0)])
 
-    z = torch.Tensor([5.0, -2.0])
-    z_prime = torch.Tensor([5.0, 4.0])
+    z = torch.Tensor([-5.5, 1.0])
+    z_prime = torch.Tensor([-1.0, 5.0])
 
     # z_in_grid = as_interpolation._query_tree(z.detach().numpy())
     # z_prime_in_grid = as_interpolation._query_tree(z_prime.detach().numpy())

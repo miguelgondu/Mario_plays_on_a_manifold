@@ -27,7 +27,7 @@ def array_to_string_rows(level: np.ndarray):
     return level_
 
 
-def process():
+def process(width=14, comment=""):
     """
     Slices all levels into 14x14 chunks.
 
@@ -46,19 +46,21 @@ def process():
             entire_level[entire_level == "B"] = "-"
 
         _, level_length = entire_level.shape
-        for i in range(level_length - 14):
-            level_slice = entire_level[:, i : i + 14]
+        for i in range(level_length - width):
+            level_slice = entire_level[:, i : i + width]
             level_slices.append(level_slice)
 
     for i, level_slice in enumerate(level_slices):
         strings = array_to_string_rows(level_slice)
         strings[-1].replace("\n", "")
         string = "".join(strings)
-        with open(processed_level_path / f"{i:05d}.txt", "w") as fp:
+        with open(processed_level_path / f"{comment}{i:05d}.txt", "w") as fp:
             fp.write(string)
 
     level_slices = np.array(level_slices)
-    np.savez(data_path / "processed" / "all_levels_text.npz", levels=level_slices)
+    np.savez(
+        data_path / "processed" / f"{comment}all_levels_text.npz", levels=level_slices
+    )
 
     with open("./encoding.json") as fp:
         encoding = json.load(fp)
@@ -68,12 +70,18 @@ def process():
 
     # Saving as classes
     level_slices = level_slices.astype(int)
-    np.savez(data_path / "processed" / "all_levels_encoded.npz", levels=level_slices)
+    np.savez(
+        data_path / "processed" / f"{comment}all_levels_encoded.npz",
+        levels=level_slices,
+    )
 
     # Saving as onehot
     level_slices = levels_to_onehot(level_slices, n_sprites=len(encoding.keys()))
-    np.savez(data_path / "processed" / "all_levels_onehot.npz", levels=level_slices)
+    np.savez(
+        data_path / "processed" / f"{comment}all_levels_onehot.npz", levels=level_slices
+    )
 
 
 if __name__ == "__main__":
-    process()
+    # process()
+    process(width=16, comment="rasmus_")
