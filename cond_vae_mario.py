@@ -33,14 +33,14 @@ class CondVAEMario(nn.Module):
         self.w = w
         self.h = h
         self.n_sprites = n_sprites
-        self.input_dim = w * h * n_sprites + 1
+        self.input_dim = w * h * n_sprites
 
         self.z_dim = z_dim or 64
         self.h_dims = h_dims or [256, 128]
 
         # Adding the input layer with onehot encoding
         # (assuming that the views are inside the net)
-        self.h_dims = [self.input_dim] + self.h_dims
+        self.h_dims = [self.input_dim + 1] + self.h_dims
         modules = []
         for dim_1, dim_2 in zip(self.h_dims[:-1], self.h_dims[1:]):
             modules.append(nn.Sequential(nn.Linear(dim_1, dim_2), nn.Tanh()))
@@ -58,7 +58,7 @@ class CondVAEMario(nn.Module):
             else:
                 dec_modules.append(
                     nn.Sequential(
-                        nn.Linear(dim_1, dim_2),
+                        nn.Linear(dim_1, dim_2 - 1),
                         nn.LogSoftmax(dim=1),
                     )
                 )
@@ -88,7 +88,7 @@ class CondVAEMario(nn.Module):
     def forward(self, x: Tensor, c: Tensor) -> List[Tensor]:
         # Does a forward pass through the network.
         # batch_size, n_classes, h, w = x.shape
-        x = x.view(-1, self.input_dim - 1)
+        x = x.view(-1, self.input_dim)
         mu, log_var = self.encode(x, c)
 
         # Sample z from p(z|x)

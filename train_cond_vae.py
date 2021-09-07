@@ -62,8 +62,10 @@ def loss_function(x_prime, x, mu, log_var, scale=1.0):
 def plot_samples(vae, zs, comment=None):
     _, axes = plt.subplots(2, 2, figsize=(2 * 7, 2 * 7))
     axes = [axes[0, 0], axes[0, 1], axes[1, 0], axes[1, 1]]
-    samples = vae.decoder(zs)
+    samples = vae.decode(zs, torch.ones((zs.shape[0],)))
+    print(f"Samples shape: {samples.shape}")
     samples = onehot_to_levels(samples.detach().numpy())
+    print(f"Samples shape: {samples.shape}")
     for level, ax in zip(samples, axes):
         # print(level)
         plot_level_from_array(ax, level)
@@ -73,9 +75,9 @@ def plot_samples(vae, zs, comment=None):
     plt.close()
 
 
-def plot_reconstructions(vae, levels, comment=None):
+def plot_reconstructions(vae, levels, classes, comment=None):
     _, axes = plt.subplots(2, 2, figsize=(2 * 7, 2 * 7))
-    reconst, _, _, _ = vae(torch.Tensor(levels))
+    reconst, _, _, _ = vae(torch.Tensor(levels), classes)
     levels = onehot_to_levels(levels)
     levels_prime = onehot_to_levels(reconst.detach().numpy())
     for i, (level, level_prime) in enumerate(zip(levels[:2], levels_prime[:2])):
@@ -196,6 +198,12 @@ def run(
 
     # Loading the data.
     X_train, X_test, y_train, y_test = load_data_w_classes()
+    print("-" * 25 + " Training data " + "-" * 25)
+    print(f"X train: {X_train.shape} ({X_train.dtype})")
+    print(f"y train: {y_train.shape} ({y_train.dtype})")
+    print("-" * 25 + " Testing data " + "-" * 25)
+    print(f"X test: {X_test.shape} ({X_test.dtype})")
+    print(f"y test: {y_test.shape} ({y_test.dtype})")
 
     # -----------------------------------------------------------------
     ## Overfitting test: check if we overfit to one batch.
@@ -227,6 +235,7 @@ def run(
 
     # Training and testing.
     levels_for_reconstruction = X_test[:2, :, :, :].detach().numpy()
+    classes_for_reconstruction = y_test[:2].detach().numpy()
     print(f"Training experiment {comment}")
     train_losses = []
     test_losses = []
@@ -261,11 +270,11 @@ def run(
 
         if epoch % save == 0 and epoch != 0:
             # Saving the model
-            # print("Plotting samples and reconstructions")
-            # plot_samples(vae, zs, comment=f"{comment}_epoch_{epoch}")
-            # plot_reconstructions(
-            #     vae, levels_for_reconstruction, comment=f"{comment}_epoch_{epoch}"
-            # )
+            print("Plotting samples and reconstructions")
+            plot_samples(vae, zs, comment=f"{comment}_epoch_{epoch}")
+            plot_reconstructions(
+                vae, levels_for_reconstruction, comment=f"{comment}_epoch_{epoch}"
+            )
 
             print(f"Saving the model at checkpoint {epoch}.")
             torch.save(vae.state_dict(), f"./models/{comment}_epoch_{epoch}.pt")

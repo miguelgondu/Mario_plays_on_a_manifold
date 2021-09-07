@@ -8,6 +8,7 @@ why not use it directly?
 """
 import json
 from pathlib import Path
+from vae_mario_hierarchical import VAEMarioHierarchical
 from sklearn import cluster
 
 import torch
@@ -194,7 +195,8 @@ def fitting_GPC_on_training_levels(model_name):
     playable_levels = all_levels[playable_idxs]
     non_playable_levels = all_levels[non_playable_idxs]
 
-    vae = VAEGeometry()
+    vae = VAEMarioHierarchical(14, 14, z_dim=2)
+    # vae = VAEGeometry()
     vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
     # print("Updating cluster centers")
     # vae.update_cluster_centers(model_name, False, beta=-1.5)
@@ -252,11 +254,11 @@ def fitting_GPC_on_training_levels(model_name):
 
     _, ax = plt.subplots(1, 1)
     ax.imshow(class_image, extent=[*x_lims, *y_lims], cmap="Blues")
-    # ax.scatter(zs_p_numpy[:, 0], zs_p_numpy[:, 1], marker="o", c="#FADADD")
-    # ax.scatter(zs_np_numpy[:, 0], zs_np_numpy[:, 1], marker="o", c="r")
+    ax.scatter(zs_p_numpy[:, 0], zs_p_numpy[:, 1], marker="o", c="#FADADD")
+    ax.scatter(zs_np_numpy[:, 0], zs_np_numpy[:, 1], marker="o", c="r")
 
     plt.tight_layout()
-    plt.savefig("./data/plots/GPC_on_training_levels.png")
+    plt.savefig(f"./data/plots/GPC_on_training_levels_{model_name}.png")
     plt.show()
 
 
@@ -290,7 +292,8 @@ def show_multiple_betas(model_name):
 if __name__ == "__main__":
     # create_table_training_levels()
 
-    model_name = "mariovae_z_dim_2_overfitting_epoch_480"
+    # model_name = "mariovae_z_dim_2_overfitting_epoch_480"
+    model_name = "mariovae_hierarchical_final"
     # geodesics_in_grid(model_name)
-    # fitting_GPC_on_training_levels(model_name)
-    show_multiple_betas(model_name)
+    fitting_GPC_on_training_levels(model_name)
+    # show_multiple_betas(model_name)

@@ -62,25 +62,31 @@ class VAEMarioHierarchical(nn.Module):
         self.fc_mu = nn.Sequential(nn.Linear(self.h_dims[-1], z_dim))
         self.fc_var = nn.Sequential(nn.Linear(self.h_dims[-1], z_dim))
 
-        dec_dims = self.h_dims.copy() + [z_dim]
-        dec_dims.reverse()
-        dec_modules = []
-        for dim_1, dim_2 in zip(dec_dims[:-1], dec_dims[1:]):
-            if dim_2 != dec_dims[-1]:
-                dec_modules.append(nn.Sequential(nn.Linear(dim_1, dim_2), nn.Tanh()))
-            else:
-                dec_modules.append(
-                    nn.Sequential(
-                        nn.Linear(dim_1, dim_2),
-                        # View([-1, self.n_sprites, self.h, self.w]),
-                        # nn.LogSoftmax(dim=1),
-                    )
-                )
+        # dec_dims = self.h_dims.copy() + [z_dim]
+        # dec_dims.reverse()
+        # dec_modules = []
+        # for dim_1, dim_2 in zip(dec_dims[:-1], dec_dims[1:]):
+        #     if dim_2 != dec_dims[-1]:
+        #         dec_modules.append(nn.Sequential(nn.Linear(dim_1, dim_2), nn.Tanh()))
+        #     else:
+        #         dec_modules.append(
+        #             nn.Sequential(
+        #                 nn.Linear(dim_1, dim_2),
+        #                 # View([-1, self.n_sprites, self.h, self.w]),
+        #                 # nn.LogSoftmax(dim=1),
+        #             )
+        #         )
 
-        self.dec_mu = nn.Linear(dec_dims[-1], dec_dims[-1])
-        self.dec_var = nn.Linear(dec_dims[-1], dec_dims[-1])
+        self.decoder = nn.Sequential(
+            nn.Linear(self.z_dim, 256),
+            nn.Tanh(),
+            nn.Linear(256, self.input_dim),
+            nn.Tanh(),
+        )
 
-        self.decoder = nn.Sequential(*dec_modules)
+        self.dec_mu = nn.Linear(self.input_dim, self.input_dim)
+        self.dec_var = nn.Linear(self.input_dim, self.input_dim)
+
         # print(self)
 
     def encode(self, x: Tensor) -> List[Tensor]:

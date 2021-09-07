@@ -247,6 +247,8 @@ def run(
     # Training and testing.
     levels_for_reconstruction = test_tensors[:2, :, :, :].detach().numpy()
     print(f"Training experiment {comment}")
+    print("Model:")
+    print(vae)
     train_losses = []
     test_losses = []
     best_loss = np.Inf
