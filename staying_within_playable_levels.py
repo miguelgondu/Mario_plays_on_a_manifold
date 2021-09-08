@@ -22,6 +22,7 @@ from sklearn.gaussian_process.kernels import RBF
 from train_vae import load_data
 from approximate_metric import local_KL, plot_grid_reweight
 from vae_geometry import VAEGeometry
+from vae_geometry_hierarchical import VAEGeometryHierarchical
 
 # Types
 Tensor = torch.Tensor
@@ -179,6 +180,95 @@ def geodesics_in_grid(model_name):
     plt.show()
 
 
+def plot_logsigmas(vae, ax):
+    print("Plotting Local KL approximation")
+    x_lims = (-6, 6)
+    y_lims = (-6, 6)
+
+    n_x, n_y = 50, 50
+    z1 = torch.linspace(*x_lims, n_x)
+    z2 = torch.linspace(*y_lims, n_x)
+
+    logsigmas_image = np.zeros((n_y, n_x))
+    zs = torch.Tensor([[x, y] for x in z1 for y in z2])
+    positions = {
+        (x.item(), y.item()): (i, j)
+        for j, x in enumerate(z1)
+        for i, y in enumerate(reversed(z2))
+    }
+
+    _, logsigmas = vae.reweight(zs, return_logsigma=True)
+    print(logsigmas)
+    print(logsigmas.shape)
+
+    for l, (x, y) in enumerate(zs):
+        i, j = positions[(x.item(), y.item())]
+        logsigmas_image[i, j] = logsigmas[l].mean()
+
+    ax.imshow(logsigmas_image, extent=[*x_lims, *y_lims])
+
+
+def geodesics_for_hierarchical_circle(model_name):
+    model_name = "mariovae_hierarchical_final"
+
+    vae = VAEGeometryHierarchical()
+    vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
+    print("Updating cluster centers")
+    angles = torch.rand((100,)) * 2 * np.pi
+    encodings = 3.0 * torch.vstack((torch.cos(angles), torch.sin(angles))).T
+    print(encodings)
+    # raise
+
+    vae.update_cluster_centers(model_name, False, beta=-1.5, encodings=encodings)
+
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10 * 3, 10))
+
+    print("Plotting grid of levels")
+    x_lims = (-6, 6)
+    y_lims = (-6, 6)
+    plot_grid_reweight(vae, ax1, x_lims, y_lims, n_rows=10, n_cols=10)
+
+    print("Plotting geodesics and latent space")
+    try:
+        vae.plot_w_geodesics(ax=ax2, plot_points=False)
+    except Exception as e:
+        print(f"couldn't get geodesics for reason {e}")
+
+    print("Plotting Local KL approximation")
+    n_x, n_y = 50, 50
+    z1 = torch.linspace(*x_lims, n_x)
+    z2 = torch.linspace(*y_lims, n_x)
+
+    KL_image = np.zeros((n_y, n_x))
+    zs = torch.Tensor([[x, y] for x in z1 for y in z2])
+    positions = {
+        (x.item(), y.item()): (i, j)
+        for j, x in enumerate(z1)
+        for i, y in enumerate(reversed(z2))
+    }
+
+    KLs = local_KL(vae, zs, eps=0.05)
+    for l, (x, y) in enumerate(zs):
+        i, j = positions[(x.item(), y.item())]
+        KL_image[i, j] = KLs[l]
+
+    ax3.scatter(vae.cluster_centers[:, 0], vae.cluster_centers[:, 1], marker="x", c="k")
+    plot = ax3.imshow(KL_image, extent=[*x_lims, *y_lims], cmap="viridis")
+    plt.colorbar(plot, ax=ax3, fraction=0.046, pad=0.04)
+
+    ax1.set_title("Decoded levels")
+    ax2.set_title("Latent space and geodesics")
+    ax3.set_title("Estimated metric volume")
+
+    plt.tight_layout()
+    plt.savefig("data/plots/geodesics_hierarchical_circle.png")
+
+    plt.show()
+
+    print(f"min KL estimates: {np.min(KLs)}")
+    print(f"max KL estimates: {np.max(KLs)}")
+
+
 def fitting_GPC_on_training_levels(model_name):
     df = pd.read_csv("./data/processed/training_levels_results.csv")
 
@@ -295,5 +385,22 @@ if __name__ == "__main__":
     # model_name = "mariovae_z_dim_2_overfitting_epoch_480"
     model_name = "mariovae_hierarchical_final"
     # geodesics_in_grid(model_name)
-    fitting_GPC_on_training_levels(model_name)
+    # fitting_GPC_on_training_levels(model_name)
     # show_multiple_betas(model_name)
+    geodesics_for_hierarchical_circle(model_name)
+    # model_name = "mariovae_hierarchical_final"
+
+    # vae = VAEGeometryHierarchical()
+    # vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
+    # print("Updating cluster centers")
+    # angles = torch.rand((100,)) * 2 * np.pi
+    # encodings = 3.0 * torch.vstack((torch.cos(angles), torch.sin(angles))).T
+    # print(encodings)
+    # # raise
+
+    # vae.update_cluster_centers(model_name, False, beta=-2.5, encodings=encodings)
+
+    # # levels, logsigmas = vae.reweight()
+    # _, ax = plt.subplots(1, 1)
+    # plot_logsigmas(vae, ax)
+    # plt.show()
