@@ -3,18 +3,23 @@ This experiment gets random interpolations on
 the latent space and simulates them, measuring
 playability in each one of them.
 """
-from base_interpolation import BaseInterpolation
+from pathlib import Path
 from typing import List
 import pandas as pd
 import torch
 import click
 import numpy as np
+import json
+import multiprocessing as mp
+from itertools import repeat
 
 from vae_mario import VAEMario
 from vae_geometry import VAEGeometry
 from train_vae import load_data
+from geoml.discretized_manifold import DiscretizedManifold
 
 from simulator import test_level_from_z
+from base_interpolation import BaseInterpolation
 from linear_interpolation import LinearInterpolation
 from astar_interpolation import AStarInterpolation
 from geodesic_interpolation import GeodesicInterpolation
@@ -68,6 +73,25 @@ def get_random_pairs(
     return pairs_1, pairs_2
 
 
+def simulate_line(
+    vae: VAEGeometry,
+    line: List[Tensor],
+    path_to_exp: Path = None,
+    experiment_name: str = None,
+):
+    for i, z in enumerate(line):
+        result = test_level_from_z(z, vae)
+        result = {
+            "experiment_name": experiment_name,
+            "line_idx": i,
+            "line": [z.tolist() for z in line],
+            **result,
+        }
+
+        with open(path_to_exp / f"{experiment_name}_{i:05d}.json") as fp:
+            json.dump(result, fp)
+
+
 @click.command()
 @click.argument(
     "model_name", default="mariovae_z_dim_2_overfitting_epoch_480", type=str
@@ -75,7 +99,8 @@ def get_random_pairs(
 @click.option("--interpolation", default="linear", type=str)
 @click.option("--n-lines", default=20, type=int)
 @click.option("--n-points-in-line", default=10, type=int)
-def experiment(model_name, interpolation, n_lines, n_points_in_line):
+@click.option("--processes", default=10, type=int)
+def experiment(model_name, interpolation, n_lines, n_points_in_line, processes):
     vae = load_model(model_name)
 
     playable_tensors, _ = load_data(only_playable=True)
@@ -85,3 +110,25 @@ def experiment(model_name, interpolation, n_lines, n_points_in_line):
 
     if interpolation == "linear":
         inter = LinearInterpolation(n_points=n_points_in_line)
+    elif interpolation == "geodesic":
+        grid = [torch.linspace(-5, 5, 50), torch.linspace(-5, 5, 50)]
+        Mx, My = torch.meshgrid(grid[0], grid[1])
+        grid2 = torch.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
+        DM = DiscretizedManifold(vae, grid2, use_diagonals=True)
+        inter = GeodesicInterpolation(DM, model_name, n_points_in_line=n_points_in_line)
+    elif interpolation == "astar":
+        inter = AStarInterpolation(n_points_in_line, model_name)
+
+    # Core of the experiment: run the jewels
+    experiment_name = f"interpolation_{model_name}_{interpolation}"
+
+    filepath = Path(__file__).parent.resolve()
+    path_to_exp = filepath / "data" / "interpolation_experiment" / experiment_name
+    path_to_exp.mkdir(exist_ok=True)
+
+    lines = [inter.interpolate(z1, z2) for z1, z2 in zip(z1s, z2s)]
+    with mp.Pool(processes=processes) as p:
+        p.starmap(
+            simulate_line,
+            zip(repeat(vae), lines, repeat(path_to_exp), repeat(experiment_name)),
+        )
