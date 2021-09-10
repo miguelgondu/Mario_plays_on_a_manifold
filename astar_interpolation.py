@@ -30,8 +30,8 @@ def get_playable_points(model_name):
 
 
 class AStarInterpolation(BaseInterpolation):
-    def __init__(self, n_points: int, model_name: str):
-        super().__init__(n_points=n_points)
+    def __init__(self, n_points_in_line: int, model_name: str):
+        super().__init__(n_points_in_line=n_points_in_line)
 
         # Computing the grid for A*
         df = pd.read_csv(
@@ -191,6 +191,7 @@ class AStarInterpolation(BaseInterpolation):
         path_positions = path_positions[1:]
         zs_in_path = np.array([self.inv_positions[p] for p in path_positions])
 
+        # TODO: this should be returning only self.n_points_in_line
         return zs_in_path
 
 

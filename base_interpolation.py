@@ -10,10 +10,10 @@ Tensor = torch.Tensor
 
 
 class BaseInterpolation:
-    def __init__(self, n_points: int = 10):
+    def __init__(self, n_points_in_line: int = 10):
         # self.zs = zs
         # self.zs_prime = zs_prime
-        self.n_points = n_points
+        self.n_points_in_line = n_points_in_line
 
     def interpolate(self, z: Tensor, z_prime: Tensor) -> Tensor:
         """
