@@ -68,13 +68,14 @@ def load_data(
 # Cross Entropy + KLD regularization
 def loss_function(x_prime, x, mu, log_var, scale=1.0):
     # Assmuing that both are 1-hot encoding representations.
-    # x_classes = onehot_to_levels(x)
-    # loss = torch.nn.NLLLoss(reduction="sum")
-    # CEL = loss(x_prime, x_classes)
-    print(f"x shape: {x.shape}")
-    print(f"x_prime shape: {x_prime.shape}")
-    cat = Categorical(logits=x_prime.permute(0, 2, 3, 1))
-    rec_loss = cat.log_prob(x.permute(0, 2, 3, 1))
+    x_classes = onehot_to_levels(x)
+    loss = torch.nn.NLLLoss(reduction="sum")
+    rec_loss = loss(x_prime, x_classes)
+    # print(f"x shape: {x.shape}")
+    # print(f"x_prime shape: {x_prime.shape}")
+    # x_ = x.argmax(dim=1)
+    # cat = Categorical(logits=x_prime.permute(0, 2, 3, 1))
+    # rec_loss = cat.log_prob(x_).sum(dim=(1, 2)).mean(dim=0)
     KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
     return rec_loss + scale * KLD, rec_loss, KLD
 
@@ -82,10 +83,11 @@ def loss_function(x_prime, x, mu, log_var, scale=1.0):
 def plot_samples(vae, zs, comment=None):
     _, axes = plt.subplots(2, 2, figsize=(2 * 7, 2 * 7))
     axes = [axes[0, 0], axes[0, 1], axes[1, 0], axes[1, 1]]
-    samples = vae.decoder(zs)
+    samples = vae.decode(zs)
     samples = onehot_to_levels(samples.detach().numpy())
     for level, ax in zip(samples, axes):
         # print(level)
+        # print(level.shape)
         plot_level_from_array(ax, level)
 
     plt.tight_layout()
@@ -132,7 +134,9 @@ def fit(model, optimizer, data_loader, dataset, device, writer, epoch=0, scale=1
         levels = levels.to(device)
         optimizer.zero_grad()
         x_primes, xs, mu, log_var = model(levels)
-        loss, CEL, KLD = loss_function(x_primes, xs, mu, log_var, scale=scale)
+        loss, CEL, KLD = loss_function(
+            x_primes.contiguous(), xs, mu, log_var, scale=scale
+        )
         running_loss += loss.item()
         CELs.append(CEL.item() / len(levels))
         KLDs.append(KLD.item() / len(levels))
