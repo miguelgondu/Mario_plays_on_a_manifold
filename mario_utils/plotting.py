@@ -12,10 +12,14 @@ import PIL
 
 # SPRITES_PATH = os.environ.get("SPRITES_PATH")
 # ENCODING_PATH = os.environ.get("ENCODING_PATH")
-SPRITES_PATH = "/Users/migd/Projects/mario_geometry_project/MarioVAE/sprites.json"
-ENCODING_PATH = "/Users/migd/Projects/mario_geometry_project/MarioVAE/encoding.json"
 
 Tensor = torch.Tensor
+SPRITES_PATH = (
+    "/home/miguel/Projects/MarioVAE/sprites.json"
+)
+ENCODING_PATH = (
+    "/home/miguel/Projects/MarioVAE/encoding.json"
+)
 
 with open(SPRITES_PATH) as fp:
     sprites = json.load(fp)
