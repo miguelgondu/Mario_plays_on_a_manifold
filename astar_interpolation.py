@@ -192,7 +192,35 @@ class AStarInterpolation(BaseInterpolation):
         zs_in_path = np.array([self.inv_positions[p] for p in path_positions])
 
         # TODO: this should be returning only self.n_points_in_line
-        return zs_in_path
+        # if len(zs_in_path) > self.n_points_in_line:
+        #     stepsize = len(zs_in_path) / self.n_points_in_line
+        #     final_points = np.array(
+        #         [
+        #             zs_in_path[int(k * stepsize)]
+        #             for k in range(self.n_points_in_line - 1)
+        #         ]
+        #         + zs_in_path[-1]
+        #     )
+
+        # elif len(zs_in_path) < self.n_points_in_line:
+        #     # We need to expand by interpolating with lines. Adding (a+b)/2
+        #     # until we get there.
+        #     print(f"Length was smaller: {zs_in_path.shape}")
+        #     final_points = [z for z in zs_in_path]
+        #     while len(final_points) < self.n_points_in_line:
+        #         print(f"final points: {final_points}")
+        #         idx = np.random.randint(len(final_points) - 1)
+        #         print(f"idx: {idx}")
+        #         final_points = (
+        #             final_points[:idx]
+        #             + [(final_points[idx] + final_points[idx + 1]) / 2]
+        #             + final_points[idx + 1 :]
+        #         )
+        #     final_points = np.array(final_points)
+        # else:
+        #     final_points = zs_in_path
+
+        return torch.from_numpy(zs_in_path)
 
 
 if __name__ == "__main__":
