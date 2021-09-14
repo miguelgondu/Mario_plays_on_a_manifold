@@ -19,6 +19,7 @@ from mario_utils.plotting import save_level_from_array
 from mario_utils.plotting import plot_level_from_array
 from mario_utils.plotting import get_img_from_level
 from vae_mario_hierarchical import VAEMarioHierarchical
+from plot_grid_of_levels import plot_grid
 from torch.utils.tensorboard import SummaryWriter
 
 # Data types.
@@ -74,18 +75,22 @@ def loss_function(x_prime, x, mu, log_var, scale=1.0):
     return CEL + scale * KLD, CEL, KLD
 
 
-def plot_samples(vae, zs, comment=None):
+def plot_samples(vae, zs, comment=None, save=True):
     _, axes = plt.subplots(2, 2, figsize=(2 * 7, 2 * 7))
     axes = [axes[0, 0], axes[0, 1], axes[1, 0], axes[1, 1]]
     samples = vae.decode(zs)
     samples = onehot_to_levels(samples.detach().numpy())
     for level, ax in zip(samples, axes):
         # print(level)
+        # print(level.shape)
         plot_level_from_array(ax, level)
 
     plt.tight_layout()
-    plt.savefig(f"./data/samples/samples_{comment}.png", bbox_inches="tight")
+    if save:
+        plt.savefig(f"./data/samples/samples_{comment}.png", bbox_inches="tight")
     plt.close()
+
+    return np.array([get_img_from_level(s) for s in samples])
 
 
 def plot_reconstructions(vae, levels, comment=None):
@@ -135,7 +140,7 @@ def fit(model, optimizer, data_loader, dataset, device, writer, epoch=0, scale=1
         optimizer.step()
         # if i % 2 == 0:
         #     report(writer, )
-    report(writer, "train", epoch, loss.item() / len(dataset))
+    # report(writer, "train", epoch, loss.item() / len(dataset))
 
     return running_loss
 
@@ -151,15 +156,23 @@ def test(model, test_loader, test_dataset, device, writer, epoch=0, scale=1.0):
             loss, _, _ = loss_function(x_primes, xs, mu, log_var, scale=scale)
             running_loss += loss.item()
 
-    report(writer, "test", epoch, loss.item() / len(test_dataset))
+    # report(writer, "test", epoch, loss.item() / len(test_dataset))
     print(f"Epoch {epoch}. Loss in test: {running_loss / len(test_dataset)}")
     return running_loss
 
 
-def report(writer: SummaryWriter, comment: str, checkpoint: int, loss: float):
+def report(
+    writer: SummaryWriter,
+    checkpoint: int,
+    train_loss: float,
+    test_loss: float,
+    grid: np.ndarray,
+    samples: np.ndarray,
+):
     # writer.add_scalar(f"KLD - {comment}", KLD, checkpoint)
     # writer.add_scalar(f"CEL - {comment}", CEL, checkpoint)
-    writer.add_scalar(f"loss - {comment}", loss, checkpoint)
+    writer.add_scalar(f"train_loss", train_loss, checkpoint)
+    writer.add_scalar(f"test_loss", test_loss, checkpoint)
 
     # samples = decoder(zs)
     # samples = onehot_to_levels(
@@ -169,7 +182,16 @@ def report(writer: SummaryWriter, comment: str, checkpoint: int, loss: float):
     #     [get_img_from_level(level) for level in samples]
     # )
 
-    # writer.add_images(f"samples_{epoch}", samples, checkpoint, dataformats="NHWC")
+    # print(grid)
+    # print(grid.shape)
+    # print(samples)
+    # print(samples.shape)
+    grid = 255 - grid
+    samples = 255 - samples
+    writer.add_images(f"samples", samples, checkpoint, dataformats="NHWC")
+    writer.add_images(
+        f"grid", grid.reshape(1, *grid.shape), checkpoint, dataformats="NHWC"
+    )
 
 
 @click.command()
@@ -205,7 +227,7 @@ def run(
     if comment is None:
         comment = f"{timestamp}_mariovae_zdim_{z_dim}"
 
-    writer = SummaryWriter(log_dir=f"./runs/{comment}")
+    writer = SummaryWriter(log_dir=f"./runs/{timestamp}_{comment}")
     # Setting up the hyperparameters
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -279,6 +301,20 @@ def run(
         else:
             if not overfit:
                 n_without_improvement += 1
+
+        # Reporting
+        fig, ax = plt.subplots(1, 1)
+        grid = plot_grid(vae, ax, (-5, 5), (-5, 5))
+        plt.close(fig)
+        samples = plot_samples(vae, zs, comment=f"{comment}_epoch_{epoch}", save=False)
+        report(
+            writer,
+            epoch,
+            train_loss / len(dataset),
+            test_loss / len(test_dataset),
+            grid,
+            samples,
+        )
 
         if epoch % save == 0 and epoch != 0:
             # Saving the model

@@ -108,14 +108,8 @@ class VAEMarioDirichlet(nn.Module):
         # Decode this z
         dec_alphas = self._decode_sample(z)
 
-        # This doesn't work
         d = Dirichlet(dec_alphas.reshape(-1, self.h, self.w, self.n_sprites))
         x_prime = torch.log(d.rsample())
-
-        # This does work
-        # x_prime = torch.ones_like(dec_alphas).reshape(
-        #     -1, self.h, self.w, self.n_sprites
-        # )
 
         return x_prime.permute(0, 3, 1, 2)
 
