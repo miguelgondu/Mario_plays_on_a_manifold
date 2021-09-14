@@ -2,30 +2,51 @@
 This script defines some functions that
 plot levels.
 """
-from mario_utils.levels import onehot_to_levels
 import os
 import json
+from pathlib import Path
+
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import PIL
 
-# SPRITES_PATH = os.environ.get("SPRITES_PATH")
-# ENCODING_PATH = os.environ.get("ENCODING_PATH")
+from mario_utils.levels import onehot_to_levels
 
+filepath = Path(__file__).parent.resolve()
 Tensor = torch.Tensor
-SPRITES_PATH = (
-    "/home/miguel/Projects/MarioVAE/sprites.json"
-)
-ENCODING_PATH = (
-    "/home/miguel/Projects/MarioVAE/encoding.json"
-)
 
-with open(SPRITES_PATH) as fp:
-    sprites = json.load(fp)
 
-with open(ENCODING_PATH) as fp:
-    encoding = json.load(fp)
+def absolute(path_str):
+    return str(Path(path_str).absolute())
+
+
+encoding = {
+    "X": 0,
+    "S": 1,
+    "-": 2,
+    "?": 3,
+    "Q": 4,
+    "E": 5,
+    "<": 6,
+    ">": 7,
+    "[": 8,
+    "]": 9,
+    "o": 10,
+}
+
+sprites = {
+    encoding["X"]: absolute(f"{filepath}/sprites/stone.png"),
+    encoding["S"]: absolute(f"{filepath}/sprites/breakable_stone.png"),
+    encoding["?"]: absolute(f"{filepath}/sprites/question.png"),
+    encoding["Q"]: absolute(f"{filepath}/sprites/depleted_question.png"),
+    encoding["E"]: absolute(f"{filepath}/sprites/goomba.png"),
+    encoding["<"]: absolute(f"{filepath}/sprites/left_pipe_head.png"),
+    encoding[">"]: absolute(f"{filepath}/sprites/right_pipe_head.png"),
+    encoding["["]: absolute(f"{filepath}/sprites/left_pipe.png"),
+    encoding["]"]: absolute(f"{filepath}/sprites/right_pipe.png"),
+    encoding["o"]: absolute(f"{filepath}/sprites/coin.png"),
+}
 
 
 def save_level_from_array(path, level, title=None, dpi=150):
@@ -62,9 +83,7 @@ def get_img_from_level(level: np.ndarray):
                 # masked
                 tile = (128 * np.ones((16, 16, 3))).astype(int)
             else:
-                tile = np.asarray(
-                    PIL.Image.open(sprites[str(c)]).convert("RGB")
-                ).astype(int)
+                tile = np.asarray(PIL.Image.open(sprites[c]).convert("RGB")).astype(int)
             image_row.append(tile)
         image.append(image_row)
 

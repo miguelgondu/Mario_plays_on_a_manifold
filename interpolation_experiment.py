@@ -75,6 +75,7 @@ def get_random_pairs(
 
 def simulate_line(
     model_name: VAEGeometry,
+    line_id: int,
     line: List[Tensor],
     path_to_exp: Path = None,
     experiment_name: str = None,
@@ -84,7 +85,7 @@ def simulate_line(
     playable_points = torch.from_numpy(playable_points)
     vae = VAEGeometry()
     vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
-    print("Updating cluster centers")
+    # print("Updating cluster centers")
     vae.update_cluster_centers(
         model_name,
         False,
@@ -94,17 +95,22 @@ def simulate_line(
         cluster_centers=playable_points,
     )
     vae.eval()
+
     for i, z in enumerate(line):
+        print(f"Evaluating line {line_id} (z {i}).")
         result = test_level_from_z(z, vae)
         result = {
             "experiment_name": experiment_name,
-            "z_idx": i,
+            "line_id": line_id,
             "line": [z.tolist() for z in line],
+            "z_idx": i,
             "z": z.tolist(),
             **result,
         }
 
-        with open(path_to_exp / f"{experiment_name}_{i:05d}.json", "w") as fp:
+        with open(
+            path_to_exp / f"{experiment_name}_{line_id:05d}_{i:05d}.json", "w"
+        ) as fp:
             json.dump(result, fp)
 
 
@@ -166,8 +172,10 @@ def experiment(model_name, interpolation, processes):
     path_to_exp.mkdir(exist_ok=True)
 
     # Loading lines
-    lines = np.load(path_to_exp / f"{interpolation}_lines.npz")["lines"]
-    lines = torch.from_numpy(lines).detach()
+    lines = np.load(path_to_exp / f"{interpolation}_lines.npz", allow_pickle=True)[
+        "lines"
+    ]
+    # lines = torch.from_numpy(lines).detach()
 
     if processes > 1:
         with mp.Pool(processes=processes) as p:
@@ -175,7 +183,8 @@ def experiment(model_name, interpolation, processes):
                 simulate_line,
                 zip(
                     repeat(model_name),
-                    lines,
+                    range(len(lines)),
+                    [torch.from_numpy(l).type(torch.float).detach() for l in lines],
                     repeat(path_to_exp),
                     repeat(experiment_name),
                 ),

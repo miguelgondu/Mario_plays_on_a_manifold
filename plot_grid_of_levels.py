@@ -1,9 +1,10 @@
-from vae_mario_hierarchical import VAEMarioHierarchical
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
 from vae_mario import VAEMario
+from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_dirichlet import VAEMarioDirichlet
 
 from mario_utils.levels import onehot_to_levels
 from mario_utils.plotting import get_img_from_level
@@ -40,8 +41,19 @@ def plot_grid_hierarchical_model():
     plt.savefig(f"./data/plots/grid_{model_name}.png")
 
 
+def plot_grid_dirichlet_model():
+    vae = VAEMarioDirichlet(14, 14, z_dim=2)
+    model_name = "mariovae_dirichlet_final"
+    vae.load_state_dict(torch.load(f"./models/{model_name}.pt"))
+    vae.eval()
+    _, ax = plt.subplots(1, 1, figsize=(15, 15))
+    plot_grid(vae, ax, [-6, 6], [-6, 6], n_rows=10, n_cols=10)
+    plt.savefig(f"./data/plots/grid_{model_name}.png")
+
+
 if __name__ == "__main__":
-    plot_grid_hierarchical_model()
+    # plot_grid_hierarchical_model()
+    plot_grid_dirichlet_model()
     # vae = VAEMario(14, 14, z_dim=2)
     # model_names = [
     #     # "mariovae_z_dim_2_only_playable_epoch_480",
