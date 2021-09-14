@@ -8,6 +8,7 @@ from typing import List
 
 import numpy as np
 import torch
+from torch.distributions import Distribution, Normal, Categorical, kl_divergence
 from torch.nn import functional as F
 import torch.nn as nn
 from torch.tensor import Tensor
@@ -17,143 +18,163 @@ from mario_utils.levels import onehot_to_levels
 from mario_utils.plotting import get_img_from_level
 
 
-class View(nn.Module):
-    def __init__(self, shape):
-        super(View, self).__init__()
-        self.shape = shape
+def load_data(
+    training_percentage=0.8, test_percentage=None, shuffle_seed=0, only_playable=False
+):
+    """Returns two tensors with training and testing data"""
+    # Loading the data.
+    # This data is structured [b, c, i, j], where c corresponds to the class.
+    if only_playable:
+        data = np.load("./data/processed/all_playable_levels_onehot.npz")["levels"]
+    else:
+        data = np.load("./data/processed/all_levels_onehot.npz")["levels"]
 
-    def forward(self, x):
-        return x.view(*self.shape)
+    np.random.seed(shuffle_seed)
+    np.random.shuffle(data)
+
+    # Separating into training and test.
+    n_data, _, _, _ = data.shape
+    training_index = int(n_data * training_percentage)
+    training_data = data[:training_index, :, :, :]
+    testing_data = data[training_index:, :, :, :]
+    training_tensors = torch.from_numpy(training_data).type(torch.float)
+    test_tensors = torch.from_numpy(testing_data).type(torch.float)
+
+    return training_tensors, test_tensors
 
 
 class VAEMarioHierarchical(nn.Module):
     def __init__(
         self,
-        w: int,
-        h: int,
-        z_dim: int,
+        w: int = 14,
+        h: int = 14,
+        z_dim: int = 2,
         n_sprites: int = 11,
-        h_dims: List[int] = None,
     ):
         super(VAEMarioHierarchical, self).__init__()
         self.w = w
         self.h = h
         self.n_sprites = n_sprites
-        self.input_dim = w * h * n_sprites
+        self.input_dim = w * h * n_sprites  # for flattening
+        self.z_dim = z_dim
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.z_dim = z_dim or 64
-        self.h_dims = h_dims or [256, 128]
-
-        # Adding the input layer with onehot encoding
-        # (assuming that the views are inside the net)
-        self.h_dims = [self.input_dim] + self.h_dims
-        modules = []
-        for dim_1, dim_2 in zip(self.h_dims[:-1], self.h_dims[1:]):
-            if dim_1 == self.h_dims[0]:
-                modules.append(
-                    nn.Sequential(
-                        View([-1, self.input_dim]), nn.Linear(dim_1, dim_2), nn.Tanh()
-                    )
-                )
-            else:
-                modules.append(nn.Sequential(nn.Linear(dim_1, dim_2), nn.Tanh()))
-
-        self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Sequential(nn.Linear(self.h_dims[-1], z_dim))
-        self.fc_var = nn.Sequential(nn.Linear(self.h_dims[-1], z_dim))
-
-        # dec_dims = self.h_dims.copy() + [z_dim]
-        # dec_dims.reverse()
-        # dec_modules = []
-        # for dim_1, dim_2 in zip(dec_dims[:-1], dec_dims[1:]):
-        #     if dim_2 != dec_dims[-1]:
-        #         dec_modules.append(nn.Sequential(nn.Linear(dim_1, dim_2), nn.Tanh()))
-        #     else:
-        #         dec_modules.append(
-        #             nn.Sequential(
-        #                 nn.Linear(dim_1, dim_2),
-        #                 # View([-1, self.n_sprites, self.h, self.w]),
-        #                 # nn.LogSoftmax(dim=1),
-        #             )
-        #         )
+        self.encoder = nn.Sequential(
+            nn.Linear(self.input_dim, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+        )
+        self.enc_mu = nn.Sequential(nn.Linear(128, z_dim))
+        self.enc_var = nn.Sequential(nn.Linear(128, z_dim))
 
         self.decoder = nn.Sequential(
             nn.Linear(self.z_dim, 256),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(256, self.input_dim),
-            nn.Tanh(),
+            nn.ReLU(),
         )
-
         self.dec_mu = nn.Linear(self.input_dim, self.input_dim)
         self.dec_var = nn.Linear(self.input_dim, self.input_dim)
 
-        # print(self)
+        self.p_z = Normal(torch.zeros(self.z_dim), torch.ones(self.z_dim))
 
-    def encode(self, x: Tensor) -> List[Tensor]:
+        self.train_data, self.test_data = load_data()
+
+        print(self)
+
+    def encode(self, x: Tensor) -> Normal:
+        # Returns q(z | x) = Normal(mu, sigma)
+        x = x.view(-1, self.input_dim)
         result = self.encoder(x)
-        mu = self.fc_mu(result)
-        log_var = self.fc_var(result)
+        mu = self.enc_mu(result)
+        log_var = self.enc_var(result)
 
-        return [mu, log_var]
+        return Normal(mu, torch.exp(0.5 * log_var))
 
-    def _decode_sample(self, z: Tensor) -> List[Tensor]:
+    def _intermediate_distribution(self, z: Tensor) -> Normal:
         result = self.decoder(z)
         dec_mu = self.dec_mu(result)
         dec_log_var = self.dec_var(result)
 
-        return dec_mu, dec_log_var
+        return Normal(dec_mu, torch.exp(0.5 * dec_log_var))
 
-    def decode(self, z: Tensor) -> Tensor:
-        # Decode this z
-        dec_mu, dec_log_var = self._decode_sample(z)
-        x_prime = F.log_softmax(
-            self.reparametrize(dec_mu, dec_log_var).view(
-                -1, self.n_sprites, self.h, self.w
-            ),
-            dim=1,
+    def decode(self, z: Tensor) -> Categorical:
+        # Returns p(x | z) = Cat(logits=samples from _intermediate_distribution)
+        dec_dist = self._intermediate_distribution(z)
+        samples = dec_dist.rsample()
+        p_x_given_z = Categorical(
+            logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
         )
 
-        return x_prime
+        return p_x_given_z
 
-    def reparametrize(self, mu: Tensor, log_var: Tensor) -> Tensor:
-        std = torch.exp(0.5 * log_var)
-        rvs = torch.randn_like(std)
+    def forward(self, x: Tensor) -> List[Distribution]:
+        q_z_given_x = self.encode(x)
 
-        return rvs.mul(std).add_(mu)
+        z = q_z_given_x.rsample()
 
-    def forward(self, x: Tensor) -> List[Tensor]:
-        # Does a forward pass through the network.
+        p_x_given_z = self.decode(z)
 
-        mu, log_var = self.encode(x.view(-1, self.input_dim))
+        return [q_z_given_x, p_x_given_z]
 
-        # Sample z from p(z|x)
-        z = self.reparametrize(mu, log_var)
+    def elbo_loss_function(
+        self, x: Tensor, q_z_given_x: Distribution, p_x_given_z: Distribution
+    ) -> Tensor:
+        x_ = x.argmax(dim=1)  # assuming x is bchw.
+        rec_loss = -p_x_given_z.log_prob(x_).sum(dim=(1, 2))  # b
+        kld = kl_divergence(q_z_given_x, self.p_z).sum(dim=1)  # b
 
-        # Decode this z
-        x_prime = self.decode(z)
+        return (rec_loss + kld).mean()
 
-        return [x_prime, x, mu, log_var]
+    def plot_grid(
+        self, x_lims=(-5, 5), y_lims=(-5, 5), n_rows=10, n_cols=10, argmax=True, ax=None
+    ):
+        z1 = np.linspace(*x_lims, n_cols)
+        z2 = np.linspace(*y_lims, n_rows)
+
+        zs = torch.Tensor([[a, b] for a in reversed(z1) for b in z2])
+
+        images_dist = self.decode(zs)
+        if argmax:
+            images = images_dist.probs.argmax(dim=-1)
+        else:
+            images = images_dist.sample()
+
+        images = np.array(
+            [get_img_from_level(im) for im in images.cpu().detach().numpy()]
+        )
+
+        final_img = np.vstack(
+            [
+                np.hstack([im for im in row])
+                for row in images.reshape((n_cols, n_rows, 16 * 14, 16 * 14, 3))
+            ]
+        )
+        if ax is not None:
+            ax.imshow(final_img, extent=[*x_lims, *y_lims])
+
+        return final_img
 
     def report(
         self,
         writer: SummaryWriter,
-        batch_id: int,
-        KLD: float,
-        CEL: float,
-        zs: Tensor,
-        epoch: int,
+        step_id: int,
+        train_loss: float,
+        test_loss: float,
     ):
-        writer.add_scalar("KLD", KLD, batch_id)
-        writer.add_scalar("CEL", CEL, batch_id)
-        writer.add_scalar("loss", KLD + CEL, batch_id)
+        writer.add_scalar("train loss", train_loss, step_id)
+        writer.add_scalar("test loss", test_loss, step_id)
 
-        samples = self.decoder(zs)
-        samples = onehot_to_levels(samples.detach().numpy())
-        samples = np.array([get_img_from_level(level) for level in samples])
+        grid = self.plot_grid()
+        grid = 255 - grid
+        writer.add_image(
+            "grid", grid.reshape(1, *grid.shape), step_id, dataformats="NHWC"
+        )
 
-        writer.add_images(f"samples_{epoch}", samples, batch_id, dataformats="NHWC")
-
-    # def loss_function(self, x_prime, x, mu, log_var):
-    #     BCE = F.binary_cross_entropy(x_prime.view(-1, 28*28), x.view(-1, 784), reduction="sum")
-    #     KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-    #     return BCE + KLD
+        zs = self.p_z.sample((64,)).to(self.device)
+        recons_dist = self.decode(zs)
+        recons = recons_dist.sample().cpu().detach().numpy()
+        levels = np.array([get_img_from_level(recon) for recon in recons])
+        levels = 255 - levels
+        writer.add_image("reconstructions", levels, step_id, dataformats="NHWC")
