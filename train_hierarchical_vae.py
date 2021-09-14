@@ -163,7 +163,7 @@ def run(
     for epoch in range(max_epochs):
         print(f"Epoch {epoch + 1} of {max_epochs}.")
         train_loss = fit(vae, optimizer, data_loader, device)
-        test_loss = test(vae, test_loader, test_dataset, device)
+        test_loss = test(vae, test_loader, test_dataset, device, epoch)
         if test_loss < best_loss:
             best_loss = test_loss
             n_without_improvement = 0
