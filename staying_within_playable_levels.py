@@ -88,12 +88,15 @@ def create_table_training_levels():
     return df
 
 
-def get_playable_points(model_name):
+def get_playable_points(model_name, full_playable=False):
     df = pd.read_csv(
         f"./data/processed/playability_experiment/{model_name}_playability_experiment.csv",
         index_col=0,
     )
-    playable_points = df.loc[df["marioStatus"] > 0, ["z1", "z2"]]
+    if full_playable:
+        playable_points = df.loc[df["marioStatus"] == 1.0, ["z1", "z2"]]
+    else:
+        playable_points = df.loc[df["marioStatus"] > 0, ["z1", "z2"]]
     playable_points.drop_duplicates(inplace=True)
     playable_points = playable_points.values
 
