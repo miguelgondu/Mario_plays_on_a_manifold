@@ -1,5 +1,6 @@
 from typing import List
 from itertools import product
+from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -42,6 +43,16 @@ def preprocess_raw_data() -> np.ndarray:
             levels_onehot[b, c, i, j] = 1.0
 
     return levels_onehot
+
+
+def preprocess_original_data() -> np.ndarray:
+    filepath = Path(__file__).parent.resolve()
+    all_levels = (filepath / "data" / "raw" / "og_zelda_levels").glob("tloz*.txt")
+
+    # Split the level into chunks of 16x11.
+    for l in all_levels:
+        with open(l) as fp:
+            level_txt = fp.readlines()
 
 
 def load_data(training_percentage=0.8, shuffle_seed=0) -> List[t.Tensor]:
