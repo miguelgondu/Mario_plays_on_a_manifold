@@ -2,14 +2,13 @@ from typing import List
 from pathlib import Path
 
 import torch
-from torch.distributions import Categorical, Dirichlet
+from torch.distributions import Categorical, Dirichlet, Normal
 import numpy as np
 import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
-from vae_mario_hierarchical import VAEMarioHierarchical
-from train_vae import load_data
+from vae_mario_hierarchical import VAEMarioHierarchical, load_data
 from geoml.discretized_manifold import DiscretizedManifold
 
 Tensor = torch.Tensor
@@ -22,9 +21,8 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         h: int = 14,
         z_dim: int = 2,
         n_sprites: int = 11,
-        h_dims: List[int] = None,
     ):
-        super().__init__(w, h, z_dim, n_sprites=n_sprites, h_dims=h_dims)
+        super().__init__(w, h, z_dim, n_sprites=n_sprites)
 
         self.distribution = Categorical
         self.cluster_centers = None
@@ -33,7 +31,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
 
     def theoretical_KL(self, p: Categorical, q: Categorical) -> torch.Tensor:
         # TODO: change this to take the mean of the whole array.
-        return torch.distributions.kl_divergence(p, q).mean(dim=0)
+        return torch.distributions.kl_divergence(p, q).sum(dim=(1, 2))
 
     def update_cluster_centers(
         self,
@@ -53,7 +51,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         """
         if encodings is None:
             training_tensors, _ = load_data(only_playable=only_playable)
-            latent_codes = self.encode(training_tensors)[0]
+            latent_codes = self.encode(training_tensors).mean
             self.encodings = latent_codes
         else:
             self.encodings = encodings.type(torch.float32)
@@ -88,40 +86,34 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
 
         return min_dist.view(zsh[:-1])
 
-    def reweight(self, z: Tensor, return_logsigma=False) -> List[Tensor]:
+    def reweight(self, z: Tensor) -> Categorical:
         similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-        dec_mu, dec_logsigma = self._decode_sample(z)
-
-        dec_std = torch.exp(0.5 * dec_logsigma)
+        intermediate_normal = self._intermediate_distribution(z)
+        dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
 
         reweighted_std = (1 - similarity) * dec_std + similarity * (
             10.0 * torch.ones_like(dec_std)
         )
-        reweighted_logsigma = 2.0 * torch.log(reweighted_std)
-
-        res = torch.nn.LogSoftmax(dim=1)(
-            self.reparametrize(dec_mu, reweighted_logsigma).view(
-                -1, self.n_sprites, self.h, self.w
-            )
+        reweighted_normal = Normal(dec_mu, reweighted_std)
+        samples = reweighted_normal.rsample()
+        p_x_given_z = Categorical(
+            logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
         )
 
-        if return_logsigma:
-            return [res, reweighted_logsigma]
-
-        return [res]
+        return p_x_given_z
 
     def curve_length(self, curve):
         dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
 
         # -------------------------------------------
         #     CHANGE THIS DEPENDING ON THE DIST.
-        log_probs = self.reweight(curve)[0]
-        log_probs.transpose(1, 3)
-        c_size, n_classes, h, w = log_probs.shape
-        log_probs = log_probs.view(c_size, n_classes, h * w)
+        full_cat = self.reweight(curve)
+        probs = full_cat.probs
 
-        cat1 = Categorical(logits=log_probs[:-1])
-        cat2 = Categorical(logits=log_probs[1:])
+        c_size, h, w, n_classes = probs.shape
+
+        cat1 = Categorical(probs=probs[:-1])
+        cat2 = Categorical(probs=probs[1:])
 
         # If there's a theoretical KL that's easy to implement:
         try:
@@ -166,7 +158,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
             for i, y in enumerate(reversed(z2))
         }
 
-        dist_ = Categorical(logits=self.reweight(zs)[0])
+        dist_ = self.reweight(zs)
         entropy_ = dist_.entropy().mean(axis=1).mean(axis=1)
         # print(entropy_)
         # print(entropy_.shape)
@@ -215,5 +207,8 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         N = data.shape[0]
         for _ in range(n_geodesics):
             idx = torch.randint(N, (2,))
-            c = DM.connecting_geodesic(data[idx[0]], data[idx[1]])
-            c.plot(ax=ax, c="#FADADD", linewidth=2.5)
+            try:
+                c = DM.connecting_geodesic(data[idx[0]], data[idx[1]])
+                c.plot(ax=ax, c="#FADADD", linewidth=2.5)
+            except Exception as e:
+                print(f"Couldn't, got {e}")
