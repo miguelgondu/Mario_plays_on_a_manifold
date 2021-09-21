@@ -209,6 +209,6 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
             idx = torch.randint(N, (2,))
             try:
                 c = DM.connecting_geodesic(data[idx[0]], data[idx[1]])
-                c.plot(ax=ax, c="#FADADD", linewidth=2.5)
+                c.plot(ax=ax, c="red", linewidth=2.0)
             except Exception as e:
                 print(f"Couldn't, got {e}")
