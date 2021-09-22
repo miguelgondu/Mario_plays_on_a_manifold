@@ -58,7 +58,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
 
         if cluster_centers is None:
             self.kmeans = KMeans(n_clusters=n_clusters)
-            self.kmeans.fit(self.encodings.detach().numpy())
+            self.kmeans.fit(self.encodings.cpu().detach().numpy())
             cluster_centers = self.kmeans.cluster_centers_
             self.cluster_centers = torch.from_numpy(cluster_centers).type(torch.float32)
         else:
