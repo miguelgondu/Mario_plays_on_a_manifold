@@ -19,7 +19,11 @@ from mario_utils.plotting import get_img_from_level
 
 
 def load_data(
-    training_percentage=0.8, test_percentage=None, shuffle_seed=0, only_playable=False
+    training_percentage=0.8,
+    test_percentage=None,
+    shuffle_seed=0,
+    only_playable=False,
+    device="cpu",
 ):
     """Returns two tensors with training and testing data"""
     # Loading the data.
@@ -40,7 +44,7 @@ def load_data(
     training_tensors = torch.from_numpy(training_data).type(torch.float)
     test_tensors = torch.from_numpy(testing_data).type(torch.float)
 
-    return training_tensors, test_tensors
+    return training_tensors.to(device), test_tensors.to(device)
 
 
 class VAEMarioHierarchical(nn.Module):
@@ -64,22 +68,24 @@ class VAEMarioHierarchical(nn.Module):
             nn.Tanh(),
             nn.Linear(256, 128),
             nn.Tanh(),
-        )
-        self.enc_mu = nn.Sequential(nn.Linear(128, z_dim))
-        self.enc_var = nn.Sequential(nn.Linear(128, z_dim))
+        ).to(self.device)
+        self.enc_mu = nn.Sequential(nn.Linear(128, z_dim)).to(self.device)
+        self.enc_var = nn.Sequential(nn.Linear(128, z_dim)).to(self.device)
 
         self.decoder = nn.Sequential(
             nn.Linear(self.z_dim, 256),
             nn.Tanh(),
             nn.Linear(256, self.input_dim),
             nn.Tanh(),
+        ).to(self.device)
+        self.dec_mu = nn.Linear(self.input_dim, self.input_dim).to(self.device)
+        self.dec_var = nn.Linear(self.input_dim, self.input_dim).to(self.device)
+
+        self.p_z = Normal(torch.zeros(self.z_dim), torch.ones(self.z_dim)).to(
+            self.device
         )
-        self.dec_mu = nn.Linear(self.input_dim, self.input_dim)
-        self.dec_var = nn.Linear(self.input_dim, self.input_dim)
 
-        self.p_z = Normal(torch.zeros(self.z_dim), torch.ones(self.z_dim))
-
-        self.train_data, self.test_data = load_data()
+        self.train_data, self.test_data = load_data(device=self.device)
 
         print(self)
 
