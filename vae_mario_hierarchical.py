@@ -61,18 +61,18 @@ class VAEMarioHierarchical(nn.Module):
 
         self.encoder = nn.Sequential(
             nn.Linear(self.input_dim, 256),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(256, 128),
-            nn.ReLU(),
+            nn.Tanh(),
         )
         self.enc_mu = nn.Sequential(nn.Linear(128, z_dim))
         self.enc_var = nn.Sequential(nn.Linear(128, z_dim))
 
         self.decoder = nn.Sequential(
             nn.Linear(self.z_dim, 256),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(256, self.input_dim),
-            nn.ReLU(),
+            nn.Tanh(),
         )
         self.dec_mu = nn.Linear(self.input_dim, self.input_dim)
         self.dec_var = nn.Linear(self.input_dim, self.input_dim)
