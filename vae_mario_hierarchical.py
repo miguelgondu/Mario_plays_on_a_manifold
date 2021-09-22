@@ -56,6 +56,7 @@ class VAEMarioHierarchical(nn.Module):
         h: int = 14,
         z_dim: int = 2,
         n_sprites: int = 11,
+        device: str = None,
     ):
         super(VAEMarioHierarchical, self).__init__()
         self.w = w
@@ -63,7 +64,9 @@ class VAEMarioHierarchical(nn.Module):
         self.n_sprites = n_sprites
         self.input_dim = w * h * n_sprites  # for flattening
         self.z_dim = z_dim
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
 
         self.encoder = nnj.Sequential(
             nnj.Linear(self.input_dim, 256),

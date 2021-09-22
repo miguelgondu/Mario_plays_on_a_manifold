@@ -86,7 +86,7 @@ def simulate_line(
     else:
         encodings = None
 
-    vae = VAEGeometryHierarchical()
+    vae = VAEGeometryHierarchical(device="cpu")
     vae.load_state_dict(torch.load(f"models/{model_name}.pt", map_location="cpu"))
     # print("Updating cluster centers")
     vae.update_cluster_centers(

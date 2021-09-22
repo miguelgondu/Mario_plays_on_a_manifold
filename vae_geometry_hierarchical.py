@@ -21,8 +21,9 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         h: int = 14,
         z_dim: int = 2,
         n_sprites: int = 11,
+        device: str = None,
     ):
-        super().__init__(w, h, z_dim, n_sprites=n_sprites)
+        super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
 
         self.distribution = Categorical
         self.cluster_centers = None

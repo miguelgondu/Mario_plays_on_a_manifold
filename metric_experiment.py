@@ -6,18 +6,14 @@ from vae_geometry_hierarchical import VAEGeometryHierarchical
 
 from metric_approximation import MetricApproximation
 
-model_name = "mario_vae_hierarchical_zdim_2_epoch_160"
+model_name = "final_overfitted_nnj_epoch_120"
 
 vae = VAEGeometryHierarchical()
-vae.load_state_dict(t.load(f"models/{model_name}.pt"))
-vae.update_cluster_centers(
-    model_name,
-    False,
-    beta=-1.5,
-)
+vae.load_state_dict(t.load(f"models/{model_name}.pt", map_location="cpu"))
+vae.update_cluster_centers(model_name, False, beta=-2.5, n_clusters=2000)
 print("Updated cluster centers.")
 
-_, (ax1, ax2) = plt.subplots(1, 2)
+_, (ax1, ax2) = plt.subplots(1, 2, figsize=(7 * 2, 7))
 vae.plot_w_geodesics(ax=ax1)
 # plt.show()
 
@@ -51,5 +47,5 @@ for l, z in enumerate(zs):
 cbar = ax2.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
 plt.colorbar(cbar)
 plt.tight_layout()
-plt.savefig("./data/plots/metric_volume.png")
+plt.savefig(f"./data/plots/metric_volume_{model_name}.png")
 plt.show()
