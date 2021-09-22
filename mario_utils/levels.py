@@ -76,7 +76,8 @@ def tensor_to_sim_level(tensor_levels: Tensor, level_size: int = 14) -> List[Lis
     simulator
     """
     # Computes argmax for each channel.
-    lvls_numpy = onehot_to_levels(tensor_levels.cpu().detach().numpy())
+    # lvls_numpy = onehot_to_levels(tensor_levels.cpu().detach().numpy())
+    lvls_numpy = tensor_levels.cpu().detach().numpy()
 
     # Adds a padding with some floor
     # (to help the A* agent).

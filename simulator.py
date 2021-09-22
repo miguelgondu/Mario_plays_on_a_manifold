@@ -88,22 +88,24 @@ def test_level_from_z(
     # Get the level from the VAE
     res = vae.decode(z.view(1, -1)).probs.argmax(dim=-1)
     level = res[0]
+    print("level: ")
+    print(level)
 
     return test_level_from_decoded_tensor(level, human_player=human_player)
 
 
-# if __name__ == "__main__":
-#     human_player = True
-#     z_dim = 2
-#     checkpoint = 100
-#     model_name = f"mariovae_zdim_{z_dim}_playesting_epoch_{checkpoint}"
+if __name__ == "__main__":
+    human_player = True
+    z_dim = 2
+    checkpoint = 100
+    model_name = f"final_overfitted_nnj_epoch_300"
 
-#     print(f"Loading model {model_name}")
-#     vae = VAEMario(16, 16, z_dim=z_dim)
-#     vae.load_state_dict(torch.load(f"./models/{model_name}.pt"))
-#     vae.eval()
+    print(f"Loading model {model_name}")
+    vae = VAEMarioHierarchical()
+    vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
+    vae.eval()
 
-#     random_z = 2 * torch.randn((1, z_dim))
-#     print(f"Playing {random_z[0]}")
-#     res = test_level_from_z(random_z[0], vae)
-#     print(res)
+    random_z = 2 * torch.randn((1, z_dim))
+    print(f"Playing {random_z[0]}")
+    res = test_level_from_z(random_z[0], vae, human_player=human_player)
+    print(res)

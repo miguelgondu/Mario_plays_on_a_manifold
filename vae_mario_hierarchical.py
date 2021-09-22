@@ -187,8 +187,18 @@ class VAEMarioHierarchical(nn.Module):
         )
 
         zs = self.p_z.sample((64,)).to(self.device)
-        recons_dist = self.decode(zs)
-        recons = recons_dist.sample().cpu().detach().numpy()
-        levels = np.array([get_img_from_level(recon) for recon in recons])
+        samples_dist = self.decode(zs)
+        ress = samples_dist.sample().cpu().detach().numpy()
+        levels = np.array([get_img_from_level(res) for res in ress])
         levels = 255 - levels
-        writer.add_image("reconstructions", levels, step_id, dataformats="NHWC")
+        writer.add_image("random samples", levels, step_id, dataformats="NHWC")
+
+        og_levels = self.test_data[:64].to(self.device)
+        _, p_x_given_z = self.forward(og_levels)
+        reconstructions = p_x_given_z.probs.argmax(dim=-1).cpu().detach().numpy()
+        levels = np.array([get_img_from_level(rec) for rec in reconstructions])
+        levels = 255 - levels
+
+        writer.add_image(
+            "reconstructions from test set", levels, step_id, dataformats="NHWC"
+        )
