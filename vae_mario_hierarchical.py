@@ -81,8 +81,9 @@ class VAEMarioHierarchical(nn.Module):
         self.dec_mu = nn.Linear(self.input_dim, self.input_dim).to(self.device)
         self.dec_var = nn.Linear(self.input_dim, self.input_dim).to(self.device)
 
-        self.p_z = Normal(torch.zeros(self.z_dim), torch.ones(self.z_dim)).to(
-            self.device
+        self.p_z = Normal(
+            torch.zeros(self.z_dim, device=self.device),
+            torch.ones(self.z_dim, device=self.device),
         )
 
         self.train_data, self.test_data = load_data(device=self.device)
