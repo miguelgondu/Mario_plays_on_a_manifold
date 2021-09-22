@@ -92,7 +92,7 @@ class VAEMarioHierarchical(nn.Module):
 
         self.train_data, self.test_data = load_data(device=self.device)
 
-        print(self)
+        # print(self)
 
     def encode(self, x: Tensor) -> Normal:
         # Returns q(z | x) = Normal(mu, sigma)
