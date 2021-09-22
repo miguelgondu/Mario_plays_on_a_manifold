@@ -11,11 +11,12 @@ import torch
 from torch.distributions import Distribution, Normal, Categorical, kl_divergence
 from torch.nn import functional as F
 import torch.nn as nn
-from torch.tensor import Tensor
 from torch.utils.tensorboard import SummaryWriter
 
 from mario_utils.levels import onehot_to_levels
 from mario_utils.plotting import get_img_from_level
+
+Tensor = torch.Tensor
 
 
 def load_data(
