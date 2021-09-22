@@ -6,7 +6,6 @@ import torch
 import matplotlib.pyplot as plt
 from torch.tensor import Tensor
 
-from vae_geometry import VAEGeometry
 from base_interpolation import BaseInterpolation
 
 

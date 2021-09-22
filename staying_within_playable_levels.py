@@ -19,10 +19,12 @@ from sklearn.cluster import KMeans
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
 
-from train_vae import load_data
-from approximate_metric import local_KL, plot_grid_reweight
-from vae_geometry import VAEGeometry
+from vae_mario_hierarchical import load_data
+
+# from metric_appr import local_KL, plot_grid_reweight
+# from vae_geometry import VAEGeometry
 from vae_geometry_hierarchical import VAEGeometryHierarchical
+from interpolation_experiment import get_playable_points
 
 # Types
 Tensor = torch.Tensor
@@ -88,16 +90,16 @@ def create_table_training_levels():
     return df
 
 
-def get_playable_points(model_name):
-    df = pd.read_csv(
-        f"./data/processed/playability_experiment/{model_name}_playability_experiment.csv",
-        index_col=0,
-    )
-    playable_points = df.loc[df["marioStatus"] > 0, ["z1", "z2"]]
-    playable_points.drop_duplicates(inplace=True)
-    playable_points = playable_points.values
+# def get_playable_points(model_name):
+#     df = pd.read_csv(
+#         f"./data/processed/playability_experiment/{model_name}_playability_experiment.csv",
+#         index_col=0,
+#     )
+#     playable_points = df.loc[df["marioStatus"] > 0, ["z1", "z2"]]
+#     playable_points.drop_duplicates(inplace=True)
+#     playable_points = playable_points.values
 
-    return playable_points
+#     return playable_points
 
 
 def get_non_playable_points(model_name):
@@ -118,7 +120,7 @@ def geodesics_in_grid(model_name):
     playable_points = get_playable_points(model_name)
     playable_points = torch.from_numpy(playable_points)
 
-    vae = VAEGeometry()
+    vae = VAEGeometryHierarchical()
     vae.load_state_dict(torch.load(f"models/{model_name}.pt"))
     print("Updating cluster centers")
     vae.update_cluster_centers(
@@ -383,11 +385,10 @@ if __name__ == "__main__":
     # create_table_training_levels()
 
     # model_name = "mariovae_z_dim_2_overfitting_epoch_480"
-    model_name = "mariovae_hierarchical_final"
     # geodesics_in_grid(model_name)
     # fitting_GPC_on_training_levels(model_name)
     # show_multiple_betas(model_name)
-    geodesics_for_hierarchical_circle(model_name)
+    # geodesics_for_hierarchical_circle(model_name)
     # model_name = "mariovae_hierarchical_final"
 
     # vae = VAEGeometryHierarchical()
@@ -404,3 +405,24 @@ if __name__ == "__main__":
     # _, ax = plt.subplots(1, 1)
     # plot_logsigmas(vae, ax)
     # plt.show()
+    model_name = "final_overfitted_nnj_epoch_300"
+    only_playable = False
+    if only_playable:
+        playable_points = get_playable_points(model_name)
+        encodings = torch.from_numpy(playable_points)
+    else:
+        encodings = None
+    vae = VAEGeometryHierarchical()
+    vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
+    vae.update_cluster_centers(
+        model_name,
+        False,
+        beta=-2.5,
+        n_clusters=300,
+        encodings=encodings,
+    )
+    vae.eval()
+
+    _, ax1 = plt.subplots(1, 1)
+    vae.plot_latent_space(ax=ax1)
+    plt.show()

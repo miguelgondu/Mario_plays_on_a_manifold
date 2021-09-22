@@ -4,7 +4,6 @@ from geoml.discretized_manifold import DiscretizedManifold
 import torch
 import pandas as pd
 
-from vae_geometry import VAEGeometry
 from base_interpolation import BaseInterpolation
 
 Tensor = torch.Tensor
