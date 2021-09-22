@@ -4,9 +4,10 @@ Implements a linear interpolation baseline
 from typing import List
 import torch
 import matplotlib.pyplot as plt
-from torch.tensor import Tensor
 
 from base_interpolation import BaseInterpolation
+
+Tensor = torch.Tensor
 
 
 class LinearInterpolation(BaseInterpolation):
