@@ -15,6 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from mario_utils.levels import onehot_to_levels
 from mario_utils.plotting import get_img_from_level
+import geoml.nnj as nnj
 
 Tensor = torch.Tensor
 
@@ -64,25 +65,25 @@ class VAEMarioHierarchical(nn.Module):
         self.z_dim = z_dim
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.encoder = nn.Sequential(
-            nn.Linear(self.input_dim, 256),
-            nn.Tanh(),
-            nn.Linear(256, 128),
-            nn.Tanh(),
+        self.encoder = nnj.Sequential(
+            nnj.Linear(self.input_dim, 256),
+            nnj.Tanh(),
+            nnj.Linear(256, 128),
+            nnj.Tanh(),
         ).to(self.device)
-        self.enc_mu = nn.Sequential(nn.Linear(128, z_dim)).to(self.device)
-        self.enc_var = nn.Sequential(nn.Linear(128, z_dim)).to(self.device)
+        self.enc_mu = nnj.Sequential(nnj.Linear(128, z_dim)).to(self.device)
+        self.enc_var = nnj.Sequential(nnj.Linear(128, z_dim)).to(self.device)
 
-        self.decoder = nn.Sequential(
-            nn.Linear(self.z_dim, 256),
-            nn.Tanh(),
-            nn.Linear(256, 512),
-            nn.Tanh(),
-            nn.Linear(512, self.input_dim),
-            nn.Tanh(),
+        self.decoder = nnj.Sequential(
+            nnj.Linear(self.z_dim, 256),
+            nnj.Tanh(),
+            nnj.Linear(256, 512),
+            nnj.Tanh(),
+            nnj.Linear(512, self.input_dim),
+            nnj.Tanh(),
         ).to(self.device)
-        self.dec_mu = nn.Linear(self.input_dim, self.input_dim).to(self.device)
-        self.dec_var = nn.Linear(self.input_dim, self.input_dim).to(self.device)
+        self.dec_mu = nnj.Linear(self.input_dim, self.input_dim).to(self.device)
+        self.dec_var = nnj.Linear(self.input_dim, self.input_dim).to(self.device)
 
         self.p_z = Normal(
             torch.zeros(self.z_dim, device=self.device),
