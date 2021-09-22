@@ -85,7 +85,7 @@ class VAEMarioHierarchical(nn.Module):
 
     def encode(self, x: Tensor) -> Normal:
         # Returns q(z | x) = Normal(mu, sigma)
-        x = x.view(-1, self.input_dim)
+        x = x.view(-1, self.input_dim).to(self.device)
         result = self.encoder(x)
         mu = self.enc_mu(result)
         log_var = self.enc_var(result)
@@ -93,7 +93,7 @@ class VAEMarioHierarchical(nn.Module):
         return Normal(mu, torch.exp(0.5 * log_var))
 
     def _intermediate_distribution(self, z: Tensor) -> Normal:
-        result = self.decoder(z)
+        result = self.decoder(z.to(self.device))
         dec_mu = self.dec_mu(result)
         dec_log_var = self.dec_var(result)
 
@@ -101,7 +101,7 @@ class VAEMarioHierarchical(nn.Module):
 
     def decode(self, z: Tensor) -> Categorical:
         # Returns p(x | z) = Cat(logits=samples from _intermediate_distribution)
-        dec_dist = self._intermediate_distribution(z)
+        dec_dist = self._intermediate_distribution(z.to(self.device))
         samples = dec_dist.rsample()
         p_x_given_z = Categorical(
             logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
@@ -110,18 +110,18 @@ class VAEMarioHierarchical(nn.Module):
         return p_x_given_z
 
     def forward(self, x: Tensor) -> List[Distribution]:
-        q_z_given_x = self.encode(x)
+        q_z_given_x = self.encode(x.to(self.device))
 
         z = q_z_given_x.rsample()
 
-        p_x_given_z = self.decode(z)
+        p_x_given_z = self.decode(z.to(self.device))
 
         return [q_z_given_x, p_x_given_z]
 
     def elbo_loss_function(
         self, x: Tensor, q_z_given_x: Distribution, p_x_given_z: Distribution
     ) -> Tensor:
-        x_ = x.argmax(dim=1)  # assuming x is bchw.
+        x_ = x.to(self.device).argmax(dim=1)  # assuming x is bchw.
         rec_loss = -p_x_given_z.log_prob(x_).sum(dim=(1, 2))  # b
         kld = kl_divergence(q_z_given_x, self.p_z).sum(dim=1)  # b
 
