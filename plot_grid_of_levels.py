@@ -30,6 +30,8 @@ def plot_grid(vae, ax, x_lims, y_lims, n_rows=10, n_cols=10, title=""):
     # ax.imshow(final_img)
     ax.set_title(f"Decoded samples ({title})")
 
+    return final_img
+
 
 def plot_grid_hierarchical_model():
     vae = VAEMarioHierarchical(14, 14, z_dim=2)
@@ -43,7 +45,7 @@ def plot_grid_hierarchical_model():
 
 def plot_grid_dirichlet_model():
     vae = VAEMarioDirichlet(14, 14, z_dim=2)
-    model_name = "mariovae_dirichlet_final"
+    model_name = "mariovae_dirichlet_epoch_240"
     vae.load_state_dict(torch.load(f"./models/{model_name}.pt"))
     vae.eval()
     _, ax = plt.subplots(1, 1, figsize=(15, 15))
