@@ -88,7 +88,7 @@ class VAEGeometryDirichlet(VAEMario):
         return min_dist.view(zsh[:-1])
 
     def reweight(self, z: Tensor) -> Categorical:
-        similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
+        similarity = self.translated_sigmoid(self.min_distance(z))  # .unsqueeze(-1)
         dec_categorical = self.decode(z)
         dec_probs = dec_categorical.probs
 
@@ -209,3 +209,13 @@ class VAEGeometryDirichlet(VAEMario):
                 c.plot(ax=ax, c="red", linewidth=2.0)
             except Exception as e:
                 print(f"Couldn't, got {e}")
+
+
+if __name__ == "__main__":
+    model_name = "16324019946774652_mariovae_zdim_2_epoch_40"
+    vae = VAEGeometryDirichlet()
+    vae.load_state_dict(torch.load(f"./models/{model_name}.pt"))
+    vae.update_cluster_centers(model_name, False)
+    _, ax = plt.subplots(1, 1)
+    vae.plot_latent_space(ax=ax)
+    plt.show()
