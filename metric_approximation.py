@@ -11,12 +11,15 @@ import numpy as np
 
 from vae_zelda_hierarchical import VAEZeldaHierarchical
 from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_mario import VAEMario
+
+Models = Union[VAEMario, VAEMarioHierarchical]
 
 
 class MetricApproximation:
     def __init__(
         self,
-        model: Union[VAEZeldaHierarchical, VAEMarioHierarchical],
+        model: Models,
         z_dim: int,
         eps: float = 0.1,
     ) -> None:
