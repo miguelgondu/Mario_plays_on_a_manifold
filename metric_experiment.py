@@ -1,3 +1,4 @@
+from vae_mario import VAEMario
 import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
@@ -59,9 +60,10 @@ def approximate_metric_hierarchical():
 
 
 if __name__ == "__main__":
-    model_name = "mariovae_w_relu_epoch_60"
+    model_name = "mariovae_w_relu_epoch_180"
+    # vae = VAEMario()
     vae = VAEGeometryDirichlet()
     vae.load_state_dict(t.load(f"./models/{model_name}.pt"))
-    vae.update_cluster_centers(model_name, False, beta=-4.5, n_clusters=500)
+    vae.update_cluster_centers(model_name, False, beta=-2.5, n_clusters=500)
 
     plots(vae, model_name)

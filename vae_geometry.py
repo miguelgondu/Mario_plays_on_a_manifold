@@ -92,9 +92,9 @@ class VAEGeometryDirichlet(VAEMario):
         dec_categorical = self.decode(z)
         dec_probs = dec_categorical.probs
 
-        random_probs = Dirichlet(torch.ones_like(dec_probs)).sample()
+        uniform_probs = (1 / self.n_sprites) * torch.ones_like(dec_probs)
 
-        reweighted_probs = (1 - similarity) * dec_probs + similarity * (random_probs)
+        reweighted_probs = (1 - similarity) * dec_probs + similarity * (uniform_probs)
         p_x_given_z = Categorical(probs=reweighted_probs)
 
         return p_x_given_z
