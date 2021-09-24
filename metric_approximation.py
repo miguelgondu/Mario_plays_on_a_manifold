@@ -36,32 +36,41 @@ class MetricApproximation:
     def __call__(self, z: t.Tensor) -> t.Tensor:
         # Alison's
 
-        dzs = t.Tensor(
-            [
-                [1.0, 0.0],
-                [0.0, 1.0],
-                [1.0, 1.0],
-            ]
+        KL_e0 = (
+            kl_divergence(
+                self.model.reweight(z),
+                self.model.reweight(z + self.eps * t.Tensor([1.0, 0.0])),
+            )
+            .sum()
+            .item()
         )
-        KLs = {}
-        for dz in dzs:
-            dzi, dzj = dz
-            dist_z = self.model.decode(z)
-            dist_z_dz = self.model.decode(z + (dz * self.eps))
-            KLs[(dzi.item(), dzj.item())] = kl_divergence(dist_z, dist_z_dz).mean()
+        KL_e1 = (
+            kl_divergence(
+                self.model.reweight(z),
+                self.model.reweight(z + self.eps * t.Tensor([0.0, 1.0])),
+            )
+            .sum()
+            .item()
+        )
+        KL_e0_plus_e1 = (
+            kl_divergence(
+                self.model.reweight(z),
+                self.model.reweight(z + self.eps * t.Tensor([1.0, 1.0])),
+            )
+            .sum()
+            .item()
+        )
 
-        # print(KLs)
-        symmetric_term = KLs[1.0, 1.0] - KLs[1.0, 0.0] - KLs[0.0, 1.0]
         metric = (
             t.Tensor(
                 [
-                    [2 * KLs[1.0, 0.0], symmetric_term],
-                    [symmetric_term, 2 * KLs[0.0, 1.0]],
+                    [2 * KL_e0, KL_e0_plus_e1 - KL_e0 - KL_e1],
+                    [KL_e0_plus_e1 - KL_e0 - KL_e1, 2 * KL_e1],
                 ]
             )
             * (1 / self.eps ** 2)
         )
-        metric[metric == float("Inf")] = 1e5
-        metric[metric == -float("Inf")] = -1e5
+        # metric[metric == float("Inf")] = 1e5
+        # metric[metric == -float("Inf")] = -1e5
 
         return metric
