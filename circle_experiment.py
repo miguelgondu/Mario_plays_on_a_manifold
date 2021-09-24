@@ -61,7 +61,7 @@ def circle_experiment(
         (x, y) = z
         i, j = positions[(x.item(), y.item())]
         Mz = M(z)
-        # print(Mz)
+
         detMz = t.det(Mz).item()
         if detMz < 0:
             metric_volume[i, j] = np.nan

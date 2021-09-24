@@ -1,5 +1,6 @@
 from typing import List
 from pathlib import Path
+from geoml.manifold import Manifold
 
 import torch
 from torch.distributions import Categorical, Dirichlet, Normal
@@ -9,12 +10,14 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
 from vae_mario import VAEMario, load_data
+
 from geoml.discretized_manifold import DiscretizedManifold
+from metric_approximation import MetricApproximation
 
 Tensor = torch.Tensor
 
 
-class VAEGeometryDirichlet(VAEMario):
+class VAEGeometryDirichlet(VAEMario, Manifold):
     def __init__(
         self,
         w: int = 14,
@@ -29,6 +32,7 @@ class VAEGeometryDirichlet(VAEMario):
         self.cluster_centers = None
         self.translated_sigmoid = None
         self.encodings = None
+        self.metric_approximation = MetricApproximation(self, self.z_dim, eps=0.05)
 
     def theoretical_KL(self, p: Categorical, q: Categorical) -> torch.Tensor:
         # TODO: change this to take the mean of the whole array.
@@ -86,6 +90,9 @@ class VAEGeometryDirichlet(VAEMario):
         min_dist, _ = d2.min(dim=1)  # N
 
         return min_dist.view(zsh[:-1])
+
+    def metric(self, z: torch.Tensor) -> torch.Tensor:
+        return self.metric_approximation(z)
 
     def reweight(self, z: Tensor) -> Categorical:
         similarity = self.translated_sigmoid(self.min_distance(z)).view(-1, 1, 1, 1)
