@@ -49,7 +49,7 @@ def geometric_random_walk():
     plt.scatter(zs_normal[:, 0], zs_normal[:, 1], c="r", marker="x")
     plt.show()
 
-    return zs
+    return zs, zs_normal
 
 
 geometric_random_walk()
