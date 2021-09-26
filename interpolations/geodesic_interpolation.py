@@ -1,10 +1,7 @@
-from typing import List
 from geoml.discretized_manifold import DiscretizedManifold
-
 import torch
-import pandas as pd
 
-from base_interpolation import BaseInterpolation
+from .base_interpolation import BaseInterpolation
 
 Tensor = torch.Tensor
 

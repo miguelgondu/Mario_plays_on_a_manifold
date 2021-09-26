@@ -1,11 +1,9 @@
 """
 Implements a linear interpolation baseline
 """
-from typing import List
 import torch
-import matplotlib.pyplot as plt
 
-from base_interpolation import BaseInterpolation
+from .base_interpolation import BaseInterpolation
 
 Tensor = torch.Tensor
 
