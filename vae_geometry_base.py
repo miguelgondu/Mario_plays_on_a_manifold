@@ -18,6 +18,11 @@ Tensor = torch.Tensor
 
 
 class VAEGeometryBase(VAEMario, Manifold):
+    """
+    Interface for possible extrapolations. This class leaves
+    self.reweight without implementation.
+    """
+
     def __init__(
         self,
         w: int = 14,
