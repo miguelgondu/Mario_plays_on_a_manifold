@@ -18,10 +18,10 @@ from vae_geometry_hierarchical import VAEGeometryHierarchical
 from geoml.discretized_manifold import DiscretizedManifold
 
 from simulator import test_level_from_z
-from base_interpolation import BaseInterpolation
-from linear_interpolation import LinearInterpolation
-from astar_interpolation import AStarInterpolation
-from geodesic_interpolation import GeodesicInterpolation
+from interpolations.base_interpolation import BaseInterpolation
+from interpolations.linear_interpolation import LinearInterpolation
+from interpolations.astar_interpolation import AStarInterpolation
+from interpolations.geodesic_interpolation import GeodesicInterpolation
 
 Tensor = torch.Tensor
 

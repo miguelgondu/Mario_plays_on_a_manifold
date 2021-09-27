@@ -2,10 +2,9 @@ import torch as t
 from torch.distributions import MultivariateNormal
 
 
-class NormalDifussion:
-    def __init__(self, n_points: int, scale: float = 0.5) -> None:
+class GeometricDifussion:
+    def __init__(self, n_points: int) -> None:
         self.n_points = n_points
-        self.scale
 
     def run(self, vae) -> t.Tensor:
         """Returns the random walk as a Tensor of shape [n_points, z_dim=2]"""
@@ -16,7 +15,9 @@ class NormalDifussion:
 
         # Taking it from there.
         for _ in range(self.n_steps):
-            d = MultivariateNormal(z_n, covariance_matrix=self.scale * t.eye(2))
+            Mz = vae.metric(z_n)
+
+            d = MultivariateNormal(z_n, covariance_matrix=Mz.inverse())
             z_n = d.rsample()
             zs.append(z_n)
 

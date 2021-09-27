@@ -8,6 +8,7 @@ from pathlib import Path
 
 import torch
 
+from vae_mario import VAEMario
 from vae_mario_hierarchical import VAEMarioHierarchical
 from mario_utils.levels import tensor_to_sim_level, clean_level
 
@@ -98,14 +99,23 @@ if __name__ == "__main__":
     human_player = True
     z_dim = 2
     checkpoint = 100
-    model_name = f"final_overfitted_nnj_epoch_300"
+    model_name = f"mariovae_video_for_tv2_lorry_2_epoch_80"
 
     print(f"Loading model {model_name}")
-    vae = VAEMarioHierarchical()
+    vae = VAEMario()
     vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
     vae.eval()
 
-    random_z = 2 * torch.randn((1, z_dim))
+    # random_z = 2.5 * torch.randn((1, z_dim))
+    random_z = torch.Tensor([[-0.7635, -0.4633]])
     print(f"Playing {random_z[0]}")
     res = test_level_from_z(random_z[0], vae, human_player=human_player)
     print(res)
+
+
+# Record a longer video
+# Email: somy@tv2lorry.dk
+
+# Miguel González-Duque
+# migd@itu.dk
+# +45 52 73 45 65.

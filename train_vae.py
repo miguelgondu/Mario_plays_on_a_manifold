@@ -156,7 +156,6 @@ def run(
     optimizer = optim.Adam(vae.parameters(), lr=lr)
 
     # Training and testing.
-    levels_for_reconstruction = test_tensors[:2, :, :, :].detach().numpy()
     print(f"Training experiment {comment}")
     best_loss = np.Inf
     n_without_improvement = 0

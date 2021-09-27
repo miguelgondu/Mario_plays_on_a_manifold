@@ -1,7 +1,13 @@
+import gc
+import multiprocessing as mp
+
 import torch
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+
+matplotlib.use("TkAgg")
 
 from vae_mario import VAEMario
 from train_vae import load_data, optim, TensorDataset, DataLoader, fit, test
@@ -22,81 +28,60 @@ def plot_images(z, images, ax):
         ax.autoscale()
 
 
-playable = False
-batch_size = 64
-seed = 0
-max_epochs = 300
-overfit = True
-save_every = 20
-z_dim = 2
-lr = 1e-4
-
-# Setting up the hyperparameters
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 # Loading the data.
-training_tensors, test_tensors = load_data(shuffle_seed=seed, only_playable=playable)
 
-# Creating datasets.
-dataset = TensorDataset(training_tensors)
-data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-test_dataset = TensorDataset(test_tensors)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-# Loading the model
-print("Model:")
-vae = VAEMario(z_dim=z_dim)
-optimizer = optim.Adam(vae.parameters(), lr=lr)
+def plot_image(vae, epoch, training_tensors, og_imgs):
+    n_rows = n_cols = 10
+    _, ax1 = plt.subplots(1, 1, figsize=(7 * n_rows, 7 * n_cols))
+    print(f"Plotting reconstructions ({epoch})")
+    q_z_given_x, p_x_given_z = vae.forward(training_tensors)
+    levels = p_x_given_z.probs.argmax(dim=-1).detach().numpy()
+    imgs = [get_img_from_level(l) for l in levels]
+    zs = q_z_given_x.mean.detach().numpy()
+    plot_images(zs, imgs, ax1)
+    ax1.set_xlim((-5, 5))
+    ax1.set_ylim((-5, 5))
+    ax1.axis("off")
+    plt.tight_layout()
+    plt.savefig(f"./data/plots/imgs_for_videos/reconstructions_{epoch:05d}.png")
+    plt.close()
+    print(f"Saved reconstructions for epoch {epoch}.")
+    del imgs
 
-# Training and testing.
-levels_for_reconstruction = test_tensors[:2, :, :, :].detach().numpy()
-best_loss = np.Inf
-n_without_improvement = 0
-img_id = 0
-for epoch in range(max_epochs):
-    print(f"Epoch {epoch + 1} of {max_epochs}.")
-    train_loss = fit(vae, optimizer, data_loader, device)
-    test_loss = test(vae, test_loader, test_dataset, device, epoch)
-    if test_loss < best_loss:
-        best_loss = test_loss
-        n_without_improvement = 0
-    else:
-        if not overfit:
-            n_without_improvement += 1
+    print(f"Plotting grid ({epoch})")
+    _, ax2 = plt.subplots(1, 1, figsize=(7 * n_rows, 7 * n_cols))
+    vae.plot_grid(ax=ax2)
+    plt.tight_layout()
+    plt.savefig(f"./data/plots/imgs_for_videos/grid_{epoch:05d}.png")
+    plt.close()
+    print(f"Saved grid for epoch {epoch}.")
 
-    if epoch % 3 == 0:
-        img_id += 1
-        n_rows = n_cols = 10
-        fig1, ax1 = plt.subplots(1, 1, figsize=(7 * n_rows, 7 * n_cols))
-        ax1.set_xlim((-6, 6))
-        ax1.set_ylim((-6, 6))
-        q_z_given_x, p_x_given_z = vae.forward(training_tensors)
-        levels = p_x_given_z.probs.argmax(dim=-1).detach().numpy()
-        imgs = [get_img_from_level(l) for l in levels]
-        zs = q_z_given_x.mean.detach().numpy()
-        plot_images(zs, imgs, ax1)
-        ax1.axis("off")
-        plt.tight_layout()
-        plt.savefig(f"./data/plots/imgs_for_videos/reconstructions_{img_id:05d}.png")
-        plt.close()
+    _, ax3 = plt.subplots(1, 1, figsize=(7 * n_rows, 7 * n_cols))
+    print(f"Plotting embeddings ({epoch})")
+    plot_images(zs, og_imgs, ax3)
+    ax3.set_xlim((-5, 5))
+    ax3.set_ylim((-5, 5))
+    plt.tight_layout()
+    plt.savefig(f"./data/plots/imgs_for_videos/embeddings_{epoch:05d}.png")
+    plt.close()
+    print(f"Saved embeddings for epoch {epoch}.")
+    # del og_imgs
 
-        fig2, ax2 = plt.subplots(1, 1, figsize=(7 * n_rows, 7 * n_cols))
-        vae.plot_grid(ax=ax2)
-        plt.tight_layout()
-        plt.savefig(f"./data/plots/imgs_for_videos/grid_{img_id:05d}.png")
-        plt.close()
+    gc.collect()
 
-        fig3, ax3 = plt.subplots(1, 1, figsize=(7 * n_rows, 7 * n_cols))
-        ax3.set_xlim((-6, 6))
-        ax3.set_ylim((-6, 6))
-        og_levels = training_tensors.argmax(dim=1).detach().numpy()
-        og_imgs = [get_img_from_level(og_l) for og_l in og_levels]
-        plot_images(zs, og_imgs, ax3)
-        plt.tight_layout()
-        plt.savefig(f"./data/plots/imgs_for_videos/embeddings_{img_id:05d}.png")
-        plt.close()
 
-    # Early stopping:
-    if n_without_improvement == 10:
-        print("Stopping early")
-        break
+if __name__ == "__main__":
+    playable = False
+    seed = 0
+    z_dim = 2
+    training_tensors, _ = load_data(shuffle_seed=seed, only_playable=playable)
+    vae = VAEMario(z_dim=z_dim)
+    og_levels = training_tensors.argmax(dim=1).detach().numpy()
+    og_imgs = [get_img_from_level(og_l) for og_l in og_levels]
+    for epoch in list(range(1, 191)).__reversed__():
+        print(f"Epoch {epoch}")
+        vae.load_state_dict(torch.load(f"./models/mariovae_videos_epoch_{epoch}.pt"))
+        print(f"Loaded model ({epoch})")
+        plot_image(vae, epoch, training_tensors, og_imgs)
+        gc.collect()
