@@ -13,6 +13,7 @@ from vae_mario import VAEMario, load_data
 
 from geoml.discretized_manifold import DiscretizedManifold
 from metric_approximation import MetricApproximation
+from metric_approximation_with_jacobians import approximate_metric
 
 Tensor = torch.Tensor
 
@@ -95,7 +96,8 @@ class VAEGeometryBase(VAEMario, Manifold):
         return min_dist.view(zsh[:-1])
 
     def metric(self, z: torch.Tensor) -> torch.Tensor:
-        return self.metric_approximation(z)
+        return approximate_metric(self.reweight, z)
+        # return self.metric_approximation(z)
 
     def reweight(self, z: Tensor) -> Categorical:
         raise NotImplementedError

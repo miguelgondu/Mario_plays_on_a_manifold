@@ -1,9 +1,8 @@
-from vae_geometry_base import VAEGeometryBase
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from vae_geometry_dirichlet import VAEGeometryDirichlet
+# from vae_geometry_base import VAEGeometryBase
 
 
 def fd_jacobian(function, x, h=1e-4):
@@ -48,7 +47,7 @@ def approximate_metric(function, z, h=0.01):
         return J.T @ J
 
 
-def plot_approximation(model: VAEGeometryBase):
+def plot_approximation(model):
     n_x, n_y = 50, 50
     x_lims = (-6, 6)
     y_lims = (-6, 6)
@@ -85,6 +84,8 @@ def plot_approximation(model: VAEGeometryBase):
 
 if __name__ == "__main__":
     # Load the model
+    from vae_geometry_dirichlet import VAEGeometryDirichlet
+
     vae = VAEGeometryDirichlet()
     vae.load_state_dict(
         torch.load("./models/mariovae_w_relu_epoch_160.pt", map_location="cpu")

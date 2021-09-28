@@ -32,17 +32,6 @@ def load_data(
     else:
         data = np.load("./data/processed/all_levels_onehot.npz")["levels"]
 
-    # if only_playable:
-    #     np.random.seed(0)
-    #     np.random.shuffle(data)
-
-    #     with open("./data/processed/playable_levels_idxs.json") as fp:
-    #         playable_level_idxs = json.load(fp)
-
-    #     data = data[playable_level_idxs]
-    # else:
-    #     np.random.seed(shuffle_seed)
-
     np.random.seed(shuffle_seed)
     np.random.shuffle(data)
 
@@ -59,8 +48,6 @@ def load_data(
     return training_tensors, test_tensors
 
 
-# Next step: defining the loss function.
-# Cross Entropy + KLD regularization
 def fit(
     model: VAEMarioHierarchical,
     optimizer: Optimizer,

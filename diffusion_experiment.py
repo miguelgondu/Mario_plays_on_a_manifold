@@ -17,14 +17,14 @@ def load_model(
     if extrapolation == "dirichlet":
         Model = VAEGeometryDirichlet
         update_hyperparams = {
-            "beta": -1.5,
+            "beta": -2.2,
             "n_clusters": 500,
             "only_playable": only_playable,
         }
     elif extrapolation == "hierarchical":
         Model = VAEGeometryHierarchical
         update_hyperparams = {
-            "beta": -1.5,
+            "beta": -2.5,
             "n_clusters": 500,
             "only_playable": only_playable,
         }
@@ -59,10 +59,14 @@ def run(model_name, extrapolation, only_playable, n_points, n_runs):
     normal_diffusion = NormalDifussion(n_points)
 
     _, ax = plt.subplots(1, 1)
-    vae.plot_latent_space(ax=ax, plot_points=False)
+    vae.plot_latent_space(ax=ax, plot_points=True)
     for _ in range(n_runs):
-        zs = normal_diffusion.run(vae).detach().numpy()
-        ax.scatter(zs[:, 0], zs[:, 1], c="r", marker="x")
+        # zs = normal_diffusion.run(vae).detach().numpy()
+        # ax.scatter(zs[:, 0], zs[:, 1], c="r", marker="x")
+
+        zs_g = geometric_diffusion.run(vae).detach().numpy()
+        ax.scatter(zs_g[1:, 0], zs_g[1:, 1], c="g", marker="x")
+        ax.scatter(zs_g[:1, 0], zs_g[:1, 1], c="c", marker="o", zorder=10)
 
     plt.show()
 
