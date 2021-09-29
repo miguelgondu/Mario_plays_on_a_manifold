@@ -1,4 +1,5 @@
 import click
+import numpy as np
 import torch as t
 import matplotlib.pyplot as plt
 
@@ -60,12 +61,26 @@ def run(model_name, extrapolation, only_playable, n_points, n_runs):
 
     _, ax = plt.subplots(1, 1)
     vae.plot_latent_space(ax=ax, plot_points=True)
-    for _ in range(n_runs):
-        # zs = normal_diffusion.run(vae).detach().numpy()
-        # ax.scatter(zs[:, 0], zs[:, 1], c="r", marker="x")
-
+    for r in range(n_runs):
+        zs = normal_diffusion.run(vae).detach().numpy()
+        levels = vae.decode(zs).probs.argmax(dim=-1)
         zs_g = geometric_diffusion.run(vae).detach().numpy()
+        levels_g = vae.decode(zs).probs.argmax(dim=-1)
+
+        np.savez(
+            f"./data/arrays/normal_diffusion_model_{model_name}_run_{r}.npz",
+            zs=zs,
+            levels=levels,
+        )
+
+        np.savez(
+            f"./data/arrays/geodesic_diffusion_model_{model_name}_run_{r}.npz",
+            zs=zs_g,
+            levels=levels_g,
+        )
+
         ax.scatter(zs_g[1:, 0], zs_g[1:, 1], c="g", marker="x")
+        ax.scatter(zs[:, 0], zs[:, 1], c="r", marker="x")
         ax.scatter(zs_g[:1, 0], zs_g[:1, 1], c="c", marker="o", zorder=10)
 
     plt.show()
