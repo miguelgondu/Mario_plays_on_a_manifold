@@ -77,9 +77,9 @@ class VAEMario(nn.Module):
 
         self.decoder = nn.Sequential(
             nn.Linear(self.z_dim, 256),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(256, 512),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(512, self.input_dim),
         ).to(self.device)
 

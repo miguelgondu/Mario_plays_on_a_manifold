@@ -143,7 +143,6 @@ def run(
     optimizer = optim.Adam(vae.parameters(), lr=lr)
 
     # Training and testing.
-    levels_for_reconstruction = test_tensors[:2, :, :, :].detach().numpy()
     print(f"Training experiment {comment}")
     best_loss = np.Inf
     n_without_improvement = 0
@@ -156,7 +155,7 @@ def run(
             n_without_improvement = 0
 
             # Saving the best model so far.
-            torch.save(vae.state_dict(), f"./models/{comment}_final.pt")
+            torch.save(vae.state_dict(), f"./models/{comment}_epoch_{epoch}_final.pt")
         else:
             if not overfit:
                 n_without_improvement += 1
