@@ -187,7 +187,7 @@ def run(
             torch.save(vae.state_dict(), f"./models/{comment}_epoch_{epoch}.pt")
 
         # Early stopping:
-        if n_without_improvement == 10:
+        if n_without_improvement == 25:
             print("Stopping early")
             break
 
