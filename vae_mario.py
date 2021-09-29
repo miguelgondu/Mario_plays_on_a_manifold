@@ -107,7 +107,7 @@ class VAEMario(nn.Module):
 
     def decode(self, z: Tensor) -> Categorical:
         # Decodes z, returning p(x|z)
-        logits = self.decoder(z)
+        logits = self.decoder(z.to(self.device))
         p_x_given_z = Categorical(
             logits=logits.reshape(-1, self.h, self.w, self.n_sprites)
         )
