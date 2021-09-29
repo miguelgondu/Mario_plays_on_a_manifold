@@ -69,10 +69,12 @@ class VAEMarioHierarchical(nn.Module):
         )
 
         self.encoder = nnj.Sequential(
-            nnj.Linear(self.input_dim, 256),
-            nnj.Tanh(),
-            nnj.Linear(256, 128),
-            nnj.Tanh(),
+            nn.Linear(self.input_dim, 512),
+            nn.Tanh(),
+            nn.Linear(512, 256),
+            nn.Tanh(),
+            nn.Linear(256, 128),
+            nn.Tanh(),
         ).to(self.device)
         self.enc_mu = nnj.Sequential(nnj.Linear(128, z_dim)).to(self.device)
         self.enc_var = nnj.Sequential(nnj.Linear(128, z_dim)).to(self.device)

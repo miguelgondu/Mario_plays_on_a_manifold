@@ -67,7 +67,9 @@ class VAEMario(nn.Module):
         )
 
         self.encoder = nn.Sequential(
-            nn.Linear(self.input_dim, 256),
+            nn.Linear(self.input_dim, 512),
+            nn.Tanh(),
+            nn.Linear(512, 256),
             nn.Tanh(),
             nn.Linear(256, 128),
             nn.Tanh(),
@@ -76,7 +78,9 @@ class VAEMario(nn.Module):
         self.enc_var = nn.Sequential(nn.Linear(128, z_dim)).to(self.device)
 
         self.decoder = nn.Sequential(
-            nn.Linear(self.z_dim, 256),
+            nn.Linear(self.z_dim, 128),
+            nn.Tanh(),
+            nn.Linear(128, 256),
             nn.Tanh(),
             nn.Linear(256, 512),
             nn.Tanh(),

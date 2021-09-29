@@ -168,7 +168,7 @@ def run(
             n_without_improvement = 0
 
             # Saving the best model so far.
-            torch.save(vae.state_dict(), f"./models/{comment}_epoch_{epoch}_final.pt")
+            torch.save(vae.state_dict(), f"./models/{comment}_final.pt")
         else:
             if not overfit:
                 n_without_improvement += 1
