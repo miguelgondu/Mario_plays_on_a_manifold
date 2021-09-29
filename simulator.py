@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import torch
+import numpy as np
 
 from vae_mario import VAEMario
 from vae_mario_hierarchical import VAEMarioHierarchical
@@ -39,7 +40,15 @@ def test_level_from_int_tensor(
 ) -> dict:
     level = clean_level(level.detach().numpy())
     level = str(level)
-    print(level)
+
+    return run_level(level, human_player=human_player)
+
+
+def test_level_from_int_array(
+    level: np.ndarray, human_player: bool = False, max_time: int = 30
+) -> dict:
+    level = clean_level(level)
+    level = str(level)
 
     return run_level(level, human_player=human_player)
 

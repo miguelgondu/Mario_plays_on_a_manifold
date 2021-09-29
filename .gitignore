@@ -4,6 +4,8 @@ data/processed/text
 data/processed/*.npz
 data/processed/playability_experiment
 data/processed/interpolation_experiment
+data/arrays/
+data/array_simulation_results/
 data/reconstructions/
 data/samples/
 data/testing_training_levels/
