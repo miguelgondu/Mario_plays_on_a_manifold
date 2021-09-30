@@ -47,10 +47,10 @@ def approximate_metric(function, z, h=0.01):
         return J.T @ J
 
 
-def plot_approximation(model):
+def plot_approximation(model, ax=None):
     n_x, n_y = 50, 50
-    x_lims = (-6, 6)
-    y_lims = (-6, 6)
+    x_lims = (-5, 5)
+    y_lims = (-5, 5)
     z1 = torch.linspace(*x_lims, n_x)
     z2 = torch.linspace(*y_lims, n_x)
     positions = {
@@ -72,14 +72,17 @@ def plot_approximation(model):
         else:
             metric_volume[i, j] = np.log(detMz)
 
-    _, (ax1, ax2) = plt.subplots(1, 2)
-    model.plot_latent_space(ax=ax1, plot_points=False)
+    if ax is not None:
+        ax.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
+    else:
+        _, (ax1, ax2) = plt.subplots(1, 2)
+        model.plot_latent_space(ax=ax1, plot_points=False)
 
-    ax2.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
+        ax2.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
 
-    ax1.set_title("Latent space w. Entropy")
-    ax2.set_title("Numerical approximation of the metric")
-    plt.show()
+        ax1.set_title("Latent space w. Entropy")
+        ax2.set_title("Numerical approximation of the metric")
+        plt.show()
 
 
 if __name__ == "__main__":

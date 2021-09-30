@@ -131,8 +131,8 @@ class VAEGeometryBase(VAEMario, Manifold):
             _, ax = plt.subplots(1, 1, figsize=(7, 7))
 
         n_x, n_y = 100, 100
-        x_lims = (-6, 6)
-        y_lims = (-6, 6)
+        x_lims = (-5, 5)
+        y_lims = (-5, 5)
         z1 = torch.linspace(*x_lims, n_x)
         z2 = torch.linspace(*y_lims, n_x)
 
