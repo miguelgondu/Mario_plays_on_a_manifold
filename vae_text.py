@@ -10,6 +10,7 @@ from itertools import product
 
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.lib.function_base import _corrcoef_dispatcher
 import torch as t
 from torch.distributions import Distribution, Normal, Categorical, kl_divergence
 from torch.nn import functional as F
@@ -194,13 +195,20 @@ class VAEText(nn.Module):
             seq = "".join([self.inv_encoding[s.item()] for s in seq_encoded])
             print(seq)
 
-    def plot_syntactic_correctness(
-        self, x_lims=(-5, 5), y_lims=(-5, 5), n_x=50, n_y=50
+    def plot_correctness(
+        self, _type: str, x_lims=(-5, 5), y_lims=(-5, 5), n_x=50, n_y=50
     ) -> np.ndarray:
         z1 = np.linspace(*x_lims, n_x)
         z2 = np.linspace(*y_lims, n_y)
 
-        syntactic_image = np.zeros((n_y, n_x))
+        if _type == "semantic":
+            corr = parse_semantically
+        elif _type == "syntactic":
+            corr = parse_syntactically
+        else:
+            raise ValueError("Expected semantic or syntactic")
+
+        correctness_image = np.zeros((n_y, n_x))
         zs = t.Tensor([[x, y] for x in z1 for y in z2])
         positions = {
             (x.item(), y.item()): (i, j)
@@ -209,14 +217,17 @@ class VAEText(nn.Module):
         }
 
         sequences = self.decode_to_text(zs)
-        syntactic_correctness = [int(parse_syntactically(seq)) for seq in sequences]
-        print(f"Correct sequences: {np.count_nonzero(syntactic_correctness)}")
+        correctness = [int(corr(seq)) for seq in sequences]
+        correct_sequences = [s for i, s in enumerate(sequences) if correctness[i]]
+        print(f"Correct sequences: {np.count_nonzero(correctness)}")
+        print(f"Unique correct sequences: {len(set(correct_sequences))}")
+        print(correct_sequences)
 
         for l, (x, y) in enumerate((product(z1, z2))):
             i, j = positions[(x.item(), y.item())]
-            syntactic_image[i, j] = syntactic_correctness[l]
+            correctness_image[i, j] = correctness[l]
 
-        return syntactic_image
+        return correctness_image
 
 
 if __name__ == "__main__":
