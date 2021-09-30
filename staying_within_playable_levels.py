@@ -99,6 +99,7 @@ def create_table_training_levels():
 #     playable_points.drop_duplicates(inplace=True)
 #     playable_points = playable_points.values
 
+
 #     return playable_points
 
 
