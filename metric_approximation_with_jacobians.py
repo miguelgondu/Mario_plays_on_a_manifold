@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # from vae_geometry_base import VAEGeometryBase
 
 
-def fd_jacobian(function, x, h=1e-4):
+def fd_jacobian(function, x, h=1e-4, input_size=14 * 14 * 11):
     """
     Compute finite difference Jacobian of given function
     at a single location x. This function is mainly considered
@@ -24,8 +24,8 @@ def fd_jacobian(function, x, h=1e-4):
         [
             (
                 (
-                    function(x[b] + E).probs.view(-1, 14 * 14 * 11)
-                    - function(x[b].unsqueeze(0)).probs.view(-1, 14 * 14 * 11)
+                    function(x[b] + E).probs.view(-1, input_size)
+                    - function(x[b].unsqueeze(0)).probs.view(-1, input_size)
                 ).t()
                 / h
             ).unsqueeze(0)
@@ -39,8 +39,8 @@ def fd_jacobian(function, x, h=1e-4):
     return Jnum
 
 
-def approximate_metric(function, z, h=0.01):
-    J = fd_jacobian(function, z, h=h)
+def approximate_metric(function, z, h=0.01, input_size=14 * 14 * 11):
+    J = fd_jacobian(function, z, h=h, input_size=input_size)
     if len(J.shape) > 2:
         return torch.bmm(J.transpose(1, 2), J)
     else:

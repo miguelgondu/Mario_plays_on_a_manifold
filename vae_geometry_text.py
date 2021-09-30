@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
-from vae_mario import VAEMario, load_data
+from vae_text import VAEText, load_data
 
 from geoml.discretized_manifold import DiscretizedManifold
 from metric_approximation import MetricApproximation
@@ -16,7 +16,7 @@ from metric_approximation_with_jacobians import approximate_metric
 Tensor = torch.Tensor
 
 
-class VAEGeometryBase(VAEMario, Manifold):
+class VAEGeometryText(VAEText, Manifold):
     """
     Interface for possible extrapolations. This class leaves
     self.reweight without implementation.
@@ -24,13 +24,11 @@ class VAEGeometryBase(VAEMario, Manifold):
 
     def __init__(
         self,
-        w: int = 14,
-        h: int = 14,
+        length: int = 10,
         z_dim: int = 2,
-        n_sprites: int = 11,
         device: str = None,
     ):
-        super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
+        super().__init__(length=length, z_dim=z_dim, device=device)
         self.cluster_centers = None
         self.translated_sigmoid = None
         self.encodings = None
@@ -41,11 +39,10 @@ class VAEGeometryBase(VAEMario, Manifold):
         Returns the theoretical KL between the two Categoricals
         """
         # TODO: change this to take the mean of the whole array. (?)
-        return torch.distributions.kl_divergence(p, q).sum(dim=(1, 2))
+        return torch.distributions.kl_divergence(p, q).sum(dim=(1))
 
     def update_cluster_centers(
         self,
-        only_playable: bool = False,
         beta: float = -3.0,
         n_clusters: int = 50,
         encodings: Tensor = None,
@@ -57,8 +54,7 @@ class VAEGeometryBase(VAEMario, Manifold):
         playable levels in the training set.
         """
         if encodings is None:
-            training_tensors, _ = load_data(only_playable=only_playable)
-            latent_codes = self.encode(training_tensors).mean
+            latent_codes = self.encode(self.train_tensor).mean
             self.encodings = latent_codes
         else:
             self.encodings = encodings.type(torch.float32)
@@ -94,11 +90,20 @@ class VAEGeometryBase(VAEMario, Manifold):
         return min_dist.view(zsh[:-1])
 
     def metric(self, z: torch.Tensor) -> torch.Tensor:
-        return approximate_metric(self.reweight, z)
+        return approximate_metric(self.reweight, z, input_size=self.input_dim)
         # return self.metric_approximation(z)
 
     def reweight(self, z: Tensor) -> Categorical:
-        raise NotImplementedError
+        similarity = self.translated_sigmoid(self.min_distance(z)).view(-1, 1, 1)
+        dec_categorical = self.decode(z)
+        dec_probs = dec_categorical.probs
+
+        random_probs = Dirichlet(torch.ones_like(dec_probs)).sample()
+
+        reweighted_probs = (1 - similarity) * dec_probs + similarity * (random_probs)
+        p_x_given_z = Categorical(probs=reweighted_probs)
+
+        return p_x_given_z
 
     def curve_length(self, curve):
         dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
@@ -143,7 +148,7 @@ class VAEGeometryBase(VAEMario, Manifold):
         }
 
         dist_ = self.reweight(zs)
-        entropy_ = dist_.entropy().mean(axis=1).mean(axis=1)
+        entropy_ = dist_.entropy().mean(axis=1)
         if len(entropy_.shape) > 1:
             entropy_ = torch.mean(entropy_, dim=1)
 

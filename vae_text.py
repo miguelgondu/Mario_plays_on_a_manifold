@@ -219,9 +219,9 @@ class VAEText(nn.Module):
         sequences = self.decode_to_text(zs)
         correctness = [int(corr(seq)) for seq in sequences]
         correct_sequences = [s for i, s in enumerate(sequences) if correctness[i]]
-        print(f"Correct sequences: {np.count_nonzero(correctness)}")
-        print(f"Unique correct sequences: {len(set(correct_sequences))}")
-        print(correct_sequences)
+        # print(f"Correct sequences: {np.count_nonzero(correctness)}")
+        # print(f"Unique correct sequences: {len(set(correct_sequences))}")
+        # print(correct_sequences)
 
         for l, (x, y) in enumerate((product(z1, z2))):
             i, j = positions[(x.item(), y.item())]
