@@ -1,8 +1,11 @@
+from typing import List
+from pathlib import Path
+from geoml.manifold import Manifold
+
 import torch
+from torch.distributions import Categorical, Dirichlet, Normal
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.distributions import Categorical, Normal
-from vae_mario_hierarchical import VAEMarioHierarchical
 
 from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
@@ -12,11 +15,15 @@ from geoml.discretized_manifold import DiscretizedManifold
 from metric_approximation import MetricApproximation
 from metric_approximation_with_jacobians import approximate_metric
 
-
 Tensor = torch.Tensor
 
 
-class VAEGeometryHierarchical(VAEMarioHierarchical):
+class VAEGeometryBase(VAEMario, Manifold):
+    """
+    Interface for possible extrapolations. This class leaves
+    self.reweight without implementation.
+    """
+
     def __init__(
         self,
         w: int = 14,
@@ -26,22 +33,10 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         device: str = None,
     ):
         super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
-
-    def reweight(self, z: Tensor) -> Categorical:
-        similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-        intermediate_normal = self._intermediate_distribution(z)
-        dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
-
-        reweighted_std = (1 - similarity) * dec_std + similarity * (
-            10.0 * torch.ones_like(dec_std)
-        )
-        reweighted_normal = Normal(dec_mu, reweighted_std)
-        samples = reweighted_normal.rsample()
-        p_x_given_z = Categorical(
-            logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
-        )
-
-        return p_x_given_z
+        self.cluster_centers = None
+        self.translated_sigmoid = None
+        self.encodings = None
+        self.metric_approximation = MetricApproximation(self, self.z_dim, eps=0.05)
 
     def theoretical_KL(self, p: Categorical, q: Categorical) -> torch.Tensor:
         """
@@ -103,6 +98,9 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
     def metric(self, z: torch.Tensor) -> torch.Tensor:
         return approximate_metric(self.reweight, z)
         # return self.metric_approximation(z)
+
+    def reweight(self, z: Tensor) -> Categorical:
+        raise NotImplementedError
 
     def curve_length(self, curve):
         dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1

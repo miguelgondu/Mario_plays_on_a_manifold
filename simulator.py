@@ -4,15 +4,19 @@ the MarioGAN.jar compiled simulator.
 """
 import subprocess
 import json
+from pathlib import Path
 
 import torch
+import numpy as np
 
 from vae_mario import VAEMario
+from vae_mario_hierarchical import VAEMarioHierarchical
 from mario_utils.levels import tensor_to_sim_level, clean_level
 
 Tensor = torch.Tensor
 
-JARFILE_PATH = "/Users/migd/Projects/mario_geometry_project/MarioVAE/MarioGAN.jar"
+filepath = Path(__file__).parent.resolve()
+JARFILE_PATH = f"{filepath}/simulator.jar"
 
 
 def test_level_from_decoded_tensor(
@@ -36,7 +40,15 @@ def test_level_from_int_tensor(
 ) -> dict:
     level = clean_level(level.detach().numpy())
     level = str(level)
-    print(level)
+
+    return run_level(level, human_player=human_player)
+
+
+def test_level_from_int_array(
+    level: np.ndarray, human_player: bool = False, max_time: int = 30
+) -> dict:
+    level = clean_level(level)
+    level = str(level)
 
     return run_level(level, human_player=human_player)
 
@@ -72,7 +84,9 @@ def run_level(
     return res
 
 
-def test_level_from_z(z: Tensor, vae: VAEMario, human_player: bool = False) -> dict:
+def test_level_from_z(
+    z: Tensor, vae: VAEMarioHierarchical, human_player: bool = False
+) -> dict:
     """
     Passes the level that z generates
     through the simulator and returns
@@ -82,8 +96,10 @@ def test_level_from_z(z: Tensor, vae: VAEMario, human_player: bool = False) -> d
     MarioGAN.jar <- EvaluationInfo.
     """
     # Get the level from the VAE
-    res = vae.decode(z.view(1, -1))
+    res = vae.decode(z.view(1, -1)).probs.argmax(dim=-1)
     level = res[0]
+    print("level: ")
+    print(level)
 
     return test_level_from_decoded_tensor(level, human_player=human_player)
 
@@ -92,14 +108,23 @@ if __name__ == "__main__":
     human_player = True
     z_dim = 2
     checkpoint = 100
-    model_name = f"mariovae_zdim_{z_dim}_playesting_epoch_{checkpoint}"
+    model_name = f"mariovae_video_for_tv2_lorry_2_epoch_80"
 
     print(f"Loading model {model_name}")
-    vae = VAEMario(16, 16, z_dim=z_dim)
-    vae.load_state_dict(torch.load(f"./models/{model_name}.pt"))
+    vae = VAEMario()
+    vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
     vae.eval()
 
-    random_z = 2 * torch.randn((1, z_dim))
+    # random_z = 2.5 * torch.randn((1, z_dim))
+    random_z = torch.Tensor([[-0.7635, -0.4633]])
     print(f"Playing {random_z[0]}")
-    res = test_level_from_z(random_z[0], vae)
+    res = test_level_from_z(random_z[0], vae, human_player=human_player)
     print(res)
+
+
+# Record a longer video
+# Email: somy@tv2lorry.dk
+
+# Miguel González-Duque
+# migd@itu.dk
+# +45 52 73 45 65.
