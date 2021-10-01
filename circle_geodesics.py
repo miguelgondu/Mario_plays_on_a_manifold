@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from metric_approximation import MetricApproximation
 
+from vae_geometry_base import VAEGeometryBase
 from vae_geometry_dirichlet import VAEGeometryDirichlet
 from vae_geometry_uniform import VAEGeometryUniform
 from vae_geometry_hierarchical import VAEGeometryHierarchical
@@ -17,7 +18,7 @@ from vae_geometry_hierarchical import VAEGeometryHierarchical
 
 def circle_experiment(
     model_name: str,
-    Model: Union[VAEGeometryDirichlet, VAEGeometryHierarchical, VAEGeometryUniform],
+    Model: VAEGeometryBase,
 ):
     """
     Returns some plots for the circle dataset,

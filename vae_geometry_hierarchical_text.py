@@ -129,8 +129,6 @@ class VAEGeometryHierarchicalText(VAEHierarchicalText, Manifold):
 
         return (kl.sqrt() * dt).sum()
 
-    # def curve_leng
-
     def plot_latent_space(self, ax=None, plot_points=True):
         """
         Plots the latent space, colored by entropy.

@@ -123,6 +123,18 @@ class VAEGeometryBase(VAEMario, Manifold):
 
         return (kl.sqrt() * dt).sum()
 
+    def curve_length(self, curve):
+        dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
+        full_cat = self.reweight(curve)
+        probs = full_cat.probs
+
+        cat1 = Categorical(probs=probs[:-1])
+        cat2 = Categorical(probs=probs[1:])
+
+        inner_term = (1 - (cat1.probs * cat2.probs).sum(dim=-1)).sum(dim=(1, 2))
+        energy = (inner_term * dt).sum()
+        return energy
+
     def plot_latent_space(self, ax=None, plot_points=True):
         """
         Plots the latent space, colored by entropy.
