@@ -1,58 +1,47 @@
+from geoml.manifold import Manifold
+
 import torch
+from torch.distributions import Categorical, Dirichlet, Normal
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.distributions import Categorical, Normal
-from vae_mario_hierarchical import VAEMarioHierarchical
 
 from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
-from vae_mario import VAEMario, load_data
+from vae_hierarchical_text import VAEHierarchicalText, load_data
 
 from geoml.discretized_manifold import DiscretizedManifold
 from metric_approximation import MetricApproximation
 from metric_approximation_with_jacobians import approximate_metric
 
-
 Tensor = torch.Tensor
 
 
-class VAEGeometryHierarchical(VAEMarioHierarchical):
+class VAEGeometryHierarchicalText(VAEHierarchicalText, Manifold):
+    """
+    Interface for possible extrapolations. This class leaves
+    self.reweight without implementation.
+    """
+
     def __init__(
         self,
-        w: int = 14,
-        h: int = 14,
+        length: int = 10,
         z_dim: int = 2,
-        n_sprites: int = 11,
         device: str = None,
     ):
-        super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
-
-    def reweight(self, z: Tensor) -> Categorical:
-        similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-        intermediate_normal = self._intermediate_distribution(z)
-        dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
-
-        reweighted_std = (1 - similarity) * dec_std + similarity * (
-            10.0 * torch.ones_like(dec_std)
-        )
-        reweighted_normal = Normal(dec_mu, reweighted_std)
-        samples = reweighted_normal.rsample()
-        p_x_given_z = Categorical(
-            logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
-        )
-
-        return p_x_given_z
+        super().__init__(length=length, z_dim=z_dim, device=device)
+        self.cluster_centers = None
+        self.translated_sigmoid = None
+        self.encodings = None
 
     def theoretical_KL(self, p: Categorical, q: Categorical) -> torch.Tensor:
         """
         Returns the theoretical KL between the two Categoricals
         """
         # TODO: change this to take the mean of the whole array. (?)
-        return torch.distributions.kl_divergence(p, q).sum(dim=(1, 2))
+        return torch.distributions.kl_divergence(p, q).sum(dim=(1))
 
     def update_cluster_centers(
         self,
-        only_playable: bool = False,
         beta: float = -3.0,
         n_clusters: int = 50,
         encodings: Tensor = None,
@@ -64,8 +53,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         playable levels in the training set.
         """
         if encodings is None:
-            training_tensors, _ = load_data(only_playable=only_playable)
-            latent_codes = self.encode(training_tensors).mean
+            latent_codes = self.encode(self.train_tensor).mean
             self.encodings = latent_codes
         else:
             self.encodings = encodings.type(torch.float32)
@@ -101,20 +89,45 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         return min_dist.view(zsh[:-1])
 
     def metric(self, z: torch.Tensor) -> torch.Tensor:
-        return approximate_metric(self.reweight, z)
+        return approximate_metric(self.reweight, z, input_size=self.input_dim)
         # return self.metric_approximation(z)
+
+    def reweight(self, z: Tensor) -> Categorical:
+        similarity = self.translated_sigmoid(self.min_distance(z)).view(-1, 1, 1)
+        intermediate_normal = self._intermediate_distribution(z)
+        dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
+
+        reweighted_std = (1 - similarity) * dec_std + similarity * (
+            3.0 * torch.ones_like(dec_std)
+        )
+        reweighted_normal = Normal(dec_mu, reweighted_std)
+        samples = reweighted_normal.rsample()
+        p_x_given_z = Categorical(
+            logits=samples.reshape(-1, self.length, self.n_symbols)
+        )
+
+        return p_x_given_z
 
     def curve_length(self, curve):
         dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
+
         full_cat = self.reweight(curve)
         probs = full_cat.probs
 
         cat1 = Categorical(probs=probs[:-1])
         cat2 = Categorical(probs=probs[1:])
 
-        inner_term = (1 - (cat1.probs * cat2.probs).sum(dim=-1)).sum(dim=(1, 2))
-        energy = (inner_term * dt).sum()
-        return energy
+        # If there's a theoretical KL that's easy to implement:
+        try:
+            kl = self.theoretical_KL(cat1, cat2).abs()
+        except NotImplementedError:
+            # Otherwise, we can do it by sampling (but it's numerically unstable
+            # and takes foreeeeeever)
+            print("Defaulting to KL-by-sampling, this might take a while")
+            kl = self.KL_by_sampling(cat1, cat2, n_samples=10000).abs()
+        # -------------------------------------------
+
+        return (kl.sqrt() * dt).sum()
 
     def plot_latent_space(self, ax=None, plot_points=True):
         """
@@ -123,7 +136,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         if ax is None:
             _, ax = plt.subplots(1, 1, figsize=(7, 7))
 
-        n_x, n_y = 100, 100
+        n_x, n_y = 50, 50
         x_lims = (-5, 5)
         y_lims = (-5, 5)
         z1 = torch.linspace(*x_lims, n_x)
@@ -138,7 +151,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         }
 
         dist_ = self.reweight(zs)
-        entropy_ = dist_.entropy().mean(axis=1).mean(axis=1)
+        entropy_ = dist_.entropy().mean(axis=1)
         if len(entropy_.shape) > 1:
             entropy_ = torch.mean(entropy_, dim=1)
 
@@ -177,68 +190,3 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
                 c.plot(ax=ax, c="red", linewidth=2.0)
             except Exception as e:
                 print(f"Couldn't, got {e}")
-
-
-if __name__ == "__main__":
-    model_name = "deeper_lr_1e-4_no_overfit_final"
-    vae = VAEGeometryHierarchical()
-    vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
-    vae.update_cluster_centers(beta=-1.5, n_clusters=500)
-    # _, (ax1, ax2) = plt.subplots(1, 2)
-    # vae.plot_latent_space(ax=ax1)
-    # vae.plot_w_geodesics(ax=ax2, plot_points=False)
-    # plt.show()
-    # """
-    # Returns some plots for the circle dataset,
-    # plotting geodescis and approximating metrics.
-    # """
-    # vae = Model()
-    # vae.load_state_dict(t.load(f"models/{model_name}.pt", map_location="cpu"))
-    # print("Updating cluster centers")
-    # print(encodings)
-
-    angles = torch.rand((100,)) * 2 * np.pi
-    encodings = 3.0 * torch.vstack((torch.cos(angles), torch.sin(angles))).T
-    vae.update_cluster_centers(beta=-2.5, encodings=encodings)
-
-    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(10 * 2, 10))
-    x_lims = (-6, 6)
-    y_lims = (-6, 6)
-
-    print("Plotting geodesics and latent space")
-    try:
-        vae.plot_w_geodesics(ax=ax1, plot_points=False)
-    except Exception as e:
-        print(f"couldn't get geodesics for reason {e}")
-
-    n_x, n_y = 50, 50
-    x_lims = (-5, 5)
-    y_lims = (-5, 5)
-    z1 = torch.linspace(*x_lims, n_x)
-    z2 = torch.linspace(*y_lims, n_x)
-    positions = {
-        (x.item(), y.item()): (i, j)
-        for j, x in enumerate(z1)
-        for i, y in enumerate(reversed(z2))
-    }
-
-    zs = torch.Tensor([[x, y] for x in z1 for y in z2])
-    metric_volume = np.zeros((n_y, n_x))
-    for z in zs:
-        (x, y) = z
-        i, j = positions[(x.item(), y.item())]
-        Mz = vae.metric(z)
-
-        detMz = torch.det(Mz).item()
-        if detMz < 0:
-            metric_volume[i, j] = np.nan
-        else:
-            metric_volume[i, j] = np.log(detMz)
-
-    cbar = ax2.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
-    plt.colorbar(cbar)
-
-    ax1.set_title("Latent space and geodesics")
-    ax2.set_title("Estimated metric volume")
-    plt.tight_layout()
-    plt.show()

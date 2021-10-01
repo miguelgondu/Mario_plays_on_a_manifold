@@ -1,6 +1,5 @@
 """
-This script trains a VAESimple on the Mario
-levels.
+This script trains a VAEText
 """
 import json
 from time import time
@@ -14,55 +13,17 @@ from torch.utils.data.dataset import Dataset
 import numpy as np
 from tqdm import tqdm
 
-from vae_mario import VAEMario
+from vae_hierarchical_text import VAEHierarchicalText, load_data
 from torch.utils.tensorboard import SummaryWriter
 
 # Data types.
 Tensor = torch.Tensor
 
 
-def load_data(
-    training_percentage=0.8, test_percentage=None, shuffle_seed=0, only_playable=False
-):
-    """Returns two tensors with training and testing data"""
-    # Loading the data.
-    # This data is structured [b, c, i, j], where c corresponds to the class.
-    if only_playable:
-        data = np.load("./data/processed/all_playable_levels_onehot.npz")["levels"]
-    else:
-        data = np.load("./data/processed/all_levels_onehot.npz")["levels"]
-
-    # if only_playable:
-    #     np.random.seed(0)
-    #     np.random.shuffle(data)
-
-    #     with open("./data/processed/playable_levels_idxs.json") as fp:
-    #         playable_level_idxs = json.load(fp)
-
-    #     data = data[playable_level_idxs]
-    # else:
-    #     np.random.seed(shuffle_seed)
-
-    np.random.seed(shuffle_seed)
-    np.random.shuffle(data)
-
-    # Separating into training and test.
-    n_data, _, _, _ = data.shape
-    training_index = int(n_data * training_percentage)
-    training_data = data[:training_index, :, :, :]
-    testing_data = data[training_index:, :, :, :]
-    training_tensors = torch.from_numpy(training_data)
-    test_tensors = torch.from_numpy(testing_data)
-    training_tensors = training_tensors.type(torch.FloatTensor)
-    test_tensors = test_tensors.type(torch.FloatTensor)
-
-    return training_tensors, test_tensors
-
-
 # Next step: defining the loss function.
 # Cross Entropy + KLD regularization
 def fit(
-    model: VAEMario,
+    model: VAEHierarchicalText,
     optimizer: Optimizer,
     data_loader: DataLoader,
     device: str,
@@ -83,7 +44,7 @@ def fit(
 
 
 def test(
-    model: VAEMario,
+    model: VAEHierarchicalText,
     test_loader: DataLoader,
     test_dataset: Dataset,
     device: str,
@@ -132,28 +93,25 @@ def run(
     # Defining the name of the experiment
     timestamp = str(time()).replace(".", "")
     if comment is None:
-        comment = f"{timestamp}_mariovae_zdim_{z_dim}"
+        comment = f"{timestamp}_text_zdim_{z_dim}"
 
     writer = SummaryWriter(log_dir=f"./runs/{timestamp}_{comment}")
 
     # Setting up the hyperparameters
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Loading the data.
-    training_tensors, test_tensors = load_data(
-        shuffle_seed=seed, only_playable=playable
-    )
-
     # Creating datasets.
-    dataset = TensorDataset(training_tensors)
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    test_dataset = TensorDataset(test_tensors)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
     # Loading the model
     print("Model:")
-    vae = VAEMario(z_dim=z_dim)
+    vae = VAEHierarchicalText(z_dim=z_dim)
     optimizer = optim.Adam(vae.parameters(), lr=lr)
+
+    # Creting the datasets
+    dataset = TensorDataset(vae.train_tensor)
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    test_dataset = TensorDataset(vae.test_tensor)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
     # Training and testing.
     print(f"Training experiment {comment}")

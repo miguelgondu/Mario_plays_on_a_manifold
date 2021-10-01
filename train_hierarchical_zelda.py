@@ -14,55 +14,19 @@ from torch.utils.data.dataset import Dataset
 import numpy as np
 from tqdm import tqdm
 
-from vae_mario import VAEMario
+from shapeguard import ShapeGuard
+
+from vae_zelda_hierarchical import VAEZeldaHierarchical, load_data
 from torch.utils.tensorboard import SummaryWriter
 
 # Data types.
 Tensor = torch.Tensor
 
 
-def load_data(
-    training_percentage=0.8, test_percentage=None, shuffle_seed=0, only_playable=False
-):
-    """Returns two tensors with training and testing data"""
-    # Loading the data.
-    # This data is structured [b, c, i, j], where c corresponds to the class.
-    if only_playable:
-        data = np.load("./data/processed/all_playable_levels_onehot.npz")["levels"]
-    else:
-        data = np.load("./data/processed/all_levels_onehot.npz")["levels"]
-
-    # if only_playable:
-    #     np.random.seed(0)
-    #     np.random.shuffle(data)
-
-    #     with open("./data/processed/playable_levels_idxs.json") as fp:
-    #         playable_level_idxs = json.load(fp)
-
-    #     data = data[playable_level_idxs]
-    # else:
-    #     np.random.seed(shuffle_seed)
-
-    np.random.seed(shuffle_seed)
-    np.random.shuffle(data)
-
-    # Separating into training and test.
-    n_data, _, _, _ = data.shape
-    training_index = int(n_data * training_percentage)
-    training_data = data[:training_index, :, :, :]
-    testing_data = data[training_index:, :, :, :]
-    training_tensors = torch.from_numpy(training_data)
-    test_tensors = torch.from_numpy(testing_data)
-    training_tensors = training_tensors.type(torch.FloatTensor)
-    test_tensors = test_tensors.type(torch.FloatTensor)
-
-    return training_tensors, test_tensors
-
-
 # Next step: defining the loss function.
 # Cross Entropy + KLD regularization
 def fit(
-    model: VAEMario,
+    model: VAEZeldaHierarchical,
     optimizer: Optimizer,
     data_loader: DataLoader,
     device: str,
@@ -83,7 +47,7 @@ def fit(
 
 
 def test(
-    model: VAEMario,
+    model: VAEZeldaHierarchical,
     test_loader: DataLoader,
     test_dataset: Dataset,
     device: str,
@@ -110,10 +74,8 @@ def test(
 @click.option("--batch-size", type=int, default=64)
 @click.option("--lr", type=float, default=1e-3)
 @click.option("--seed", type=int, default=0)
-@click.option("--scale", type=float, default=1.0)
 @click.option("--save-every", type=int, default=20)
 @click.option("--overfit/--no-overfit", default=False)
-@click.option("--playable/--no-playable", default=False)
 def run(
     z_dim,
     comment,
@@ -121,10 +83,8 @@ def run(
     batch_size,
     lr,
     seed,
-    scale,
     save_every,
     overfit,
-    playable,
 ):
     # Setting up the seeds
     torch.manual_seed(seed)
@@ -132,7 +92,7 @@ def run(
     # Defining the name of the experiment
     timestamp = str(time()).replace(".", "")
     if comment is None:
-        comment = f"{timestamp}_mariovae_zdim_{z_dim}"
+        comment = f"{timestamp}_zeldavae_zdim_{z_dim}"
 
     writer = SummaryWriter(log_dir=f"./runs/{timestamp}_{comment}")
 
@@ -140,9 +100,7 @@ def run(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Loading the data.
-    training_tensors, test_tensors = load_data(
-        shuffle_seed=seed, only_playable=playable
-    )
+    training_tensors, test_tensors = load_data(shuffle_seed=seed)
 
     # Creating datasets.
     dataset = TensorDataset(training_tensors)
@@ -152,7 +110,7 @@ def run(
 
     # Loading the model
     print("Model:")
-    vae = VAEMario(z_dim=z_dim)
+    vae = VAEZeldaHierarchical()
     optimizer = optim.Adam(vae.parameters(), lr=lr)
 
     # Training and testing.
@@ -187,7 +145,7 @@ def run(
             torch.save(vae.state_dict(), f"./models/{comment}_epoch_{epoch}.pt")
 
         # Early stopping:
-        if n_without_improvement == 25:
+        if n_without_improvement == 10:
             print("Stopping early")
             break
 
