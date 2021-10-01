@@ -139,7 +139,7 @@ class VAEHierarchicalText(nn.Module):
 
         return Normal(mu, t.exp(0.5 * log_var))
 
-    def _intermediate_dist(self, z: t.Tensor) -> Normal:
+    def _intermediate_distribution(self, z: t.Tensor) -> Normal:
         res = self.decoder(z.to(self.device))
         mu = self.dec_mu(res)
         log_var = self.dec_var(res)
@@ -148,7 +148,7 @@ class VAEHierarchicalText(nn.Module):
 
     def decode(self, z: t.Tensor) -> Categorical:
         # Decodes z, returning p(x|z)
-        hierarchical_dist = self._intermediate_dist(z)
+        hierarchical_dist = self._intermediate_distribution(z)
         logits = hierarchical_dist.rsample()
 
         p_x_given_z = Categorical(
@@ -202,7 +202,9 @@ class VAEHierarchicalText(nn.Module):
             print(seq)
 
         syntactic_correctness = self.plot_correctness("syntactic")
-        writer.add_image("syntactic correctness", syntactic_correctness, step_id)
+        writer.add_image(
+            "syntactic correctness", syntactic_correctness, step_id, dataformats="HW"
+        )
 
     def plot_correctness(
         self, _type: str, x_lims=(-5, 5), y_lims=(-5, 5), n_x=50, n_y=50
