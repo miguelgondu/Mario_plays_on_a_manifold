@@ -60,14 +60,14 @@ def load_data(n_sequences: int, max_length: int = 10, seed=0):
     return train_seqs, test_seqs
 
 
-class VAEText(nn.Module):
+class VAEHierarchicalText(nn.Module):
     def __init__(
         self,
         length: int = 10,
         z_dim: int = 2,
         device: str = None,
     ):
-        super(VAEText, self).__init__()
+        super(VAEHierarchicalText, self).__init__()
         self.encoding = {
             "0": 0,
             "1": 1,
@@ -200,6 +200,9 @@ class VAEText(nn.Module):
         for seq_encoded in seqs_encoded:
             seq = "".join([self.inv_encoding[s.item()] for s in seq_encoded])
             print(seq)
+
+        syntactic_correctness = self.plot_correctness("syntactic")
+        writer.add_image("syntactic correctness", syntactic_correctness, step_id)
 
     def plot_correctness(
         self, _type: str, x_lims=(-5, 5), y_lims=(-5, 5), n_x=50, n_y=50
