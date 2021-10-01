@@ -104,27 +104,6 @@ class VAEGeometryBase(VAEMario, Manifold):
 
     def curve_length(self, curve):
         dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
-
-        full_cat = self.reweight(curve)
-        probs = full_cat.probs
-
-        cat1 = Categorical(probs=probs[:-1])
-        cat2 = Categorical(probs=probs[1:])
-
-        # If there's a theoretical KL that's easy to implement:
-        try:
-            kl = self.theoretical_KL(cat1, cat2).abs()
-        except NotImplementedError:
-            # Otherwise, we can do it by sampling (but it's numerically unstable
-            # and takes foreeeeeever)
-            print("Defaulting to KL-by-sampling, this might take a while")
-            kl = self.KL_by_sampling(cat1, cat2, n_samples=10000).abs()
-        # -------------------------------------------
-
-        return (kl.sqrt() * dt).sum()
-
-    def curve_length(self, curve):
-        dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
         full_cat = self.reweight(curve)
         probs = full_cat.probs
 
