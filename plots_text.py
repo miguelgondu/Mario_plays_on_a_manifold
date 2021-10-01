@@ -48,7 +48,7 @@ def geometry_plots():
     vaetext.plot_latent_space(ax=ax3, plot_points=False)
     for _ in range(5):
         zs = gd.run(vaetext).detach().numpy()
-        ax3.plot(zs[:, 0], zs[:, 1], "g")
+        ax3.plot(zs[:, 0], zs[:, 1])
         ax3.scatter(zs[:1, 0], zs[:1, 1], c="c", marker="o", zorder=10)
         ax3.scatter(zs[:, 0], zs[:, 1], c="g", marker="x")
 
