@@ -5,13 +5,22 @@ from torch.distributions import MultivariateNormal
 from vae_geometry_base import VAEGeometryBase
 
 
-class GeometricDifussion:
-    def __init__(self, n_points: int, scale: float = 1.0) -> None:
+def get_random_point(encodings: t.Tensor) -> t.Tensor:
+    idx = np.random.randint(len(encodings))
+    return encodings[idx, :]
+
+
+class BaselineDiffusion:
+    def __init__(self, n_points: int, step_size: float = 1.0) -> None:
         self.n_points = n_points
-        self.scale = scale
+        self.step_size = step_size
 
     def run(self, vae: VAEGeometryBase, z_0: t.Tensor = None) -> t.Tensor:
-        """Returns the random walk as a Tensor of shape [n_points, z_dim=2]"""
+        """
+        Returns the random walk as a Tensor of shape [n_points, z_dim=2].
+
+        It randomly samples an encoding and takes a step in that direction.
+        """
 
         # Random starting point (or the one provided)
         if z_0 is None:
@@ -24,10 +33,9 @@ class GeometricDifussion:
 
         # Taking it from there.
         for _ in range(self.n_points):
-            Mz = vae.metric(z_n)
-
-            d = MultivariateNormal(z_n, covariance_matrix=self.scale * Mz.inverse())
-            z_n = d.rsample()
+            target = get_random_point(vae.encodings)
+            direction = target - z_n
+            z_n = z_n + direction * (self.step_size / direction.norm())
             zs.append(z_n)
 
         return t.vstack(zs)
