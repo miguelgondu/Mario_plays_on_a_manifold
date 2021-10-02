@@ -17,6 +17,7 @@ def simulate_array(array_path, processes, repetitions_per_level):
     """
     array_path = Path(array_path)
     array_name = array_path.name.replace(".npz", "")
+    print(f"Simulating array {array_name}")
 
     array = np.load(array_path)
     levels = array["levels"]
