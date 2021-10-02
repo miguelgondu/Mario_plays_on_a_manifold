@@ -16,6 +16,7 @@ data/compressed_results/
 data/plots/
 simulator_experiment/
 models/
+models_experiment/
 notebooks/
 models_backup/
 data/results/

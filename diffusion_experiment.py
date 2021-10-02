@@ -65,7 +65,7 @@ def run(model_name, extrapolation, only_playable, n_points, n_runs):
         zs = normal_diffusion.run(vae).detach().numpy()
         levels = vae.decode(zs).probs.argmax(dim=-1)
         zs_g = geometric_diffusion.run(vae).detach().numpy()
-        levels_g = vae.decode(zs).probs.argmax(dim=-1)
+        levels_g = vae.decode(zs_g).probs.argmax(dim=-1)
 
         np.savez(
             f"./data/arrays/normal_diffusion_model_{model_name}_run_{r}.npz",

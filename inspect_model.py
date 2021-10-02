@@ -1,5 +1,6 @@
 import click
 import torch as t
+import numpy as np
 import matplotlib.pyplot as plt
 
 from vae_geometry_base import VAEGeometryBase
@@ -7,6 +8,7 @@ from vae_geometry_dirichlet import VAEGeometryDirichlet
 from vae_geometry_hierarchical import VAEGeometryHierarchical
 from vae_geometry_uniform import VAEGeometryUniform
 
+from diffusions.geometric_difussion import GeometricDifussion
 from metric_approximation_with_jacobians import plot_approximation
 
 
@@ -23,7 +25,7 @@ def load_model(
     elif extrapolation == "hierarchical":
         Model = VAEGeometryHierarchical
         update_hyperparams = {
-            "beta": -2.5,
+            "beta": -3.2,
             "n_clusters": 500,
             "only_playable": only_playable,
         }
@@ -46,6 +48,34 @@ def load_model(
     return vae
 
 
+def plot_circle(vae, ax):
+    angles = t.rand((100,)) * 2 * np.pi
+    encodings = 3.0 * t.vstack((t.cos(angles), t.sin(angles))).T
+    vae.update_cluster_centers(encodings=encodings)
+    try:
+        vae.plot_w_geodesics(ax=ax, plot_points=False)
+    except Exception as e:
+        print(f"couldn't get geodesics for reason {e}")
+
+
+def plot_geometric_diffusion(vae, ax):
+    """
+    Runs the geometric diffusion 5 times and plots the results.
+    """
+    geometric_diffusion = GeometricDifussion(50)
+    vae.plot_latent_space(ax=ax, plot_points=False)
+    for _ in range(5):
+        try:
+            zs = geometric_diffusion.run(vae).detach().numpy()
+            ax.scatter(zs[:, 0], zs[:, 1], c="g", marker="x")
+            ax.scatter(zs[:1, 0], zs[:1, 1], c="c", marker="o", zorder=10)
+        except Exception as e:
+            print(f"Couldn't do diffusion: {e}")
+
+    ax.set_xlim((-5, 5))
+    ax.set_ylim((-5, 5))
+
+
 @click.command()
 @click.argument("model_name", type=str)
 @click.option("--extrapolation", type=str, default="dirichlet")
@@ -56,19 +86,22 @@ def inspect(model_name, extrapolation, only_playable):
     a summary of a given model.
     """
     vae = load_model(extrapolation, model_name, only_playable=only_playable)
-    _, axes = plt.subplots(1, 3, figsize=(3 * 7, 7))
+    fig, axes = plt.subplots(2, 2, figsize=(2 * 7, 2 * 7))
     axes = axes.flatten()
 
     axes[0].set_title("Latent space & geodesics")
     vae.plot_w_geodesics(ax=axes[0])
 
-    axes[1].set_title("Grid of levels")
-    vae.plot_grid(ax=axes[1])
+    axes[1].set_title("Geometric diffusion")
+    plot_geometric_diffusion(vae, axes[1])
 
     axes[2].set_title("Approximation of the metric")
     plot_approximation(vae, ax=axes[2])
-    axes[2].axis("off")
 
+    axes[3].set_title("On a circle")
+    plot_circle(vae, ax=axes[3])
+
+    fig.suptitle(f"Model: {model_name} - {extrapolation}")
     plt.tight_layout()
     plt.savefig(
         f"./data/plots/model_inspections/{model_name}_extrapolation_{extrapolation}_playable_{only_playable}.png"
