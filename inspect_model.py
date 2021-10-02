@@ -13,26 +13,32 @@ from metric_approximation_with_jacobians import plot_approximation
 
 
 def load_model(
-    extrapolation: str, model_name: str, only_playable: bool = False
+    extrapolation: str, model_name: str, beta: float = None, only_playable: bool = False
 ) -> VAEGeometryBase:
     if extrapolation == "dirichlet":
+        if beta is None:
+            beta = -3.5
         Model = VAEGeometryDirichlet
         update_hyperparams = {
-            "beta": -2.2,
+            "beta": beta,
             "n_clusters": 500,
             "only_playable": only_playable,
         }
     elif extrapolation == "hierarchical":
+        if beta is None:
+            beta = -3.0
         Model = VAEGeometryHierarchical
         update_hyperparams = {
-            "beta": -3.2,
+            "beta": beta,
             "n_clusters": 500,
             "only_playable": only_playable,
         }
     elif extrapolation == "uniform":
+        if beta is None:
+            beta = -3.5
         Model = VAEGeometryUniform
         update_hyperparams = {
-            "beta": -1.5,
+            "beta": beta,
             "n_clusters": 500,
             "only_playable": only_playable,
         }
@@ -79,13 +85,14 @@ def plot_geometric_diffusion(vae, ax):
 @click.command()
 @click.argument("model_name", type=str)
 @click.option("--extrapolation", type=str, default="dirichlet")
+@click.option("--beta", type=float, default=None)
 @click.option("--only-playable/--not-only-playable", default=False)
-def inspect(model_name, extrapolation, only_playable):
+def inspect(model_name, extrapolation, beta, only_playable):
     """
     Plots the latent space, a grid, and
     a summary of a given model.
     """
-    vae = load_model(extrapolation, model_name, only_playable=only_playable)
+    vae = load_model(extrapolation, model_name, beta=beta, only_playable=only_playable)
     fig, axes = plt.subplots(2, 2, figsize=(2 * 7, 2 * 7))
     axes = axes.flatten()
 
@@ -101,7 +108,8 @@ def inspect(model_name, extrapolation, only_playable):
     axes[3].set_title("On a circle")
     plot_circle(vae, ax=axes[3])
 
-    fig.suptitle(f"Model: {model_name} - {extrapolation}")
+    beta_in_vae = vae.translated_sigmoid.beta.item()
+    fig.suptitle(f"Model: {model_name} - {extrapolation} - beta {beta_in_vae}")
     plt.tight_layout()
     plt.savefig(
         f"./data/plots/model_inspections/{model_name}_extrapolation_{extrapolation}_playable_{only_playable}.png"
