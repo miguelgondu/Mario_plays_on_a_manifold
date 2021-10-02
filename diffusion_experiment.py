@@ -16,30 +16,31 @@ from inspect_model import load_model
 @click.option("--only-playable/--not-only-playable", default=False)
 @click.option("--n-points", type=int, default=100)
 @click.option("--n-runs", type=int, default=10)
-def run(
-    model_name,
-    extrapolation,
-    only_playable,
-    n_points,
-    n_runs,
-):
+@click.option("--seed", type=int, default=0)
+def run(model_name, extrapolation, only_playable, n_points, n_runs, seed):
     vae = load_model(extrapolation, model_name, only_playable=only_playable)
     g_scales = [0.5, 1.0, 1.5]
     b_step_sizes = [0.5, 1.0, 1.5]
     n_scales = [0.5, 1.0, 1.5]
 
+    np.random.seed(seed)
+
     # Geometric diffusion experiments
     for g_scale in g_scales:
         geometric_diffusion = GeometricDifussion(n_points, scale=g_scale)
         for r in range(n_runs):
-            zs_g = geometric_diffusion.run(vae).detach().numpy()
-            levels_g = vae.decode(t.from_numpy(zs_g)).probs.argmax(dim=-1)
-
-            np.savez(
-                f"./data/arrays/geodesic_diffusion_model_{model_name}_scale_{g_scale}_run_{r}.npz",
-                zs=zs_g,
-                levels=levels_g,
-            )
+            try:
+                zs_g = geometric_diffusion.run(vae).detach().numpy()
+                levels_g = vae.decode(t.from_numpy(zs_g)).probs.argmax(dim=-1)
+                array_name = f"geodesic_diffusion_model_{model_name}_extrapolation_{extrapolation}_scale_{g_scale}_run_{r}"
+                np.savez(
+                    f"./data/arrays/{array_name}.npz",
+                    zs=zs_g,
+                    levels=levels_g,
+                )
+                print(f"Saved {array_name}.")
+            except Exception as e:
+                print(f"Couldn't diffuse: {e}")
 
     # Baseline diffusion experiments
     for b_step_size in b_step_sizes:
@@ -48,11 +49,14 @@ def run(
             zs_b = baseline_diffusion.run(vae).detach().numpy()
             levels_b = vae.decode(t.from_numpy(zs_b)).probs.argmax(dim=-1)
 
+            array_name = f"baseline_diffusion_model_{model_name}_extrapolation_{extrapolation}_stepsize_{b_step_size}_run_{r}"
             np.savez(
-                f"./data/arrays/baseline_diffusion_model_{model_name}_stepsize_{b_step_size}_run_{r}.npz",
+                f"./data/arrays/{array_name}.npz",
                 zs=zs_b,
                 levels=levels_b,
             )
+
+            print(f"Saved {array_name}.")
 
     # Normal diffusion experiments
     for n_scale in n_scales:
@@ -60,11 +64,14 @@ def run(
         for r in range(n_runs):
             zs = normal_diffusion.run(vae).detach().numpy()
             levels = vae.decode(t.from_numpy(zs)).probs.argmax(dim=-1)
+
+            array_name = f"normal_diffusion_model_{model_name}_extrapolation_{extrapolation}_scale_{n_scale}_run_{r}"
             np.savez(
-                f"./data/arrays/normal_diffusion_model_{model_name}_scale_{normal_scale}_run_{r}.npz",
+                f"./data/arrays/{array_name}.npz",
                 zs=zs,
                 levels=levels,
             )
+            print(f"Saved {array_name}.")
 
 
 if __name__ == "__main__":
