@@ -153,6 +153,13 @@ def interpolation_experiment(vae) -> List[np.ndarray]:
     plt.tight_layout()
     plt.show()
 
+    return (
+        fifty_lines,
+        fifty_geodesics,
+        expected_coherences_in_lines,
+        expected_coherences_in_geodesics,
+    )
+
 
 def diffusion_experiment(vae):
     n_runs = 10
@@ -233,10 +240,10 @@ def figure_latent_codes(vae: VAEGeometryHierarchicalText):
     _, ax = plt.subplots(1, 1, figsize=(7, 7))
     img = vae.get_correctness_img("syntactic", sample=True)
     plot = ax.imshow(img, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
+    plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
+
     zs = vae.encodings.detach().numpy()
     ax.scatter(zs[:, 0], zs[:, 1], c="#DC851F", marker="x")
-
-    plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
 
     ax.axis("off")
     plt.tight_layout()
@@ -245,13 +252,34 @@ def figure_latent_codes(vae: VAEGeometryHierarchicalText):
     plt.close()
 
 
+def figure_volume_and_interpolations(vae: VAEGeometryHierarchicalText):
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    vae.plot_metric_volume(ax=ax)
+
+    (
+        fifty_lines,
+        fifty_geodesics,
+        expected_coherences_in_lines,
+        expected_coherences_in_geodesics,
+    ) = interpolation_experiment(vae)
+
+    # TODO: finish implementing this plot
+
+    ax.axis("off")
+    plt.tight_layout()
+    plt.savefig("./data/plots/final/equation_model_metric_volume.png", dpi=100)
+    plt.show()
+    plt.close()
+
+
 if __name__ == "__main__":
     vaeh = VAEGeometryHierarchicalText()
     vaeh.load_state_dict(t.load("./models/text/hierarchical_vae_text_final.pt"))
-    vaeh.update_cluster_centers(beta=-3.5)
+    vaeh.update_cluster_centers(beta=-3.0)
 
     # inspect_model(vaeh)
     # interpolation_experiment(vaeh)
     # diffusion_experiment(vaeh)
 
     figure_latent_codes(vaeh)
+    figure_volume_and_geodesics(vaeh)

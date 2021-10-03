@@ -61,7 +61,7 @@ def plot_approximation(model, ax=None):
 
     zs = torch.Tensor([[x, y] for x in z1 for y in z2])
     metric_volume = np.zeros((n_y, n_x))
-    metrics = approximate_metric(model.reweight, zs)
+    metrics = approximate_metric(model.reweight, zs, input_size=model.input_dim)
     for z, Mz in zip(zs, metrics):
         (x, y) = z
         i, j = positions[(x.item(), y.item())]
@@ -73,7 +73,8 @@ def plot_approximation(model, ax=None):
             metric_volume[i, j] = np.log(detMz)
 
     if ax is not None:
-        ax.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
+        plot = ax.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
+        plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
     else:
         _, (ax1, ax2) = plt.subplots(1, 2)
         model.plot_latent_space(ax=ax1, plot_points=False)
