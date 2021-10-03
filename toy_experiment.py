@@ -225,14 +225,33 @@ def diffusion_experiment(vae):
     plt.show()
 
 
-if __name__ == "__main__":
-    # vae = VAEGeometryText()
-    # vae.load_state_dict(t.load("./models/text/vanilla_vae_text_final.pt"))
-    # vae.update_cluster_centers(beta=-3.2, n_clusters=50)
+def figure_latent_codes(vae: VAEGeometryHierarchicalText):
+    """
+    Gets an image of the latent space with the latent codes,
+    illuminated by coherence after 100% samples.
+    """
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    img = vae.get_correctness_img("syntactic", sample=True)
+    plot = ax.imshow(img, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
+    zs = vae.encodings.detach().numpy()
+    ax.scatter(zs[:, 0], zs[:, 1], c="#DC851F", marker="x")
 
+    plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
+
+    ax.axis("off")
+    plt.tight_layout()
+    plt.savefig("./data/plots/final/equation_model_latent_codes.png", dpi=100)
+    plt.show()
+    plt.close()
+
+
+if __name__ == "__main__":
     vaeh = VAEGeometryHierarchicalText()
     vaeh.load_state_dict(t.load("./models/text/hierarchical_vae_text_final.pt"))
     vaeh.update_cluster_centers(beta=-3.5)
+
     # inspect_model(vaeh)
     # interpolation_experiment(vaeh)
-    diffusion_experiment(vaeh)
+    # diffusion_experiment(vaeh)
+
+    figure_latent_codes(vaeh)
