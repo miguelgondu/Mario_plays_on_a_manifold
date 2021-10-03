@@ -27,11 +27,13 @@ class VAEGeometryText(VAEText, Manifold):
         length: int = 10,
         z_dim: int = 2,
         device: str = None,
+        extrapolation: str = "dirichlet",
     ):
         super().__init__(length=length, z_dim=z_dim, device=device)
         self.cluster_centers = None
         self.translated_sigmoid = None
         self.encodings = None
+        self.extrapolation = extrapolation
         self.metric_approximation = MetricApproximation(self, self.z_dim, eps=0.05)
 
     def theoretical_KL(self, p: Categorical, q: Categorical) -> torch.Tensor:
@@ -98,7 +100,10 @@ class VAEGeometryText(VAEText, Manifold):
         dec_categorical = self.decode(z)
         dec_probs = dec_categorical.probs
 
-        random_probs = Dirichlet(torch.ones_like(dec_probs)).sample()
+        if self.extrapolation == "dirichlet":
+            random_probs = Dirichlet(torch.ones_like(dec_probs)).sample()
+        else:
+            random_probs = (1 / self.n_symbols) * torch.ones_like(dec_probs)
 
         reweighted_probs = (1 - similarity) * dec_probs + similarity * (random_probs)
         p_x_given_z = Categorical(probs=reweighted_probs)
@@ -156,14 +161,19 @@ class VAEGeometryText(VAEText, Manifold):
             i, j = positions[(x.item(), y.item())]
             entropy_K[i, j] = entropy_[l]
 
-        if plot_points:
-            ax.scatter(
-                self.cluster_centers[:, 0],
-                self.cluster_centers[:, 1],
-                marker="x",
-                c="k",
-            )
-        ax.imshow(entropy_K, extent=[*x_lims, *y_lims], cmap="Blues")
+        if not (isinstance(ax, list) or isinstance(ax, tuple)):
+            ax = [ax]
+
+        for axi in ax:
+            if plot_points:
+                axi.scatter(
+                    self.cluster_centers[:, 0],
+                    self.cluster_centers[:, 1],
+                    marker="x",
+                    c="k",
+                )
+            axi.imshow(entropy_K, extent=[*x_lims, *y_lims], cmap="Blues")
+
         # plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
         # cbar.ax.set_yticklabels([entropy_K.min(), entropy_K.max()])
 

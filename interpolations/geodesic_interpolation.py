@@ -10,11 +10,9 @@ class GeodesicInterpolation(BaseInterpolation):
     def __init__(
         self,
         dm: DiscretizedManifold,
-        model_name: str,
         n_points_in_line: int = 10,
     ):
         super().__init__(n_points_in_line=n_points_in_line)
-        self.model_name = model_name
         self.dm = dm
 
     def interpolate(self, z: Tensor, z_prime: Tensor) -> Tensor:

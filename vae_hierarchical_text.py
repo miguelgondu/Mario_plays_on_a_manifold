@@ -130,6 +130,9 @@ class VAEHierarchicalText(nn.Module):
 
         # print(self)
 
+    def int_sequence_to_text(self, x: t.Tensor) -> str:
+        return "".join([self.inv_encoding[xi.item()] for xi in x])
+
     def encode(self, x: t.Tensor) -> Normal:
         # Returns q(z | x) = Normal(mu, sigma)
         x = x.view(-1, self.input_dim).to(self.device)
@@ -206,8 +209,8 @@ class VAEHierarchicalText(nn.Module):
             "syntactic correctness", syntactic_correctness, step_id, dataformats="HW"
         )
 
-    def plot_correctness(
-        self, _type: str, x_lims=(-5, 5), y_lims=(-5, 5), n_x=50, n_y=50
+    def get_correctness_img(
+        self, _type: str, x_lims=(-5, 5), y_lims=(-5, 5), n_x=50, n_y=50, sample=False
     ) -> np.ndarray:
         z1 = np.linspace(*x_lims, n_x)
         z2 = np.linspace(*y_lims, n_y)
@@ -227,12 +230,19 @@ class VAEHierarchicalText(nn.Module):
             for i, y in enumerate(reversed(z2))
         }
 
-        sequences = self.decode_to_text(zs)
-        correctness = [int(corr(seq)) for seq in sequences]
-        correct_sequences = [s for i, s in enumerate(sequences) if correctness[i]]
-        # print(f"Correct sequences: {np.count_nonzero(correctness)}")
-        # print(f"Unique correct sequences: {len(set(correct_sequences))}")
-        # print(correct_sequences)
+        if sample:
+            correctness = []
+            for z in zs:
+                dist = self.decode(z)
+                samples = dist.sample((100,))
+                sequences_in_samples = [
+                    self.int_sequence_to_text(s[0]) for s in samples
+                ]
+                coherences_at_z = [corr(seq) for seq in sequences_in_samples]
+                correctness.append(np.mean(coherences_at_z))
+        else:
+            sequences = self.decode_to_text(zs)
+            correctness = [int(corr(seq)) for seq in sequences]
 
         for l, (x, y) in enumerate((product(z1, z2))):
             i, j = positions[(x.item(), y.item())]

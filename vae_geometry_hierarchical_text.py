@@ -88,17 +88,13 @@ class VAEGeometryHierarchicalText(VAEHierarchicalText, Manifold):
 
         return min_dist.view(zsh[:-1])
 
-    def metric(self, z: torch.Tensor) -> torch.Tensor:
-        return approximate_metric(self.reweight, z, input_size=self.input_dim)
-        # return self.metric_approximation(z)
-
     def reweight(self, z: Tensor) -> Categorical:
-        similarity = self.translated_sigmoid(self.min_distance(z)).view(-1, 1, 1)
+        similarity = self.translated_sigmoid(self.min_distance(z)).view(-1, 1)
         intermediate_normal = self._intermediate_distribution(z)
         dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
 
         reweighted_std = (1 - similarity) * dec_std + similarity * (
-            3.0 * torch.ones_like(dec_std)
+            5.0 * torch.ones_like(dec_std)
         )
         reweighted_normal = Normal(dec_mu, reweighted_std)
         samples = reweighted_normal.rsample()
@@ -107,6 +103,9 @@ class VAEGeometryHierarchicalText(VAEHierarchicalText, Manifold):
         )
 
         return p_x_given_z
+
+    def metric(self, z: torch.Tensor) -> torch.Tensor:
+        return approximate_metric(self.reweight, z, input_size=self.input_dim)
 
     def curve_length(self, curve):
         dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
@@ -159,14 +158,18 @@ class VAEGeometryHierarchicalText(VAEHierarchicalText, Manifold):
             i, j = positions[(x.item(), y.item())]
             entropy_K[i, j] = entropy_[l]
 
-        if plot_points:
-            ax.scatter(
-                self.cluster_centers[:, 0],
-                self.cluster_centers[:, 1],
-                marker="x",
-                c="k",
-            )
-        ax.imshow(entropy_K, extent=[*x_lims, *y_lims], cmap="Blues")
+        if not (isinstance(ax, list) or isinstance(ax, tuple)):
+            ax = [ax]
+
+        for axi in ax:
+            if plot_points:
+                axi.scatter(
+                    self.cluster_centers[:, 0],
+                    self.cluster_centers[:, 1],
+                    marker="x",
+                    c="k",
+                )
+            axi.imshow(entropy_K, extent=[*x_lims, *y_lims], cmap="Blues")
         # plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
         # cbar.ax.set_yticklabels([entropy_K.min(), entropy_K.max()])
 

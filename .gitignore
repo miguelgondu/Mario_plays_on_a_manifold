@@ -2,6 +2,7 @@
 .vscode/
 data/processed/text
 data/processed/*.npz
+data/processed/sequences_*.json
 data/processed/playability_experiment
 data/processed/interpolation_experiment
 data/arrays/
@@ -36,6 +37,7 @@ sprites.json
 __pycache__/
 *.py[cod]
 *$py.class
+*.ipy
 
 # C extensions
 *.so

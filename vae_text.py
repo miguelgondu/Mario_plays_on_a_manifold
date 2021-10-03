@@ -50,6 +50,10 @@ def parse_syntactically(eq_string: str):
 
 
 def load_data(n_sequences: int, max_length: int = 10, seed=0):
+    """
+    Returns {n_sequences} unique equations of length at most {max_length}.
+    The ones that are not of length {max_length} are padded with spaces.
+    """
     random.seed(seed)
     seqs = list(set([generate(4) for _ in range(n_sequences)]))
     seqs = [s for s in seqs if len(s) < max_length]
@@ -72,6 +76,7 @@ class VAEText(nn.Module):
         length: int = 10,
         z_dim: int = 2,
         device: str = None,
+        seed: int = 0,
     ):
         super(VAEText, self).__init__()
         self.encoding = {
@@ -116,7 +121,7 @@ class VAEText(nn.Module):
             t.ones(self.z_dim, device=self.device),
         )
 
-        self.train_seqs, self.test_seqs = load_data(n_sequences=5000)
+        self.train_seqs, self.test_seqs = load_data(n_sequences=5000, seed=seed)
 
         # One-hot encode these sequences
         self.train_tensor = t.zeros((len(self.train_seqs), self.length, self.n_symbols))
@@ -177,6 +182,9 @@ class VAEText(nn.Module):
             for seq_encoded in seqs_encoded
         ]
 
+    def int_sequence_to_text(self, x: t.Tensor) -> str:
+        return "".join([self.inv_encoding[xi.item()] for xi in x])
+
     def report(
         self,
         writer: SummaryWriter,
@@ -195,8 +203,8 @@ class VAEText(nn.Module):
             seq = "".join([self.inv_encoding[s.item()] for s in seq_encoded])
             print(seq)
 
-    def plot_correctness(
-        self, _type: str, x_lims=(-5, 5), y_lims=(-5, 5), n_x=50, n_y=50
+    def get_correctness_img(
+        self, _type: str, x_lims=(-5, 5), y_lims=(-5, 5), n_x=50, n_y=50, sample=False
     ) -> np.ndarray:
         z1 = np.linspace(*x_lims, n_x)
         z2 = np.linspace(*y_lims, n_y)
@@ -216,12 +224,19 @@ class VAEText(nn.Module):
             for i, y in enumerate(reversed(z2))
         }
 
-        sequences = self.decode_to_text(zs)
-        correctness = [int(corr(seq)) for seq in sequences]
-        correct_sequences = [s for i, s in enumerate(sequences) if correctness[i]]
-        # print(f"Correct sequences: {np.count_nonzero(correctness)}")
-        # print(f"Unique correct sequences: {len(set(correct_sequences))}")
-        # print(correct_sequences)
+        if sample:
+            correctness = []
+            for z in zs:
+                dist = self.decode(z)
+                samples = dist.sample((100,))
+                sequences_in_samples = [
+                    self.int_sequence_to_text(s[0]) for s in samples
+                ]
+                coherences_at_z = [corr(seq) for seq in sequences_in_samples]
+                correctness.append(np.mean(coherences_at_z))
+        else:
+            sequences = self.decode_to_text(zs)
+            correctness = [int(corr(seq)) for seq in sequences]
 
         for l, (x, y) in enumerate((product(z1, z2))):
             i, j = positions[(x.item(), y.item())]

@@ -126,7 +126,7 @@ def run(
             n_without_improvement = 0
 
             # Saving the best model so far.
-            torch.save(vae.state_dict(), f"./models/{comment}_final.pt")
+            torch.save(vae.state_dict(), f"./models/text/{comment}_final.pt")
         else:
             if not overfit:
                 n_without_improvement += 1
@@ -142,7 +142,7 @@ def run(
         if epoch % save_every == 0 and epoch != 0:
             # Saving the model
             print(f"Saving the model at checkpoint {epoch}.")
-            torch.save(vae.state_dict(), f"./models/{comment}_epoch_{epoch}.pt")
+            torch.save(vae.state_dict(), f"./models/text/{comment}_epoch_{epoch}.pt")
 
         # Early stopping:
         if n_without_improvement == 25:
