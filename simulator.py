@@ -99,8 +99,6 @@ def test_level_from_z(
     # Get the level from the VAE
     res = vae.decode(z.view(1, -1)).probs.argmax(dim=-1)
     level = res[0]
-    print("level: ")
-    print(level)
 
     return test_level_from_decoded_tensor(level, human_player=human_player)
 

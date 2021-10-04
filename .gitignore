@@ -6,6 +6,7 @@ data/processed/sequences_*.json
 data/processed/playability_experiment
 data/processed/interpolation_experiment
 data/arrays/
+data/ground_truth/
 data/array_simulation_results/
 data/reconstructions/
 data/samples/
