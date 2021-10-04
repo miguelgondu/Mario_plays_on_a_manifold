@@ -1,3 +1,6 @@
+from typing import Tuple
+
+from geoml.curve import CubicSpline
 from geoml.discretized_manifold import DiscretizedManifold
 import torch
 
@@ -20,3 +23,9 @@ class GeodesicInterpolation(BaseInterpolation):
         t = torch.linspace(0, 1, self.n_points_in_line)
         interpolation = c(t)
         return interpolation
+
+    def interpolate_and_return_geodesic(
+        self, z: Tensor, z_prime: Tensor
+    ) -> CubicSpline:
+        c = self.dm.connecting_geodesic(z, z_prime)
+        return c

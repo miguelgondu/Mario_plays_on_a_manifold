@@ -116,17 +116,9 @@ class VAEGeometryHierarchicalText(VAEHierarchicalText, Manifold):
         cat1 = Categorical(probs=probs[:-1])
         cat2 = Categorical(probs=probs[1:])
 
-        # If there's a theoretical KL that's easy to implement:
-        try:
-            kl = self.theoretical_KL(cat1, cat2).abs()
-        except NotImplementedError:
-            # Otherwise, we can do it by sampling (but it's numerically unstable
-            # and takes foreeeeeever)
-            print("Defaulting to KL-by-sampling, this might take a while")
-            kl = self.KL_by_sampling(cat1, cat2, n_samples=10000).abs()
-        # -------------------------------------------
-
-        return (kl.sqrt() * dt).sum()
+        inner_term = (1 - (cat1.probs * cat2.probs).sum(dim=-1)).sum(dim=1)
+        energy = (inner_term * dt).sum()
+        return energy
 
     def plot_latent_space(self, ax=None, plot_points=True):
         """
@@ -194,5 +186,5 @@ class VAEGeometryHierarchicalText(VAEHierarchicalText, Manifold):
             except Exception as e:
                 print(f"Couldn't, got {e}")
 
-    def plot_metric_volume(self, ax=None):
-        plot_approximation(self, ax=ax)
+    def plot_metric_volume(self, ax=None, x_lims=(-5, 5), y_lims=(-5, 5)):
+        plot_approximation(self, ax=ax, x_lims=x_lims, y_lims=y_lims)

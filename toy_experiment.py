@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import json
+from geoml.curve import CubicSpline
 
 import torch as t
 import numpy as np
@@ -35,20 +36,22 @@ def get_random_pairs(
     return pairs_1, pairs_2
 
 
-def get_interpolations(vae) -> Tuple[LinearInterpolation, GeodesicInterpolation]:
+def get_interpolations(
+    vae, n_points_in_line=10
+) -> Tuple[LinearInterpolation, GeodesicInterpolation]:
     """
     Returns the interpolations for the experiment. Here
     is where the hyperparameters can be found.
     """
     # Linear interpolation
-    li = LinearInterpolation(n_points_in_line=10)
+    li = LinearInterpolation(n_points_in_line=n_points_in_line)
 
     # Geodesic interpolation
     grid = [t.linspace(-5, 5, 50), t.linspace(-5, 5, 50)]
     Mx, My = t.meshgrid(grid[0], grid[1])
     grid2 = t.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
     DM = DiscretizedManifold(vae, grid2, use_diagonals=True)
-    gi = GeodesicInterpolation(DM, n_points_in_line=10)
+    gi = GeodesicInterpolation(DM, n_points_in_line=n_points_in_line)
 
     return li, gi
 
@@ -96,12 +99,17 @@ def inspect_model(vae):
     plt.show()
 
 
-def interpolation_experiment(vae) -> List[np.ndarray]:
-    z_0s, z_1s = get_random_pairs(vae.encodings, n_pairs=50)
+def interpolation_experiment(vae) -> List[t.Tensor]:
+    z_0s, z_1s = get_random_pairs(vae.encodings, n_pairs=50, seed=0)
     li, gi = get_interpolations(vae)
 
     fifty_lines = [li.interpolate(z_0, z_1) for z_0, z_1 in zip(z_0s, z_1s)]
-    fifty_geodesics = [gi.interpolate(z_0, z_1) for z_0, z_1 in zip(z_0s, z_1s)]
+    fifty_geodesics_splines = [
+        gi.interpolate_and_return_geodesic(z_0, z_1) for z_0, z_1 in zip(z_0s, z_1s)
+    ]
+
+    domain = t.linspace(0, 1, gi.n_points_in_line)
+    fifty_geodesics = [c(domain) for c in fifty_geodesics_splines]
 
     all_sequences_in_lines = []
     all_sequences_in_geodesics = []
@@ -134,30 +142,32 @@ def interpolation_experiment(vae) -> List[np.ndarray]:
     )
 
     # Plot the first 5.
-    _, (ax1, ax2) = plt.subplots(1, 2, sharex=True, sharey=True)
-    correctness = vae.get_correctness_img("syntactic", sample=True)
-    ax1.imshow(correctness, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
-    ax2.imshow(correctness, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
-    for line, geodesic, i in zip(fifty_lines, fifty_geodesics, range(15)):
-        line = line.detach().numpy()
-        geodesic = geodesic.detach().numpy()
+    # _, (ax1, ax2) = plt.subplots(1, 2, sharex=True, sharey=True)
+    # correctness = vae.get_correctness_img("syntactic", sample=True)
+    # ax1.imshow(correctness, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
+    # ax2.imshow(correctness, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
+    # for line, geodesic, i in zip(fifty_lines, fifty_geodesics, range(15)):
+    #     line = line.detach().numpy()
+    #     geodesic = geodesic.detach().numpy()
 
-        coh_line = expected_coherences_in_lines[i]
-        coh_geodesic = expected_coherences_in_geodesics[i]
+    #     coh_line = expected_coherences_in_lines[i]
+    #     coh_geodesic = expected_coherences_in_geodesics[i]
 
-        ax1.scatter(line[:, 0], line[:, 1], c=coh_line, vmin=0.0, vmax=1.0)
-        ax2.scatter(geodesic[:, 0], geodesic[:, 1], c=coh_geodesic, vmin=0.0, vmax=1.0)
+    #     ax1.scatter(line[:, 0], line[:, 1], c=coh_line, vmin=0.0, vmax=1.0)
+    #     ax2.scatter(geodesic[:, 0], geodesic[:, 1], c=coh_geodesic, vmin=0.0, vmax=1.0)
 
-    ax1.set_title("Lines")
-    ax2.set_title("Geodesics")
-    plt.tight_layout()
-    plt.show()
+    # ax1.set_title("Lines")
+    # ax2.set_title("Geodesics")
+    # plt.tight_layout()
+    # plt.show()
 
     return (
         fifty_lines,
-        fifty_geodesics,
+        fifty_geodesics_splines,
         expected_coherences_in_lines,
         expected_coherences_in_geodesics,
+        all_sequences_in_lines,
+        all_sequences_in_geodesics,
     )
 
 
@@ -238,8 +248,12 @@ def figure_latent_codes(vae: VAEGeometryHierarchicalText):
     illuminated by coherence after 100% samples.
     """
     _, ax = plt.subplots(1, 1, figsize=(7, 7))
-    img = vae.get_correctness_img("syntactic", sample=True)
-    plot = ax.imshow(img, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
+    x_lims = (-4, 4)
+    y_lims = (-4, 4)
+    img = vae.get_correctness_img(
+        "syntactic", x_lims=x_lims, y_lims=y_lims, sample=True
+    )
+    plot = ax.imshow(img, extent=[*x_lims, *y_lims], cmap="Blues", vmin=0.0, vmax=1.0)
     plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
 
     zs = vae.encodings.detach().numpy()
@@ -252,22 +266,96 @@ def figure_latent_codes(vae: VAEGeometryHierarchicalText):
     plt.close()
 
 
-def figure_volume_and_interpolations(vae: VAEGeometryHierarchicalText):
-    _, ax = plt.subplots(1, 1, figsize=(7, 7))
-    vae.plot_metric_volume(ax=ax)
+def plot_line_w_color(ax, line, color):
+    pass
 
-    (
-        fifty_lines,
-        fifty_geodesics,
-        expected_coherences_in_lines,
-        expected_coherences_in_geodesics,
-    ) = interpolation_experiment(vae)
+
+def figure_interpolations(vae: VAEGeometryHierarchicalText):
+    """
+    Saves the figure for metric volume and interpolations, as well
+    as a table for expected syntactc coherence.
+    """
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    # vae.plot_metric_volume(ax=ax, x_lims=(-4, 4), y_lims=(-4, 4))
+    img = vae.get_correctness_img(
+        "syntactic", x_lims=(-4, 4), y_lims=(-4, 4), sample=True
+    )
+    _ = ax.imshow(img, extent=[-4, 4, -4, 4], cmap="Blues", vmin=0.0, vmax=1.0)
+
+    li, gi = get_interpolations(vae)
+    # z_0 = t.Tensor([-2.5749447, 0.6269546])
+    # z_1 = t.Tensor([2.54, -0.17])
+    # z_0 = t.Tensor([-1.0, 1.98])
+    # z_1 = t.Tensor([1.0, -1.92])
+    z_0 = t.Tensor([2.35, -1.0])
+    z_1 = t.Tensor([-2.55, 0.5])
+    # z_0 = t.Tensor([-0.14, -2.1])
+    # z_1 = t.Tensor([0.05, 1.88])
+
+    line = li.interpolate(z_0, z_1)
+    geodesic = gi.interpolate_and_return_geodesic(z_0, z_1)
+    domain = t.linspace(0, 1, li.n_points_in_line)
+    geodesic_t = geodesic(domain)
+
+    coh_line, _ = get_expected_coherences(line, vae)
+    coh_geodesic, _ = get_expected_coherences(geodesic_t, vae)
+
+    print(f"Mean coherence (Line): {np.mean(coh_line)}")
+    print(f"Mean coherence (Geodesic): {np.mean(coh_geodesic)}")
+
+    line = line.detach().numpy()
+    ax.plot(line[:, 0], line[:, 1], label="Linear")
+    geodesic_arr = geodesic(domain).detach().numpy()
+    geodesic.plot(ax=ax, N=gi.n_points_in_line, label="Geodesic")
+    plot = ax.scatter(line[:, 0], line[:, 1], c=coh_line, vmin=0.0, vmax=1.0, zorder=5)
+    plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
+    ax.scatter(
+        geodesic_arr[:, 0],
+        geodesic_arr[:, 1],
+        c=coh_geodesic,
+        vmin=0.0,
+        vmax=1.0,
+        zorder=5,
+    )
+    ax.legend()
+
+    # (
+    #     fifty_lines,
+    #     fifty_geodesics_splines,
+    #     expected_coherences_in_lines,
+    #     expected_coherences_in_geodesics,
+    #     all_sequences_in_lines,
+    #     all_sequences_in_geodesics,
+    # ) = interpolation_experiment(vae)
+
+    # iterator = zip(
+    #     fifty_lines,
+    #     fifty_geodesics_splines,
+    #     expected_coherences_in_lines,
+    #     expected_coherences_in_geodesics,
+    #     range(3),
+    # )
+    # _, gi = get_interpolations(vae)
+    # domain = t.linspace(0, 1, gi.n_points_in_line)
+    # for line, geodesic, coh_line, coh_geodesic, _ in iterator:
+    #     line = line.detach().numpy()
+    #     ax.plot(line[:, 0], line[:, 1])
+    #     geodesic_arr = geodesic(domain).detach().numpy()
+    #     geodesic.plot(ax=ax, N=gi.n_points_in_line)
+    #     ax.scatter(line[:, 0], line[:, 1], c=coh_line, vmin=0.0, vmax=1.0, zorder=5)
+    #     ax.scatter(
+    #         geodesic_arr[:, 0],
+    #         geodesic_arr[:, 1],
+    #         c=coh_geodesic,
+    #         vmin=0.0,
+    #         vmax=1.0,
+    #         zorder=5,
+    #     )
 
     # TODO: finish implementing this plot
-
     ax.axis("off")
     plt.tight_layout()
-    plt.savefig("./data/plots/final/equation_model_metric_volume.png", dpi=100)
+    plt.savefig("./data/plots/final/equation_model_interpolation_example.png", dpi=100)
     plt.show()
     plt.close()
 
@@ -275,11 +363,11 @@ def figure_volume_and_interpolations(vae: VAEGeometryHierarchicalText):
 if __name__ == "__main__":
     vaeh = VAEGeometryHierarchicalText()
     vaeh.load_state_dict(t.load("./models/text/hierarchical_vae_text_final.pt"))
-    vaeh.update_cluster_centers(beta=-3.0)
+    vaeh.update_cluster_centers(beta=-3.5)
 
     # inspect_model(vaeh)
     # interpolation_experiment(vaeh)
     # diffusion_experiment(vaeh)
 
     figure_latent_codes(vaeh)
-    figure_volume_and_geodesics(vaeh)
+    figure_interpolations(vaeh)

@@ -47,7 +47,7 @@ def approximate_metric(function, z, h=0.01, input_size=14 * 14 * 11):
         return J.T @ J
 
 
-def plot_approximation(model, ax=None):
+def plot_approximation(model, ax=None, x_lims=(-5, 5), y_lims=(-5, 5)):
     n_x, n_y = 50, 50
     x_lims = (-5, 5)
     y_lims = (-5, 5)
