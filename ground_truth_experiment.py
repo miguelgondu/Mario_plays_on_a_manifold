@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 from storage_interface import upload_blob_from_file, upload_blob_from_dict
 from simulator import test_level_from_z
-from vae_mario import VAEMario
+from vae_mario_hierarchical import VAEMarioHierarchical
 from train_vae import load_data
 
 MODELS_PATH = "./models_experiment"
@@ -29,14 +29,14 @@ def process(i, z, z_dim, model_name):
     that the VAE generates from z.
     """
     print(f"Loading the model {model_name} (z dim {z_dim})")
-    vae = VAEMario(14, 14, z_dim=z_dim)
-    vae.load_state_dict(torch.load(f"{MODELS_PATH}/{model_name}.pt"))
+    vae = VAEMarioHierarchical(14, 14, z_dim=z_dim)
+    vae.load_state_dict(torch.load(f"./models/hierarchical_final_playable_final.pt"))
     vae.eval()
     print(f"Testing {z} (index {i})")
 
     # Create the folder for the data
     cwd = Path(".")
-    path_to_exp_folder = cwd / "data" / "playability_experiment_test" / model_name
+    path_to_exp_folder = cwd / "data" / "ground_truth" / model_name
     path_to_exp_folder.mkdir(parents=True, exist_ok=True)
 
     # Test the level 5 times
