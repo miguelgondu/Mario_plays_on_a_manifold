@@ -60,7 +60,7 @@ def get_diffusions() -> Tuple[NormalDifussion, BaselineDiffusion, GeometricDifus
     n_points = 50
 
     normal_diffusion = NormalDifussion(n_points, scale=0.5)
-    geometric_diffusion = GeometricDifussion(n_points, scale=0.01)
+    geometric_diffusion = GeometricDifussion(n_points, scale=0.1)
     baseline_diffusion = BaselineDiffusion(n_points, step_size=0.5)
 
     return normal_diffusion, baseline_diffusion, geometric_diffusion
@@ -261,19 +261,18 @@ def figure_latent_codes(vae: VAEGeometryHierarchicalText):
 
     ax.axis("off")
     plt.tight_layout()
-    plt.savefig("./data/plots/final/equation_model_latent_codes.png", dpi=100)
+    plt.savefig(
+        "./data/plots/final/equation_model_latent_codes.png",
+        dpi=100,
+        bbox_inches="tight",
+    )
     plt.show()
     plt.close()
 
 
-def plot_line_w_color(ax, line, color):
-    pass
-
-
 def figure_interpolations(vae: VAEGeometryHierarchicalText):
     """
-    Saves the figure for metric volume and interpolations, as well
-    as a table for expected syntactc coherence.
+    Saves the figure for metric volume and interpolations.
     """
     _, ax = plt.subplots(1, 1, figsize=(7, 7))
     # vae.plot_metric_volume(ax=ax, x_lims=(-4, 4), y_lims=(-4, 4))
@@ -283,14 +282,8 @@ def figure_interpolations(vae: VAEGeometryHierarchicalText):
     _ = ax.imshow(img, extent=[-4, 4, -4, 4], cmap="Blues", vmin=0.0, vmax=1.0)
 
     li, gi = get_interpolations(vae)
-    # z_0 = t.Tensor([-2.5749447, 0.6269546])
-    # z_1 = t.Tensor([2.54, -0.17])
-    # z_0 = t.Tensor([-1.0, 1.98])
-    # z_1 = t.Tensor([1.0, -1.92])
     z_0 = t.Tensor([2.35, -1.0])
     z_1 = t.Tensor([-2.55, 0.5])
-    # z_0 = t.Tensor([-0.14, -2.1])
-    # z_1 = t.Tensor([0.05, 1.88])
 
     line = li.interpolate(z_0, z_1)
     geodesic = gi.interpolate_and_return_geodesic(z_0, z_1)
@@ -319,43 +312,48 @@ def figure_interpolations(vae: VAEGeometryHierarchicalText):
     )
     ax.legend()
 
-    # (
-    #     fifty_lines,
-    #     fifty_geodesics_splines,
-    #     expected_coherences_in_lines,
-    #     expected_coherences_in_geodesics,
-    #     all_sequences_in_lines,
-    #     all_sequences_in_geodesics,
-    # ) = interpolation_experiment(vae)
-
-    # iterator = zip(
-    #     fifty_lines,
-    #     fifty_geodesics_splines,
-    #     expected_coherences_in_lines,
-    #     expected_coherences_in_geodesics,
-    #     range(3),
-    # )
-    # _, gi = get_interpolations(vae)
-    # domain = t.linspace(0, 1, gi.n_points_in_line)
-    # for line, geodesic, coh_line, coh_geodesic, _ in iterator:
-    #     line = line.detach().numpy()
-    #     ax.plot(line[:, 0], line[:, 1])
-    #     geodesic_arr = geodesic(domain).detach().numpy()
-    #     geodesic.plot(ax=ax, N=gi.n_points_in_line)
-    #     ax.scatter(line[:, 0], line[:, 1], c=coh_line, vmin=0.0, vmax=1.0, zorder=5)
-    #     ax.scatter(
-    #         geodesic_arr[:, 0],
-    #         geodesic_arr[:, 1],
-    #         c=coh_geodesic,
-    #         vmin=0.0,
-    #         vmax=1.0,
-    #         zorder=5,
-    #     )
-
-    # TODO: finish implementing this plot
     ax.axis("off")
     plt.tight_layout()
-    plt.savefig("./data/plots/final/equation_model_interpolation_example.png", dpi=100)
+    plt.savefig(
+        "./data/plots/final/equation_model_interpolation_example.png",
+        dpi=100,
+        bbox_inches="tight",
+    )
+    plt.show()
+    plt.close()
+
+
+def figure_diffusions(vae: VAEGeometryHierarchicalText):
+    """
+    Saves a figure with diffusions, with a background illuminated by
+    approximate metric volume.
+    """
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    vae.plot_metric_volume(ax=ax, x_lims=(-4, 4), y_lims=(-4, 4))
+
+    _, _, g_diff = get_diffusions()
+    # Plot 3 runs
+    mean_coherences_g = []
+    z_0s = [
+        t.Tensor([0.74, -1.96]),
+        t.Tensor([-0.3, 1.86]),
+        t.Tensor([0.82, -0.41]),
+    ]
+    for z_0 in z_0s:
+        zs_g = g_diff.run(vae, z_0=z_0)
+        coherences_g, _ = get_expected_coherences(zs_g, vae)
+        mean_coherences_g.append(np.mean(coherences_g))
+        zs_g = zs_g.detach().numpy()
+        print(zs_g)
+        ax.scatter(
+            zs_g[:, 0], zs_g[:, 1], marker="x", c=coherences_g, vmin=0.0, vmax=1.0
+        )
+
+    ax.axis("off")
+    plt.tight_layout()
+    plt.savefig(
+        "./data/plots/final/equation_model_diffusions.png", dpi=100, bbox_inches="tight"
+    )
     plt.show()
     plt.close()
 
@@ -363,7 +361,7 @@ def figure_interpolations(vae: VAEGeometryHierarchicalText):
 if __name__ == "__main__":
     vaeh = VAEGeometryHierarchicalText()
     vaeh.load_state_dict(t.load("./models/text/hierarchical_vae_text_final.pt"))
-    vaeh.update_cluster_centers(beta=-3.5)
+    vaeh.update_cluster_centers(beta=-2.5)
 
     # inspect_model(vaeh)
     # interpolation_experiment(vaeh)
@@ -371,3 +369,4 @@ if __name__ == "__main__":
 
     figure_latent_codes(vaeh)
     figure_interpolations(vaeh)
+    figure_diffusions(vaeh)
