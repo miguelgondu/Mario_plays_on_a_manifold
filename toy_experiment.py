@@ -1,10 +1,10 @@
 from typing import List, Tuple
 import json
-from geoml.curve import CubicSpline
 
 import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from vae_text import parse_syntactically
 from vae_geometry_text import VAEGeometryText
@@ -22,9 +22,10 @@ from diffusions.geometric_difussion import GeometricDifussion
 
 
 def get_random_pairs(
-    encodings: t.Tensor, n_pairs: int = 100, seed: int = 17
+    encodings: t.Tensor, n_pairs: int = 100, seed: int = None
 ) -> List[t.Tensor]:
-    np.random.seed(seed)
+    if seed is not None:
+        np.random.seed(seed)
     idx1 = np.random.choice(len(encodings), size=n_pairs, replace=False)
     idx2 = np.random.choice(len(encodings), size=n_pairs, replace=False)
     while np.any(idx1 == idx2):
@@ -60,17 +61,22 @@ def get_diffusions() -> Tuple[NormalDifussion, BaselineDiffusion, GeometricDifus
     n_points = 50
 
     normal_diffusion = NormalDifussion(n_points, scale=0.5)
-    geometric_diffusion = GeometricDifussion(n_points, scale=0.1)
+    geometric_diffusion = GeometricDifussion(n_points, scale=0.08)
     baseline_diffusion = BaselineDiffusion(n_points, step_size=0.5)
 
     return normal_diffusion, baseline_diffusion, geometric_diffusion
 
 
-def get_expected_coherences(points: t.Tensor, vae) -> Tuple[List[float], List[str]]:
+def get_expected_coherences(
+    points: t.Tensor, vae, seed: int = None
+) -> Tuple[List[float], List[str]]:
     """
     Grabs a tensor of points ([n_points, 2] tensor) and returns a list
     with the expected coherences of each zi.
     """
+    if seed is not None:
+        t.manual_seed(seed)
+
     expected_coherences = []
     all_sequences = []
     for z in points:
@@ -99,15 +105,15 @@ def inspect_model(vae):
     plt.show()
 
 
-def interpolation_experiment(vae) -> List[t.Tensor]:
-    z_0s, z_1s = get_random_pairs(vae.encodings, n_pairs=50, seed=0)
+def interpolation_experiment(vae, seed: int = 0) -> List[List[float]]:
+    z_0s, z_1s = get_random_pairs(vae.encodings, n_pairs=50, seed=seed)
     li, gi = get_interpolations(vae)
 
     fifty_lines = [li.interpolate(z_0, z_1) for z_0, z_1 in zip(z_0s, z_1s)]
+
     fifty_geodesics_splines = [
         gi.interpolate_and_return_geodesic(z_0, z_1) for z_0, z_1 in zip(z_0s, z_1s)
     ]
-
     domain = t.linspace(0, 1, gi.n_points_in_line)
     fifty_geodesics = [c(domain) for c in fifty_geodesics_splines]
 
@@ -117,12 +123,16 @@ def interpolation_experiment(vae) -> List[t.Tensor]:
     expected_coherences_in_geodesics = []
 
     for line in fifty_lines:
-        expected_coherences, all_sequences = get_expected_coherences(line, vae)
+        expected_coherences, all_sequences = get_expected_coherences(
+            line, vae, seed=seed
+        )
         expected_coherences_in_lines.append(expected_coherences)
         all_sequences_in_lines.append(all_sequences)
 
     for geodesic in fifty_geodesics:
-        expected_coherences, all_sequences = get_expected_coherences(geodesic, vae)
+        expected_coherences, all_sequences = get_expected_coherences(
+            geodesic, vae, seed=seed
+        )
         expected_coherences_in_geodesics.append(expected_coherences)
         all_sequences_in_geodesics.append(all_sequences)
 
@@ -161,17 +171,13 @@ def interpolation_experiment(vae) -> List[t.Tensor]:
     # plt.tight_layout()
     # plt.show()
 
-    return (
-        fifty_lines,
-        fifty_geodesics_splines,
-        expected_coherences_in_lines,
-        expected_coherences_in_geodesics,
-        all_sequences_in_lines,
-        all_sequences_in_geodesics,
-    )
+    return (expected_coherences_in_lines, expected_coherences_in_geodesics)
 
 
-def diffusion_experiment(vae):
+def diffusion_experiment(vae, seed: int = 0) -> List[List[float]]:
+    """
+    Returns mean coherences for Normal, Baseline and Geometric
+    """
     n_runs = 10
     normal_diff, baseline_diff, geometric_diff = get_diffusions()
 
@@ -189,9 +195,9 @@ def diffusion_experiment(vae):
         zs_b = baseline_diff.run(vae)
         zs_g = geometric_diff.run(vae)
 
-        coherences_n, sequences_n = get_expected_coherences(zs_n, vae)
-        coherences_b, sequences_b = get_expected_coherences(zs_b, vae)
-        coherences_g, sequences_g = get_expected_coherences(zs_g, vae)
+        coherences_n, sequences_n = get_expected_coherences(zs_n, vae, seed=seed)
+        coherences_b, sequences_b = get_expected_coherences(zs_b, vae, seed=seed)
+        coherences_g, sequences_g = get_expected_coherences(zs_g, vae, seed=seed)
 
         mean_coherences_n.append(np.mean(coherences_n))
         mean_coherences_b.append(np.mean(coherences_b))
@@ -239,7 +245,9 @@ def diffusion_experiment(vae):
     ax2.set_title("Baseline")
     ax3.set_title("Geometric")
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+
+    return (mean_coherences_n, mean_coherences_b, mean_coherences_g)
 
 
 def figure_latent_codes(vae: VAEGeometryHierarchicalText):
@@ -358,10 +366,66 @@ def figure_diffusions(vae: VAEGeometryHierarchicalText):
     plt.close()
 
 
+def get_table_for_experiment(vae: VAEGeometryHierarchicalText, seed: int = 0):
+    """
+    Gets a table with semantic coherence for all methods.
+    """
+    # Interpolations
+    coherences_in_lines, coherences_in_geodesics = interpolation_experiment(
+        vae, seed=seed
+    )
+
+    # Diffusions
+    coherence_n, coherence_b, coherence_g = diffusion_experiment(vae)
+
+    rows = [
+        {"method": "Linear", "Expected coherence": np.mean(coherences_in_lines)},
+        {"method": "Geodesic", "Expected coherence": np.mean(coherences_in_geodesics)},
+        {"method": "Normal", "Expected coherence": np.mean(coherence_n)},
+        {"method": "Baseline", "Expected coherence": np.mean(coherence_b)},
+        {"method": "Geometric", "Expected coherence": np.mean(coherence_g)},
+    ]
+
+    df = pd.DataFrame(rows)
+    print(df)
+    print(df.to_latex(float_format="%0.3f", index=False))
+
+
+def test_determinism(vae, seed):
+    z_0s, z_1s = get_random_pairs(vae.encodings, seed=seed)
+    zprime_0s, zprime_1s = get_random_pairs(vae.encodings, seed=seed)
+
+    assert (z_0s == zprime_0s).all()
+    assert (z_1s == zprime_1s).all()
+
+    li, gi = get_interpolations(vae)
+    first_line = li.interpolate(z_0s[0], z_1s[0])
+    second_line = li.interpolate(z_0s[0], z_1s[0])
+    assert (first_line == second_line).all()
+
+    first_geodesic = gi.interpolate(z_0s[0], z_1s[0])
+    second_geodesic = gi.interpolate(z_0s[0], z_1s[0])
+    assert (first_geodesic == second_geodesic).all()
+
+    first_geodesic_spline = gi.interpolate_and_return_geodesic(z_0s[0], z_1s[0])
+    second_geodesic_spline = gi.interpolate_and_return_geodesic(z_0s[0], z_1s[0])
+    domain = t.linspace(0, 1, 10)
+    assert (first_geodesic_spline(domain) == second_geodesic_spline(domain)).all()
+
+    coherences_1, sequences_1 = get_expected_coherences(first_line, vae, seed=seed)
+    coherences_2, sequences_2 = get_expected_coherences(first_line, vae, seed=seed)
+    assert coherences_1 == coherences_2
+    assert sequences_1 == sequences_2
+
+    print("Success!")
+
+
 if __name__ == "__main__":
     vaeh = VAEGeometryHierarchicalText()
     vaeh.load_state_dict(t.load("./models/text/hierarchical_vae_text_final.pt"))
-    vaeh.update_cluster_centers(beta=-2.5)
+    vaeh.update_cluster_centers(beta=-3.5)
+
+    # test_determinism(vaeh, 0)
 
     # inspect_model(vaeh)
     # interpolation_experiment(vaeh)
@@ -370,3 +434,5 @@ if __name__ == "__main__":
     figure_latent_codes(vaeh)
     figure_interpolations(vaeh)
     figure_diffusions(vaeh)
+
+    get_table_for_experiment(vaeh)
