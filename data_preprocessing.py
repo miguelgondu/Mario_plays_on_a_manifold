@@ -84,4 +84,7 @@ def process(width=14, comment=""):
 
 if __name__ == "__main__":
     # process()
-    process(width=16, comment="rasmus_")
+    # process(width=16, comment="rasmus_")
+    all_levels_encoded = np.load("./data/processed/all_levels_encoded.npz")["levels"]
+    print("Amount of levels: ")
+    print(all_levels_encoded.shape)

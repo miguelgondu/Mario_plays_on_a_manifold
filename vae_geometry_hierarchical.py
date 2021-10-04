@@ -10,7 +10,7 @@ from vae_mario import VAEMario, load_data
 
 from geoml.discretized_manifold import DiscretizedManifold
 from metric_approximation import MetricApproximation
-from metric_approximation_with_jacobians import approximate_metric
+from metric_approximation_with_jacobians import approximate_metric, plot_approximation
 
 
 Tensor = torch.Tensor
@@ -177,6 +177,9 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
                 c.plot(ax=ax, c="red", linewidth=2.0)
             except Exception as e:
                 print(f"Couldn't, got {e}")
+
+    def plot_metric_volume(self, ax=None, x_lims=(-5, 5), y_lims=(-5, 5)):
+        plot_approximation(self, ax=ax, x_lims=x_lims, y_lims=y_lims)
 
 
 if __name__ == "__main__":

@@ -121,11 +121,3 @@ if __name__ == "__main__":
     print(f"Playing {random_z[0]}")
     res = test_level_from_z(random_z[0], vae, human_player=human_player)
     print(res)
-
-
-# Record a longer video
-# Email: somy@tv2lorry.dk
-
-# Miguel González-Duque
-# migd@itu.dk
-# +45 52 73 45 65.

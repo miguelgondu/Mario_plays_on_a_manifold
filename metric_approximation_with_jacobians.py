@@ -47,7 +47,10 @@ def approximate_metric(function, z, h=0.01, input_size=14 * 14 * 11):
         return J.T @ J
 
 
-def plot_approximation(model, ax=None, x_lims=(-5, 5), y_lims=(-5, 5)):
+def plot_approximation(model, function=None, ax=None, x_lims=(-5, 5), y_lims=(-5, 5)):
+    if function is None:
+        function = model.reweight
+
     n_x, n_y = 50, 50
     x_lims = (-5, 5)
     y_lims = (-5, 5)
@@ -61,7 +64,7 @@ def plot_approximation(model, ax=None, x_lims=(-5, 5), y_lims=(-5, 5)):
 
     zs = torch.Tensor([[x, y] for x in z1 for y in z2])
     metric_volume = np.zeros((n_y, n_x))
-    metrics = approximate_metric(model.reweight, zs, input_size=model.input_dim)
+    metrics = approximate_metric(function, zs, input_size=model.input_dim)
     for z, Mz in zip(zs, metrics):
         (x, y) = z
         i, j = positions[(x.item(), y.item())]
