@@ -1,4 +1,5 @@
-from typing import Tuple
+from typing import Tuple, List
+import json
 
 import torch as t
 import numpy as np
@@ -12,6 +13,9 @@ from geoml.discretized_manifold import DiscretizedManifold
 
 from interpolations.linear_interpolation import LinearInterpolation
 from interpolations.geodesic_interpolation import GeodesicInterpolation
+from diffusions.normal_diffusion import NormalDifussion
+from diffusions.baseline_diffusion import BaselineDiffusion
+from diffusions.geometric_difussion import GeometricDifussion
 
 from metric_approximation_with_jacobians import approximate_metric, plot_approximation
 from toy_experiment import get_random_pairs, get_interpolations
@@ -137,27 +141,6 @@ def save_interpolations(vae: VAEGeometryHierarchical, seed: int = 0):
     domain = t.linspace(0, 1, gi.n_points_in_line)
     fifty_geodesics = [c(domain) for c in fifty_geodesics_splines]
 
-    # # Plot the first 5.
-    # _, (ax1, ax2) = plt.subplots(1, 2, sharex=True, sharey=True)
-    # # correctness = vae.get_correctness_img("syntactic", sample=True)
-    # playability = get_ground_truth()
-    # ax1.imshow(playability, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
-    # ax2.imshow(playability, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0)
-    # for line, geodesic in zip(fifty_lines, fifty_geodesics):
-    #     line = line.detach().numpy()
-    #     geodesic = geodesic.detach().numpy()
-
-    #     # coh_line = expected_coherences_in_lines[i]
-    #     # coh_geodesic = expected_coherences_in_geodesics[i]
-    #     ax1.plot(line[:, 0], line[:, 1])
-    #     ax2.plot(geodesic[:, 0], geodesic[:, 1])
-
-    # ax1.set_title("Lines")
-    # ax2.set_title("Geodesics")
-    # plt.tight_layout()
-    # plt.show()
-    # plt.close()
-
     # Decode lines and geodesics into levels, and save the arrays.
     fifty_lines = t.cat(fifty_lines)
     fifty_geodesics = t.cat(fifty_geodesics)
@@ -180,14 +163,180 @@ def save_interpolations(vae: VAEGeometryHierarchical, seed: int = 0):
     )
 
 
+def compare_ground_truth_and_metric_volume(vae: VAEGeometryHierarchical):
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(7 * 2, 7))
+    vae.plot_metric_volume(ax=ax1)
+    ground_truth = get_ground_truth()
+    plot = ax2.imshow(
+        ground_truth, extent=[-5, 5, -5, 5], vmin=0.0, vmax=1.0, cmap="Blues"
+    )
+    plt.colorbar(plot, ax=ax2, fraction=0.046, pad=0.04)
+
+    ax1.set_title("Metric volume")
+    ax2.set_title("Ground truth of playability")
+
+    plt.show()
+
+
+def analyse_interpolation_results(vae: VAEGeometryHierarchical) -> List[np.ndarray]:
+    """
+    Loads up the experiment csvs after simulation
+    """
+    df_lines = pd.read_csv(
+        "./data/array_simulation_results/fifty_lines_and_levels.csv", index_col=0
+    )
+    df_geodesics = pd.read_csv(
+        "./data/array_simulation_results/fifty_geodesics_and_levels.csv", index_col=0
+    )
+
+    groupby_geodesics = df_geodesics.groupby("z")
+    playability_geodesics = groupby_geodesics["marioStatus"].mean()
+    groupby_lines = df_lines.groupby("z")
+    playability_lines = groupby_lines["marioStatus"].mean()
+    print(playability_geodesics)
+    print(playability_lines)
+
+    print(f"Mean playability for linear: {np.mean(playability_lines)}")
+    print(f"Mean playability for geodesic: {np.mean(playability_geodesics)}")
+
+    zs_lines = np.array([json.loads(z) for z in playability_lines.index])
+    zs_geodesics = np.array([json.loads(z) for z in playability_geodesics.index])
+    print(zs_lines)
+    print(zs_geodesics)
+
+    c_lines = [playability_lines.loc[z] for z in playability_lines.index]
+    c_geodesics = [playability_lines.loc[z] for z in playability_lines.index]
+
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(7 * 2, 7))
+    vae.plot_metric_volume(ax=ax1)
+    ground_truth = get_ground_truth()
+    ax2.imshow(ground_truth, extent=[-5, 5, -5, 5])
+    ax1.scatter(zs_lines[:, 0], zs_lines[:, 1], c=c_lines, vmin=0.0, vmax=1.0)
+    ax1.scatter(
+        zs_geodesics[:, 0], zs_geodesics[:, 1], c=c_geodesics, vmin=0.0, vmax=1.0
+    )
+
+    # There are 10 zs per line/geodesic.
+    # so we need to do some hacking to plot the lines/geodesics.
+    # for k in range(50):
+    #     ax1.plot(
+    #         zs_lines[k * 10 : (k + 1) * 10 + 1, 0],
+    #         zs_lines[k * 10 : (k + 1) * 10 + 1, 1],
+    #         "--r",
+    #     )
+    #     ax1.plot(
+    #         zs_geodesics[k * 10 : (k + 1) * 10 + 1, 0],
+    #         zs_geodesics[k * 10 : (k + 1) * 10 + 1, 1],
+    #         "--r",
+    #     )
+    #     ax2.plot(
+    #         zs_lines[k * 10 : (k + 1) * 10 + 1, 0],
+    #         zs_lines[k * 10 : (k + 1) * 10 + 1, 1],
+    #         "--r",
+    #     )
+    #     ax2.plot(
+    #         zs_geodesics[k * 10 : (k + 1) * 10 + 1, 0],
+    #         zs_geodesics[k * 10 : (k + 1) * 10 + 1, 1],
+    #         "--r",
+    #     )
+
+    plt.show()
+
+    return playability_lines, playability_geodesics
+
+
+def get_diffusions() -> Tuple[NormalDifussion, BaselineDiffusion, GeometricDifussion]:
+    n_points = 50
+
+    normal_diffusion = NormalDifussion(n_points, scale=0.5)
+    geometric_diffusion = GeometricDifussion(n_points, scale=0.2)
+    baseline_diffusion = BaselineDiffusion(n_points, step_size=0.5)
+
+    return normal_diffusion, baseline_diffusion, geometric_diffusion
+
+
+def save_diffusion_experiment(vae):
+    """
+    Saves arrays for the diffusion experiment.
+    """
+    n_runs = 10
+    normal_diff, baseline_diff, geometric_diff = get_diffusions()
+
+    _, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, sharey=True)
+
+    # vae.plot_latent_space(ax=(ax1, ax2, ax3))
+
+    all_zs_n = []
+    all_zs_b = []
+    all_zs_g = []
+    for _ in range(n_runs):
+        zs_n = normal_diff.run(vae)
+        zs_b = baseline_diff.run(vae)
+        zs_g = geometric_diff.run(vae)
+
+        all_zs_n.append(zs_n)
+        all_zs_b.append(zs_b)
+        all_zs_g.append(zs_g)
+
+        zs_n = zs_n.detach().numpy()
+        zs_b = zs_b.detach().numpy()
+        zs_g = zs_g.detach().numpy()
+
+        ax1.scatter(zs_n[:, 0], zs_n[:, 1], c="c")
+        ax2.scatter(zs_b[:, 0], zs_b[:, 1], c="r")
+        ax3.scatter(zs_g[:, 0], zs_g[:, 1], c="g")
+
+    ground_truth = get_ground_truth()
+    for ax in [ax1, ax2, ax3]:
+        plot = ax.imshow(
+            ground_truth, extent=[-5, 5, -5, 5], vmin=0.0, vmax=1.0, cmap="Blues"
+        )
+        plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
+        ax.set_xlim((-5, 5))
+        ax.axis("off")
+
+    ax1.set_title("Normal")
+    ax2.set_title("Baseline")
+    ax3.set_title("Geometric")
+    plt.tight_layout()
+    plt.show()
+
+    all_zs_n = t.vstack(all_zs_n)
+    all_zs_b = t.vstack(all_zs_b)
+    all_zs_g = t.vstack(all_zs_g)
+
+    levels_n = vae.decode(all_zs_n).probs.argmax(dim=-1)
+    levels_b = vae.decode(all_zs_b).probs.argmax(dim=-1)
+    levels_g = vae.decode(all_zs_g).probs.argmax(dim=-1)
+
+    np.savez(
+        "./data/arrays/normal_diffusion.npz",
+        zs=all_zs_n.detach().numpy(),
+        levels=levels_n.detach().numpy(),
+    )
+    np.savez(
+        "./data/arrays/baseline_diffusion.npz",
+        zs=all_zs_b.detach().numpy(),
+        levels=levels_b.detach().numpy(),
+    )
+    np.savez(
+        "./data/arrays/geometric_diffusion.npz",
+        zs=all_zs_g.detach().numpy(),
+        levels=levels_g.detach().numpy(),
+    )
+
+
 if __name__ == "__main__":
     n_clusters = 500
     vaeh = VAEGeometryHierarchical()
     vaeh.load_state_dict(t.load(f"./models/hierarchical_final_playable_final.pt"))
-    vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters)
+    vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters, only_playable=True)
 
     # figure_grid_levels(vaeh)
     # figure_metric_for_beta(vaeh, n_clusters=n_clusters)
     # figure_metric_for_different_betas(vaeh, n_clusters=n_clusters)
     # ground_truth_plot(vaeh)
-    save_interpolations(vaeh)
+    # save_interpolations(vaeh)
+    # analyse_interpolation_results(vaeh)
+    # compare_ground_truth_and_metric_volume(vaeh)
+    save_diffusion_experiment(vaeh)
