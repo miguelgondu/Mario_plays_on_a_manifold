@@ -207,3 +207,33 @@ class VAEZeldaHierarchical(t.nn.Module):
         levels = np.array([get_img_from_level(recon) for recon in recons])
         levels = 255 - levels
         writer.add_image("reconstructions", levels, step_id, dataformats="NHWC")
+
+
+if __name__ == "__main__":
+    vae = VAEZeldaHierarchical()
+    vae.load_state_dict(
+        t.load("./models/old_models/1631881568924193_zeldavae_zdim_2_final.pt")
+    )
+
+    z = 3.0 * t.randn((10, 2))
+    p_x_given_z = vae.decode(z)
+    levels = p_x_given_z.sample().cpu().detach().numpy()
+    levels = np.array([get_img_from_level(level) for level in levels])
+
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    ax.imshow(levels[0])
+    # vae.plot_grid(ax=ax)
+    ax.axis("off")
+    plt.savefig("./data/plots/example_of_sampled_level_zelda.png", dpi=100)
+    plt.show()
+
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    print(vae.train_data.shape)
+
+    og_level = vae.train_data[0].argmax(dim=0).cpu().detach().numpy()
+    print(og_level)
+    ax.imshow(get_img_from_level(og_level))
+    # vae.plot_grid(ax=ax)
+    ax.axis("off")
+    plt.savefig("./data/plots/example_of_playable_level_zelda.png", dpi=100)
+    plt.show()

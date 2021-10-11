@@ -1,5 +1,5 @@
 """
-This script trains a VAESimple on the Mario
+This script trains VAEHierarchicalZelda on the Zelda
 levels.
 """
 import json

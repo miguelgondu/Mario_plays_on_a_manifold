@@ -8,6 +8,7 @@ from pathlib import Path
 
 import torch
 import numpy as np
+from vae_geometry_hierarchical import VAEGeometryHierarchical
 
 from vae_mario import VAEMario
 from vae_mario_hierarchical import VAEMarioHierarchical
@@ -103,19 +104,48 @@ def test_level_from_z(
     return test_level_from_decoded_tensor(level, human_player=human_player)
 
 
+def video_for_tv2(vae: VAEGeometryHierarchical):
+    # zs = torch.Tensor(
+    #     [
+    #         [-2.5, 0.5],
+    #         [2.5, 0.5],
+    #         [0.5, 2.5],
+    #         [0.5, -2.5],
+    #         [0.5, -2.0],
+    #         [1.5, 2.5],
+    #         [-1.5, -2.5],
+    #     ]
+    # )
+    torch.manual_seed(0)
+    zs = 3 * torch.randn((8, 2))
+
+    levels: torch.Tensor
+    levels = vae.decode(zs).probs.argmax(dim=-1)
+
+    level = torch.hstack([levels[i] for i in range(levels.shape[0])])
+    level_for_sim = clean_level(level.detach().numpy())
+
+    print(level.shape)
+    print(level.detach().numpy())
+    run_level(str(level_for_sim), human_player=True, max_time=zs.shape[0] * 45)
+
+
 if __name__ == "__main__":
     human_player = True
     z_dim = 2
-    checkpoint = 100
-    model_name = f"mariovae_video_for_tv2_lorry_2_epoch_80"
+    # checkpoint = 100
+    # model_name = f"mariovae_video_for_tv2_lorry_2_epoch_80"
+    model_name = f"hierarchical_final_playable_final"
 
     print(f"Loading model {model_name}")
-    vae = VAEMario()
+    vae = VAEGeometryHierarchical()
     vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
+    vae.update_cluster_centers()
     vae.eval()
 
     # random_z = 2.5 * torch.randn((1, z_dim))
-    random_z = torch.Tensor([[-0.7635, -0.4633]])
-    print(f"Playing {random_z[0]}")
-    res = test_level_from_z(random_z[0], vae, human_player=human_player)
-    print(res)
+    # random_z = torch.Tensor([[-0.7635, -0.4633]])
+    # print(f"Playing {random_z[0]}")
+    # res = test_level_from_z(random_z[0], vae, human_player=human_player)
+    # print(res)
+    video_for_tv2(vae)

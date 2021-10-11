@@ -249,7 +249,7 @@ def get_diffusions() -> Tuple[NormalDifussion, BaselineDiffusion, GeometricDifus
     n_points = 50
 
     normal_diffusion = NormalDifussion(n_points, scale=0.5)
-    geometric_diffusion = GeometricDifussion(n_points, scale=0.2)
+    geometric_diffusion = GeometricDifussion(n_points, scale=0.5)
     baseline_diffusion = BaselineDiffusion(n_points, step_size=0.5)
 
     return normal_diffusion, baseline_diffusion, geometric_diffusion
@@ -326,6 +326,170 @@ def save_diffusion_experiment(vae):
     )
 
 
+def plot_saved_diffusions(vae: VAEGeometryHierarchical):
+    zs_n = np.load("./data/arrays/normal_diffusion.npz")["zs"]
+    zs_b = np.load("./data/arrays/baseline_diffusion.npz")["zs"]
+    zs_g = np.load("./data/arrays/geometric_diffusion.npz")["zs"]
+    levels_n = np.load("./data/arrays/normal_diffusion.npz")["levels"]
+    levels_b = np.load("./data/arrays/baseline_diffusion.npz")["levels"]
+    levels_g = np.load("./data/arrays/geometric_diffusion.npz")["levels"]
+
+    print(len(np.unique(levels_n, axis=0)))
+    print(len(np.unique(levels_b, axis=0)))
+    print(len(np.unique(levels_g, axis=0)))
+
+    _, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, sharey=True)
+    ax1.scatter(zs_n[:, 0], zs_n[:, 1], c="c")
+    ax2.scatter(zs_b[:, 0], zs_b[:, 1], c="r")
+    ax3.scatter(zs_g[:, 0], zs_g[:, 1], c="g")
+
+    ground_truth = get_ground_truth()
+    for ax in [ax1, ax2, ax3]:
+        plot = ax.imshow(
+            ground_truth, extent=[-5, 5, -5, 5], vmin=0.0, vmax=1.0, cmap="Blues"
+        )
+        plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
+        ax.set_xlim((-5, 5))
+        ax.axis("off")
+
+    ax1.set_title("Normal random walk")
+    ax2.set_title("Baseline")
+    ax3.set_title("Geometric random walk")
+    plt.tight_layout()
+    plt.show()
+
+
+def analyse_diffusion_experiment(vae: VAEGeometryHierarchical):
+    df_normal = pd.read_csv(
+        "./data/array_simulation_results/normal_diffusion.csv", index_col=0
+    )
+    df_baseline = pd.read_csv(
+        "./data/array_simulation_results/baseline_diffusion.csv", index_col=0
+    )
+    df_geometric = pd.read_csv(
+        "./data/array_simulation_results/geometric_diffusion.csv", index_col=0
+    )
+
+    playability_normal = df_normal.groupby("z")["marioStatus"].mean()
+    playability_baseline = df_baseline.groupby("z")["marioStatus"].mean()
+    playability_geometric = df_geometric.groupby("z")["marioStatus"].mean()
+
+    print(playability_normal)
+    print(playability_baseline)
+    print(playability_geometric)
+    print(f"Mean playability for normal: {np.mean(playability_normal)}")
+    print(f"Mean playability for baseline: {np.mean(playability_baseline)}")
+    print(f"Mean playability for geodesic: {np.mean(playability_geometric)}")
+
+
+def run_diffusion_on_ground_truth(vae: VAEGeometryHierarchical):
+    df = pd.read_csv(
+        "./data/processed/ground_truth/hierarchical_final_playable_final_ground_truth.csv"
+    )
+    playability = df.groupby(["z1", "z2"])["marioStatus"].mean()
+    good_zs = [z for z, v in playability.iteritems() if v == 1.0]
+    print(good_zs)
+    print(np.array(good_zs))
+
+    vae.update_cluster_centers(
+        beta=vae.translated_sigmoid.beta, cluster_centers=t.Tensor(good_zs)
+    )
+
+    z_0s = [
+        vae.cluster_centers[np.random.randint(len(vae.cluster_centers))]
+        for _ in range(10)
+    ]
+    normal_diff, baseline_diff, geometric_diff = get_diffusions()
+
+    _, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, sharey=True)
+
+    # vae.plot_latent_space(ax=(ax1, ax2, ax3))
+
+    all_zs_n = []
+    all_zs_b = []
+    all_zs_g = []
+    for z_0 in z_0s:
+        zs_n = normal_diff.run(vae, z_0=z_0)
+        zs_b = baseline_diff.run(vae, z_0=z_0)
+        zs_g = geometric_diff.run(vae, z_0=z_0)
+
+        all_zs_n.append(zs_n)
+        all_zs_b.append(zs_b)
+        all_zs_g.append(zs_g)
+
+        zs_n = zs_n.detach().numpy()
+        zs_b = zs_b.detach().numpy()
+        zs_g = zs_g.detach().numpy()
+
+        ax1.scatter(zs_n[:, 0], zs_n[:, 1], c="#DC851F")
+        ax2.scatter(zs_b[:, 0], zs_b[:, 1], c="#DC851F")
+        ax3.scatter(zs_g[:, 0], zs_g[:, 1], c="#DC851F")
+
+    ground_truth = get_ground_truth()
+    for ax in [ax1, ax2, ax3]:
+        plot = ax.imshow(
+            ground_truth, extent=[-5, 5, -5, 5], vmin=0.0, vmax=1.0, cmap="Blues"
+        )
+        plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
+        ax.set_xlim((-5, 5))
+        ax.axis("off")
+
+    ax1.set_title("Normal")
+    ax2.set_title("Baseline")
+    ax3.set_title("Geometric")
+    plt.tight_layout()
+    plt.show()
+
+    all_zs_n = t.vstack(all_zs_n)
+    all_zs_b = t.vstack(all_zs_b)
+    all_zs_g = t.vstack(all_zs_g)
+
+    levels_n = vae.decode(all_zs_n).probs.argmax(dim=-1)
+    levels_b = vae.decode(all_zs_b).probs.argmax(dim=-1)
+    levels_g = vae.decode(all_zs_g).probs.argmax(dim=-1)
+
+    np.savez(
+        "./data/arrays/normal_diffusion_ground_truth.npz",
+        zs=all_zs_n.detach().numpy(),
+        levels=levels_n.detach().numpy(),
+    )
+    np.savez(
+        "./data/arrays/baseline_diffusion_ground_truth.npz",
+        zs=all_zs_b.detach().numpy(),
+        levels=levels_b.detach().numpy(),
+    )
+    np.savez(
+        "./data/arrays/geometric_diffusion_ground_truth.npz",
+        zs=all_zs_g.detach().numpy(),
+        levels=levels_g.detach().numpy(),
+    )
+
+
+def analyse_diffusion_experiment_on_ground_truth(vae: VAEGeometryHierarchical):
+    df_normal = pd.read_csv(
+        "./data/array_simulation_results/normal_diffusion_ground_truth.csv", index_col=0
+    )
+    df_baseline = pd.read_csv(
+        "./data/array_simulation_results/baseline_diffusion_ground_truth.csv",
+        index_col=0,
+    )
+    df_geometric = pd.read_csv(
+        "./data/array_simulation_results/geometric_diffusion_ground_truth.csv",
+        index_col=0,
+    )
+
+    playability_normal = df_normal.groupby("z")["marioStatus"].mean()
+    playability_baseline = df_baseline.groupby("z")["marioStatus"].mean()
+    playability_geometric = df_geometric.groupby("z")["marioStatus"].mean()
+
+    print(playability_normal)
+    print(playability_baseline)
+    print(playability_geometric)
+    print(f"Mean playability for normal: {np.mean(playability_normal)}")
+    print(f"Mean playability for baseline: {np.mean(playability_baseline)}")
+    print(f"Mean playability for geodesic: {np.mean(playability_geometric)}")
+
+
 if __name__ == "__main__":
     n_clusters = 500
     vaeh = VAEGeometryHierarchical()
@@ -339,4 +503,8 @@ if __name__ == "__main__":
     # save_interpolations(vaeh)
     # analyse_interpolation_results(vaeh)
     # compare_ground_truth_and_metric_volume(vaeh)
-    save_diffusion_experiment(vaeh)
+    # save_diffusion_experiment(vaeh)
+    # analyse_diffusion_experiment(vaeh)
+    # plot_saved_diffusions(vaeh)
+    # run_diffusion_on_ground_truth(vaeh)
+    analyse_diffusion_experiment_on_ground_truth(vaeh)
