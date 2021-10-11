@@ -224,8 +224,24 @@ if __name__ == "__main__":
     ax.imshow(levels[0])
     # vae.plot_grid(ax=ax)
     ax.axis("off")
-    plt.savefig("./data/plots/example_of_sampled_level_zelda.png", dpi=100)
-    plt.show()
+    plt.savefig(
+        "./data/plots/example_of_sampled_level_zelda.png", dpi=100, bbox_inches="tight"
+    )
+    # plt.show()
+
+    z = 3.0 * t.randn((10, 2))
+    p_x_given_z = vae.decode(z)
+    levels = p_x_given_z.probs.argmax(dim=-1).cpu().detach().numpy()
+    levels = np.array([get_img_from_level(level) for level in levels])
+
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    ax.imshow(levels[0])
+    # vae.plot_grid(ax=ax)
+    ax.axis("off")
+    plt.savefig(
+        "./data/plots/example_of_decoded_level_zelda.png", dpi=100, bbox_inches="tight"
+    )
+    # plt.show()
 
     _, ax = plt.subplots(1, 1, figsize=(7, 7))
     print(vae.train_data.shape)
@@ -235,5 +251,7 @@ if __name__ == "__main__":
     ax.imshow(get_img_from_level(og_level))
     # vae.plot_grid(ax=ax)
     ax.axis("off")
-    plt.savefig("./data/plots/example_of_playable_level_zelda.png", dpi=100)
-    plt.show()
+    plt.savefig(
+        "./data/plots/example_of_playable_level_zelda.png", dpi=100, bbox_inches="tight"
+    )
+    # plt.show()
