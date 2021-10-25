@@ -69,6 +69,7 @@ def fit(
 ):
     model.train()
     running_loss = 0.0
+    n_batches = 0
     for _, levels in tqdm(enumerate(data_loader)):
         levels = levels[0]
         levels = levels.to(device)
@@ -78,8 +79,9 @@ def fit(
         running_loss += loss.item()
         loss.backward()
         optimizer.step()
+        n_batches += 1
 
-    return running_loss
+    return running_loss / len(data_loader)
 
 
 def test(
@@ -99,8 +101,8 @@ def test(
             loss = model.elbo_loss_function(levels, q_z_given_x, p_x_given_z)
             running_loss += loss.item()
 
-    print(f"Epoch {epoch}. Loss in test: {running_loss / len(test_dataset)}")
-    return running_loss
+    print(f"Epoch {epoch}. Loss in test: {running_loss / len(test_loader)}")
+    return running_loss / len(test_loader)
 
 
 @click.command()
@@ -177,8 +179,8 @@ def run(
         vae.report(
             writer,
             epoch,
-            train_loss / len(dataset),
-            test_loss / len(test_dataset),
+            train_loss,
+            test_loss,
         )
 
         if epoch % save_every == 0 and epoch != 0:

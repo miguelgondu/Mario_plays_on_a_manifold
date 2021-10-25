@@ -66,7 +66,7 @@ def fit(
         loss.backward()
         optimizer.step()
 
-    return running_loss
+    return running_loss / len(data_loader)
 
 
 def test(
@@ -86,8 +86,8 @@ def test(
             loss = model.elbo_loss_function(levels, q_z_given_x, p_x_given_z)
             running_loss += loss.item()
 
-    print(f"Epoch {epoch}. Loss in test: {running_loss / len(test_dataset)}")
-    return running_loss
+    print(f"Epoch {epoch}. Loss in test: {running_loss / len(test_loader)}")
+    return running_loss / len(test_loader)
 
 
 @click.command()
@@ -164,8 +164,8 @@ def run(
         vae.report(
             writer,
             epoch,
-            train_loss / len(dataset),
-            test_loss / len(test_dataset),
+            train_loss,
+            test_loss,
         )
 
         if epoch % save_every == 0 and epoch != 0:

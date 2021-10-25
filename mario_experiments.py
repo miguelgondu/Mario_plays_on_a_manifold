@@ -69,7 +69,7 @@ def figure_metric_for_different_betas(
 
     # Also plotting one for vae.decoder.
     _, ax = plt.subplots(1, 1, figsize=(7, 7))
-    plot_approximation(vaeh, function=vaeh.decode, ax=ax)
+    plot_approximation(vae, function=vae.decode, ax=ax)
     zs = vae.encodings.detach().numpy()
     ax.scatter(zs[:, 0], zs[:, 1], marker="x", c="#DC851F")
     ax.set_title("No UQ", fontsize=20)
@@ -79,6 +79,25 @@ def figure_metric_for_different_betas(
         f"./data/plots/final/mario_metric_no_UQ.png", dpi=100, bbox_inches="tight"
     )
     plt.show()
+    plt.close()
+
+
+def plot_of_training_results():
+    df_vae = pd.read_csv(
+        "./data/training_results/run-1635168535982713_vae_playable_for_log-tag-test loss.csv"
+    )
+    df_vaeh = pd.read_csv(
+        "./data/training_results/run-1635168502397673_hierarchical_for_log-tag-test loss.csv"
+    )
+
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    ax.plot(df_vae["Step"], df_vae["Value"], label="Non-hierarchical")
+    ax.plot(df_vaeh["Step"], df_vaeh["Value"], label="Hierarchical")
+    ax.set_xlabel("Step", fontsize=20)
+    ax.set_ylabel("Test Loss", fontsize=20)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("./data/plots/final/test_loss.png", dpi=100, bbox_inches="tight")
     plt.close()
 
 
@@ -496,16 +515,19 @@ def analyse_diffusion_experiment_on_ground_truth(vae: VAEGeometryHierarchical):
 if __name__ == "__main__":
     n_clusters = 500
 
-    # Getting a grid of levels for both models
-    vae = VAEGeometryBase()
-    vae.load_state_dict(t.load(f"./models/vae_playable_for_log_final.pt"))
+    # # Getting a grid of levels for both models
+    # vae = VAEGeometryBase()
+    # vae.load_state_dict(t.load(f"./models/vae_playable_for_log_final.pt"))
 
-    vaeh = VAEGeometryHierarchical()
-    vaeh.load_state_dict(t.load(f"./models/hierarchical_for_log_final.pt"))
-    vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters, only_playable=True)
+    # vaeh = VAEGeometryHierarchical()
+    # vaeh.load_state_dict(t.load(f"./models/hierarchical_for_log_final.pt"))
+    # vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters, only_playable=True)
 
-    figure_grid_levels(vae, comment="vae_")
-    figure_grid_levels(vaeh, comment="hierarchical_")
+    # figure_grid_levels(vae, comment="vae_")
+    # figure_grid_levels(vaeh, comment="hierarchical_")
+
+    # Get test loss plot for these two VAEs
+    plot_of_training_results()
 
     # figure_metric_for_beta(vaeh, n_clusters=n_clusters)
     # figure_metric_for_different_betas(vaeh, n_clusters=n_clusters)
