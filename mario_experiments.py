@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_geometry_base import VAEGeometryBase
 from vae_geometry_hierarchical import VAEGeometryHierarchical
 
 from geoml.discretized_manifold import DiscretizedManifold
@@ -21,7 +22,7 @@ from metric_approximation_with_jacobians import approximate_metric, plot_approxi
 from toy_experiment import get_random_pairs, get_interpolations
 
 
-def figure_grid_levels(vae: VAEGeometryHierarchical):
+def figure_grid_levels(vae: VAEGeometryHierarchical, comment: str = ""):
     """
     Plots a grid of levels
     """
@@ -31,7 +32,9 @@ def figure_grid_levels(vae: VAEGeometryHierarchical):
     ax.axis("off")
     plt.tight_layout()
     plt.savefig(
-        "./data/plots/final/mario_grid_of_levels.png", dpi=100, bbox_inches="tight"
+        f"./data/plots/final/{comment}mario_grid_of_levels.png",
+        dpi=100,
+        bbox_inches="tight",
     )
     plt.show()
     plt.close()
@@ -492,11 +495,18 @@ def analyse_diffusion_experiment_on_ground_truth(vae: VAEGeometryHierarchical):
 
 if __name__ == "__main__":
     n_clusters = 500
+
+    # Getting a grid of levels for both models
+    vae = VAEGeometryBase()
+    vae.load_state_dict(t.load(f"./models/vae_playable_for_log_final.pt"))
+
     vaeh = VAEGeometryHierarchical()
-    vaeh.load_state_dict(t.load(f"./models/hierarchical_final_playable_final.pt"))
+    vaeh.load_state_dict(t.load(f"./models/hierarchical_for_log_final.pt"))
     vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters, only_playable=True)
 
-    # figure_grid_levels(vaeh)
+    figure_grid_levels(vae, comment="vae_")
+    figure_grid_levels(vaeh, comment="hierarchical_")
+
     # figure_metric_for_beta(vaeh, n_clusters=n_clusters)
     # figure_metric_for_different_betas(vaeh, n_clusters=n_clusters)
     # ground_truth_plot(vaeh)
@@ -507,4 +517,4 @@ if __name__ == "__main__":
     # analyse_diffusion_experiment(vaeh)
     # plot_saved_diffusions(vaeh)
     # run_diffusion_on_ground_truth(vaeh)
-    analyse_diffusion_experiment_on_ground_truth(vaeh)
+    # analyse_diffusion_experiment_on_ground_truth(vaeh)

@@ -133,7 +133,7 @@ class VAEMario(nn.Module):
         return (rec_loss + kld).mean()
 
     def plot_grid(
-        self, x_lims=(-5, 5), y_lims=(-5, 5), n_rows=10, n_cols=10, argmax=True, ax=None
+        self, x_lims=(-5, 5), y_lims=(-5, 5), n_rows=10, n_cols=10, sample=True, ax=None
     ):
         z1 = np.linspace(*x_lims, n_cols)
         z2 = np.linspace(*y_lims, n_rows)
@@ -141,10 +141,10 @@ class VAEMario(nn.Module):
         zs = torch.Tensor([[a, b] for a in reversed(z1) for b in z2])
 
         images_dist = self.decode(zs)
-        if argmax:
-            images = images_dist.probs.argmax(dim=-1)
-        else:
+        if sample:
             images = images_dist.sample()
+        else:
+            images = images_dist.probs.argmax(dim=-1)
 
         images = np.array(
             [get_img_from_level(im) for im in images.cpu().detach().numpy()]

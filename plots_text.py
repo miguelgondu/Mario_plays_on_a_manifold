@@ -1,5 +1,6 @@
 import torch as t
 import matplotlib.pyplot as plt
+from metric_approximation_with_jacobians import plot_approximation
 
 from vae_text import VAEText
 from vae_hierarchical_text import VAEHierarchicalText
@@ -85,6 +86,41 @@ def geometry_plots_but_hierarchical():
     plt.show()
 
 
+def several_betas():
+    # Plotting one with no UQ.
+    vaetext = VAEGeometryHierarchicalText()
+    vaetext.load_state_dict(t.load(f"./models/hierarchical_text_final.pt"))
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    plot_approximation(vaetext, function=vaetext.decode, ax=ax)
+    # zs = vae.encodings.detach().numpy()
+    # ax.scatter(zs[:, 0], zs[:, 1], marker="x", c="#DC851F")
+    ax.set_title("No UQ", fontsize=20)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.savefig(
+        f"./data/plots/final/text_model_no_UQ.png", dpi=100, bbox_inches="tight"
+    )
+    plt.close()
+
+    for beta in [-1.0, -2.0, -3.0, -4.0]:
+        vaetext = VAEGeometryHierarchicalText()
+        vaetext.load_state_dict(t.load(f"./models/hierarchical_text_final.pt"))
+        vaetext.update_cluster_centers(beta=beta, n_clusters=500)
+
+        fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+        vaetext.plot_metric_volume(ax=ax)
+        ax.set_title(r"$\beta=$" + f"{beta}", fontsize=20)
+        ax.axis("off")
+        plt.tight_layout()
+        fig.savefig(
+            f"./data/plots/final/text_model_beta_{beta}.png",
+            dpi=100,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
 if __name__ == "__main__":
     # geometry_plots()
-    geometry_plots_but_hierarchical()
+    # geometry_plots_but_hierarchical()
+    several_betas()

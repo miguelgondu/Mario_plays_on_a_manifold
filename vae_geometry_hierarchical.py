@@ -183,7 +183,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
 
 
 if __name__ == "__main__":
-    model_name = "deeper_lr_1e-4_no_overfit_final"
+    model_name = "hierarchical_final_playable_final"
     vae = VAEGeometryHierarchical()
     vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
     beta = -3.5
