@@ -1,5 +1,6 @@
 from pathlib import Path
 import multiprocessing as mp
+import json
 from typing import Dict, List
 
 import click
@@ -7,6 +8,17 @@ import numpy as np
 import pandas as pd
 
 from simulator import test_level_from_int_array
+
+
+def test_level(i: int, z: np.ndarray, level: np.ndarray):
+    print(f"Processing level at index {i} (z={z})")
+    res = test_level_from_int_array(level)
+    res = {"z": z.tolist(), "level": level.tolist(), **res}
+
+    with open(f"./data/array_simulation_jsons/{i:08d}.json", "w") as fp:
+        json.dump(res, fp)
+
+    return res
 
 
 @click.command()
@@ -18,7 +30,10 @@ def simulate_array(array_path, processes, repetitions_per_level):
     Takes an array stored as an .npz with
     the keys "zs" and "levels" and simulates it,
     storing the results in a csv with the same name
-    as the array in ./data/array_simulation_results
+    as the array in ./data/array_simulation_results.
+
+    In the process, saves each individual result in
+    ./data/array_simulation_jsons.
     """
     array_path = Path(array_path)
     array_name = array_path.name.replace(".npz", "")
@@ -32,7 +47,7 @@ def simulate_array(array_path, processes, repetitions_per_level):
     zs = np.repeat(zs, repetitions_per_level, axis=0)
 
     with mp.Pool(processes) as p:
-        results = p.map(test_level_from_int_array, levels)
+        results = p.starmap(test_level, zip(range(len(zs)), zs, levels))
 
     rows = []
     for z, level, result in zip(zs, levels, results):

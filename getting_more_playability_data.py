@@ -15,7 +15,7 @@ def create_more_levels() -> Tuple[np.ndarray, np.ndarray]:
     returns zs and levels
     """
     n_grid = 50
-    n_samples = 10
+    n_samples = 3
 
     print("Loading the network")
     vaeh = VAEMarioHierarchical()
