@@ -1,17 +1,44 @@
+import json
+from typing import List
+
+import pandas as pd
+import numpy as np
 import torch as t
 from torch.distributions import Bernoulli
 import torch.nn as nn
+from torch.utils.data import TensorDataset
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.model_selection import train_test_split
+
 from shapeguard import ShapeGuard
 
 
-def preprocess_levels():
-    # TODO: implement this: use load_data(), match that with playability results
-    # and return datasets that iterate over levels and their playability.
+def get_level_datasets() -> List[TensorDataset]:
+    """
+    Returns train and test datasets.
+    """
 
-    # Or even better, load up the results themselves.
-    # Oops, I should get the data as we discussed with Søren: append the levels with random samples from the hierarchical network.
-    pass
+    # Load levels and playabilities
+    df = pd.read_csv(
+        "./data/array_simulation_results/ten_random_levels.csv", index_col=0
+    )
+    mean_p_per_l = df.groupby(["level"])["marioStatus"].mean()
+
+    levels = []
+    playabilities = []
+    for l, p in mean_p_per_l.iteritems():
+        levels.append(json.loads(l))
+        playabilities.append(p)
+
+    levels = np.array(levels)
+    playabilities = np.array(playabilities)
+
+    l_train, l_test, p_train, p_test = train_test_split(levels, playabilities)
+
+    train_dataset = TensorDataset(l_train, p_train)
+    test_dataset = TensorDataset(l_test, p_test)
+
+    return train_dataset, test_dataset
 
 
 class PlayabilityConvnet(nn.Module):
@@ -62,3 +89,7 @@ class PlayabilityConvnet(nn.Module):
         writer.add_scalar("Mean Prediction Loss", pred_loss.item(), batch_id)
 
         # TODO: Get some random predictions.
+
+
+if __name__ == "__main__":
+    train_dataset, test_dataset = get_level_datasets()
