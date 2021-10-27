@@ -15,7 +15,7 @@ def create_more_levels() -> Tuple[np.ndarray, np.ndarray]:
     returns zs and levels
     """
     n_grid = 50
-    n_samples = 3
+    n_samples = 5
 
     print("Loading the network")
     vaeh = VAEMarioHierarchical()
@@ -38,18 +38,26 @@ def create_more_levels() -> Tuple[np.ndarray, np.ndarray]:
 
     print("Sampling")
     levels = cat.sample((n_samples,)).detach().numpy()
-    print(levels.shape)
+    print(f"Total amount of levels: {levels.shape}")
+    print(f"Unique levels: {len(np.unique(levels, axis=0))}")
 
     print("Flattening")
     levels = levels.reshape(n_grid * n_grid * n_samples, *levels.shape[2:])
+    print(f"Unique levels: {len(np.unique(levels, axis=0))}")
 
-    return zs.detach().numpy(), levels
+    print("Inflating z")
+    zs = zs.detach().numpy()
+    zs = np.repeat(zs, n_samples, axis=0)
+
+    assert zs.shape[0] == levels.shape[0]
+
+    return zs, levels
 
 
 if __name__ == "__main__":
     zs, levels = create_more_levels()
-    print(levels)
-    print(levels.shape)
+    # print(levels)
+    # print(levels.shape)
 
     # Saving the array
     np.savez("./data/arrays/samples_for_playability.npz", zs=zs, levels=levels)

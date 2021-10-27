@@ -26,6 +26,7 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
         "./data/array_simulation_results/samples_for_playability.csv", index_col=0
     )
     mean_p_per_l = df.groupby(["level"])["marioStatus"].mean()
+    print(f"Unique levels: {len(mean_p_per_l.index)}")
 
     levels = []
     playabilities = []
@@ -105,10 +106,9 @@ class PlayabilityConvnet(nn.Module):
         pred_loss = -p_y_given_x.log_prob(y)
         return pred_loss.mean()
 
-    def report(self, writer: SummaryWriter, pred_loss, batch_id):
-        writer.add_scalar("Mean Prediction Loss", pred_loss, batch_id)
-
-        # TODO: Get some random predictions.
+    def report(self, writer: SummaryWriter, train_loss, test_loss, batch_id):
+        writer.add_scalar("Mean Prediction Loss - Train", train_loss, batch_id)
+        writer.add_scalar("Mean Prediction Loss - Test", test_loss, batch_id)
 
 
 def fit(model: PlayabilityConvnet, optimizer: t.optim.Optimizer):
@@ -166,7 +166,7 @@ def run(
             if not overfit:
                 n_without_improvement += 1
 
-        model.report(writer, train_loss, epoch)
+        model.report(writer, train_loss, test_loss, epoch)
 
         if n_without_improvement > 20:
             print(f"Stopping early. Best loss: {best_loss}")
@@ -174,5 +174,5 @@ def run(
 
 
 if __name__ == "__main__":
-    pc = PlayabilityConvnet(batch_size=1)
+    pc = PlayabilityConvnet(batch_size=64)
     run(pc)
