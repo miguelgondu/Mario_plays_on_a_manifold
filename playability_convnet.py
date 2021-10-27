@@ -23,7 +23,7 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
 
     # Load levels and playabilities
     df = pd.read_csv(
-        "./data/array_simulation_results/ten_random_levels.csv", index_col=0
+        "./data/array_simulation_results/samples_for_playability.csv", index_col=0
     )
     mean_p_per_l = df.groupby(["level"])["marioStatus"].mean()
 
@@ -167,6 +167,10 @@ def run(
                 n_without_improvement += 1
 
         model.report(writer, train_loss, epoch)
+
+        if n_without_improvement > 20:
+            print(f"Stopping early. Best loss: {best_loss}")
+            break
 
 
 if __name__ == "__main__":
