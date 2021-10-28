@@ -60,13 +60,43 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
     return train_dataset, test_dataset
 
 
-class PlayabilityNet(nn.Module):
+def get_val_data() -> List[t.Tensor]:
+    df = pd.read_csv("./data/processed/training_levels_results.csv")
+    df_levels = df.groupby("level")["marioStatus"].mean()
+
+    print(f"Unique levels: {len(df_levels.index)}")
+
+    levels = []
+    playabilities = []
+    for l, p in df_levels.iteritems():
+        levels.append(json.loads(l))
+        playabilities.append(p)
+
+    levels = np.array(levels)[:, :, 1:]
+    playabilities = np.array(playabilities)
+    # Losing some information.
+    playabilities[playabilities > 0.0] = 1.0
+
+    b, h, w = levels.shape
+    levels_onehot = np.zeros((b, 11, h, w))
+    for batch, level in enumerate(levels):
+        for i, j in product(range(h), range(w)):
+            c = int(level[i, j])
+            levels_onehot[batch, c, i, j] = 1.0
+
+    return [
+        t.from_numpy(levels_onehot).type(t.float),
+        t.from_numpy(playabilities).type(t.float),
+    ]
+
+
+class PlayabilityBase(nn.Module):
     def __init__(self, batch_size: int = 64, random_state: int = 0):
         """
         An MLP used to predict playability of SMB levels.
         Adapted from the code I wrote for Rasmus' paper.
         """
-        super(PlayabilityNet, self).__init__()
+        super(PlayabilityBase, self).__init__()
         self.w = 14
         self.h = 14
         self.n_classes = 11
@@ -75,30 +105,18 @@ class PlayabilityNet(nn.Module):
         self.random_state = random_state
         self.device = t.device("cuda" if t.cuda.is_available() else "cpu")
 
-        # This assumes that the data comes as 11x14x14.
-        self.logits = nn.Sequential(
-            nn.Linear(self.input_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, 258),
-            nn.ReLU(),
-            nn.Linear(258, 1),
-        )
-
         train_dataset, test_dataset = get_level_datasets(random_state=self.random_state)
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
         self.test_loader = DataLoader(test_dataset, batch_size=self.batch_size)
+
+        # This assumes that the data comes as 11x14x14.
+        self.logits = None
 
         self.to(self.device)
 
     def forward(self, x: t.Tensor) -> Bernoulli:
         # Returns p(y | x) = Bernoulli(x; self.logits(x))
-        ShapeGuard.reset()
-        x.sg(("B", 11, "h", "w"))
-        x = x.view(-1, self.input_dim).sg(("B", self.input_dim))
-        x = x.to(self.device)
-        logits = self.logits(x)
-
-        return Bernoulli(logits=logits)
+        raise NotImplementedError
 
     def binary_cross_entropy_loss(
         self, y: t.Tensor, p_y_given_x: Bernoulli
@@ -111,7 +129,7 @@ class PlayabilityNet(nn.Module):
         writer.add_scalar("Mean Prediction Loss - Test", test_loss, batch_id)
 
 
-def fit(model: PlayabilityNet, optimizer: t.optim.Optimizer):
+def fit(model: PlayabilityBase, optimizer: t.optim.Optimizer):
     model.train()
     running_loss = 0.0
     for (levels, p) in tqdm(model.train_loader):
@@ -127,7 +145,7 @@ def fit(model: PlayabilityNet, optimizer: t.optim.Optimizer):
     return running_loss / len(model.train_loader)
 
 
-def test(model: PlayabilityNet, epoch: int):
+def test(model: PlayabilityBase, epoch: int):
     model.eval()
     running_loss = 0.0
     with t.no_grad():
@@ -142,12 +160,21 @@ def test(model: PlayabilityNet, epoch: int):
     return mean_loss_by_batches
 
 
-def run(model: PlayabilityNet, max_epochs: int = 100, lr: float = 1e-3, overfit=False):
+def run(
+    model: PlayabilityBase,
+    name: str = None,
+    max_epochs: int = 100,
+    lr: float = 1e-3,
+    overfit=False,
+):
     # Defining the name of the experiment
     timestamp = str(time()).replace(".", "")
-    comment = f"{timestamp}_playability_mlp_net"
+    if name is None:
+        name = f"{timestamp}_playability_net"
+    else:
+        name = f"{timestamp}_{name}"
 
-    writer = SummaryWriter(log_dir=f"./runs/{comment}")
+    writer = SummaryWriter(log_dir=f"./runs/{name}")
 
     optimizer = t.optim.Adam(model.parameters(), lr=lr)
     best_loss = float("inf")
@@ -158,7 +185,7 @@ def run(model: PlayabilityNet, max_epochs: int = 100, lr: float = 1e-3, overfit=
             best_loss = test_loss
             n_without_improvement = 0
 
-            t.save(model.state_dict(), f"./models/playability_net/model_final.pt")
+            t.save(model.state_dict(), f"./models/playability_nets/{name}_final.pt")
         else:
             if not overfit:
                 n_without_improvement += 1
@@ -169,8 +196,3 @@ def run(model: PlayabilityNet, max_epochs: int = 100, lr: float = 1e-3, overfit=
         if n_without_improvement > 20:
             print(f"Stopping early. Best loss: {best_loss}")
             break
-
-
-if __name__ == "__main__":
-    pc = PlayabilityNet(batch_size=64)
-    run(pc)
