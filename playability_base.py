@@ -13,7 +13,7 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score
 
 from shapeguard import ShapeGuard
 from tqdm import tqdm
@@ -134,17 +134,29 @@ class PlayabilityBase(nn.Module):
         writer.add_scalar("Mean Prediction Loss - Test", test_loss, batch_id)
 
         # TODO: add reporting stats for validation
+        ## - Validation accuracy
         ## - confusion matrix
         ## - histogram of predictions
         ## - plot comparing against ground truth in latent space.
 
         bern = self.forward(self.val_l)
-
-        # Confusion matrix
+        true_labels = self.val_p.detach().numpy()
         preds = bern.probs.detach().numpy()
         preds[preds > 0.5] = 1.0
         preds[preds <= 0.5] = 0.0
-        C = confusion_matrix(self.val_p.detach().numpy(), preds)
+        predicted_labels = preds.squeeze(1)
+
+        # Validation accuracy
+        t = predicted_labels == true_labels
+        val_acc = np.count_nonzero(t) / len(t)
+        writer.add_scalar("Validation Accuracy", val_acc, batch_id)
+
+        # F1 Score
+        f1 = f1_score(true_labels, predicted_labels)
+        writer.add_scalar("F1 Score", f1, batch_id)
+
+        # Confusion matrix
+        C = confusion_matrix(true_labels, predicted_labels)
         fig, ax = plt.subplots(1, 1, figsize=(7, 7))
         sns.heatmap(C, ax=ax, annot=True)
         writer.add_figure("Confusion matrix (0.5 decision boundary)", fig, batch_id)
