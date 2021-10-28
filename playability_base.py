@@ -5,12 +5,15 @@ from time import time
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import torch as t
 from torch.distributions import Bernoulli
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 from shapeguard import ShapeGuard
 from tqdm import tqdm
@@ -24,7 +27,7 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
     # Load levels and playabilities
     df = pd.read_csv("./data/array_simulation_results/sampling.csv", index_col=0)
     mean_p_per_l = df.groupby(["level"])["marioStatus"].mean()
-    print(f"Unique levels: {len(mean_p_per_l.index)}")
+    # print(f"Unique levels: {len(mean_p_per_l.index)}")
 
     levels = []
     playabilities = []
@@ -64,7 +67,7 @@ def get_val_data() -> List[t.Tensor]:
     df = pd.read_csv("./data/processed/training_levels_results.csv")
     df_levels = df.groupby("level")["marioStatus"].mean()
 
-    print(f"Unique levels: {len(df_levels.index)}")
+    # print(f"Unique levels: {len(df_levels.index)}")
 
     levels = []
     playabilities = []
@@ -109,6 +112,8 @@ class PlayabilityBase(nn.Module):
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
         self.test_loader = DataLoader(test_dataset, batch_size=self.batch_size)
 
+        self.val_l, self.val_p = get_val_data()
+
         # This assumes that the data comes as 11x14x14.
         self.logits = None
 
@@ -127,6 +132,28 @@ class PlayabilityBase(nn.Module):
     def report(self, writer: SummaryWriter, train_loss, test_loss, batch_id):
         writer.add_scalar("Mean Prediction Loss - Train", train_loss, batch_id)
         writer.add_scalar("Mean Prediction Loss - Test", test_loss, batch_id)
+
+        # TODO: add reporting stats for validation
+        ## - confusion matrix
+        ## - histogram of predictions
+        ## - plot comparing against ground truth in latent space.
+
+        bern = self.forward(self.val_l)
+
+        # Confusion matrix
+        preds = bern.probs.detach().numpy()
+        preds[preds > 0.5] = 1.0
+        preds[preds <= 0.5] = 0.0
+        C = confusion_matrix(self.val_p.detach().numpy(), preds)
+        fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+        sns.heatmap(C, ax=ax, annot=True)
+        writer.add_figure("Confusion matrix (0.5 decision boundary)", fig, batch_id)
+
+        # Histogram of probabilities
+        fig2, ax2 = plt.subplots(1, 1, figsize=(7, 7))
+        sns.histplot(data=bern.probs.detach().numpy(), ax=ax2)
+        ax2.set_xlim((-0.05, 1.05))
+        writer.add_figure("Histogram of probabilities", fig2, batch_id)
 
 
 def fit(model: PlayabilityBase, optimizer: t.optim.Optimizer):

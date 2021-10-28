@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 from playability_convnet import PlayabilityConvnet
-from playability_net import PlayabilityNet, get_level_datasets
+from playability_mlp import PlayabilityMLP
 
 
 def get_val_data() -> List[t.Tensor]:
@@ -42,7 +42,7 @@ def get_val_data() -> List[t.Tensor]:
 
 
 if __name__ == "__main__":
-    p_net = PlayabilityNet()
+    p_net = PlayabilityMLP()
     p_convnet = PlayabilityConvnet()
 
     p_net.load_state_dict(t.load("./models/playability_net/model_final.pt"))
@@ -51,5 +51,3 @@ if __name__ == "__main__":
     val_l, val_p = get_val_data()
     pred_net = p_net(val_l)
     pred_convnet = p_convnet(val_l)
-
-    pass
