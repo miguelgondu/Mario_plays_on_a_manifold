@@ -36,8 +36,6 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
     playabilities = np.array(playabilities)
     # Losing some information.
     playabilities[playabilities > 0.0] = 1.0
-    print(f"playabilities: {playabilities}")
-    print(f"Playable levels: {np.count_nonzero(playabilities)}")
 
     b, h, w = levels.shape
     levels_onehot = np.zeros((b, 11, h, w))
@@ -62,13 +60,13 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
     return train_dataset, test_dataset
 
 
-class PlayabilityConvnet(nn.Module):
+class PlayabilityNet(nn.Module):
     def __init__(self, batch_size: int = 64, random_state: int = 0):
         """
-        A convolutional neural network used to predict playability of
-        SMB levels. Adapted from the code I wrote for Rasmus' paper.
+        An MLP used to predict playability of SMB levels.
+        Adapted from the code I wrote for Rasmus' paper.
         """
-        super(PlayabilityConvnet, self).__init__()
+        super(PlayabilityNet, self).__init__()
         self.w = 14
         self.h = 14
         self.n_classes = 11
@@ -79,14 +77,11 @@ class PlayabilityConvnet(nn.Module):
 
         # This assumes that the data comes as 11x14x14.
         self.logits = nn.Sequential(
-            nn.Conv2d(11, 8, 5),  # output here is (8, 14-5+1, 14-5+1) = (8, 10, 10)
-            nn.Tanh(),
-            nn.Conv2d(8, 3, 5),  # output here is (3, 6, 6)
-            nn.Tanh(),
-            nn.Conv2d(3, 1, 2),  # output here is (1, 5, 5)
-            nn.Tanh(),
-            nn.Flatten(start_dim=1),
-            nn.Linear(5 * 5, 1),
+            nn.Linear(self.input_dim, 512),
+            nn.ReLU(),
+            nn.Linear(512, 258),
+            nn.ReLU(),
+            nn.Linear(258, 1),
         )
 
         train_dataset, test_dataset = get_level_datasets(random_state=self.random_state)
@@ -99,6 +94,7 @@ class PlayabilityConvnet(nn.Module):
         # Returns p(y | x) = Bernoulli(x; self.logits(x))
         ShapeGuard.reset()
         x.sg(("B", 11, "h", "w"))
+        x = x.view(-1, self.input_dim).sg(("B", self.input_dim))
         x = x.to(self.device)
         logits = self.logits(x)
 
@@ -115,7 +111,7 @@ class PlayabilityConvnet(nn.Module):
         writer.add_scalar("Mean Prediction Loss - Test", test_loss, batch_id)
 
 
-def fit(model: PlayabilityConvnet, optimizer: t.optim.Optimizer):
+def fit(model: PlayabilityNet, optimizer: t.optim.Optimizer):
     model.train()
     running_loss = 0.0
     for (levels, p) in tqdm(model.train_loader):
@@ -131,7 +127,7 @@ def fit(model: PlayabilityConvnet, optimizer: t.optim.Optimizer):
     return running_loss / len(model.train_loader)
 
 
-def test(model: PlayabilityConvnet, epoch: int):
+def test(model: PlayabilityNet, epoch: int):
     model.eval()
     running_loss = 0.0
     with t.no_grad():
@@ -146,12 +142,10 @@ def test(model: PlayabilityConvnet, epoch: int):
     return mean_loss_by_batches
 
 
-def run(
-    model: PlayabilityConvnet, max_epochs: int = 100, lr: float = 1e-3, overfit=False
-):
+def run(model: PlayabilityNet, max_epochs: int = 100, lr: float = 1e-3, overfit=False):
     # Defining the name of the experiment
     timestamp = str(time()).replace(".", "")
-    comment = f"{timestamp}_playability_convnet"
+    comment = f"{timestamp}_playability_mlp_net"
 
     writer = SummaryWriter(log_dir=f"./runs/{comment}")
 
@@ -164,7 +158,7 @@ def run(
             best_loss = test_loss
             n_without_improvement = 0
 
-            t.save(model.state_dict(), f"./models/playability_convnet/model_final.pt")
+            t.save(model.state_dict(), f"./models/playability_net/model_final.pt")
         else:
             if not overfit:
                 n_without_improvement += 1
@@ -178,5 +172,5 @@ def run(
 
 
 if __name__ == "__main__":
-    pc = PlayabilityConvnet(batch_size=64)
+    pc = PlayabilityNet(batch_size=64)
     run(pc)
