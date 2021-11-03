@@ -21,6 +21,26 @@ from tqdm import tqdm
 from playability_data_augmentation import get_more_non_playable_levels
 
 
+def get_human_levels() -> List[np.ndarray]:
+    df = pd.read_csv("./data/processed/training_levels_results.csv")
+    df_levels = df.groupby("level")["marioStatus"].mean()
+
+    # print(f"Unique levels: {len(df_levels.index)}")
+
+    levels = []
+    playabilities = []
+    for l, p in df_levels.iteritems():
+        levels.append(json.loads(l))
+        playabilities.append(p)
+
+    levels = np.array(levels)[:, :, 1:].astype(int)
+    playabilities = np.array(playabilities)
+    # Losing some information.
+    playabilities[playabilities > 0.0] = 1.0
+
+    return [levels, playabilities]
+
+
 def get_level_datasets(random_state=0) -> List[TensorDataset]:
     """
     Returns train, test and val datasets.
@@ -42,19 +62,24 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
 
     # Losing some information.
     playabilities[playabilities > 0.0] = 1.0
-    # print(
-    #     f"Pre-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
-    # )
+    print(
+        f"Pre-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
+    )
 
     # Data augmentation with non-playable levels
-    # more_non_playable_levels = get_more_non_playable_levels(12000, seed=random_state)
-    # non_playabilities = np.zeros((len(more_non_playable_levels),))
+    more_non_playable_levels = get_more_non_playable_levels(10000, seed=random_state)
+    non_playabilities = np.zeros((len(more_non_playable_levels),))
 
-    # levels = np.concatenate([levels, more_non_playable_levels])
-    # playabilities = np.concatenate([playabilities, non_playabilities])
-    # print(
-    #     f"Post-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
-    # )
+    levels = np.concatenate([levels, more_non_playable_levels])
+    playabilities = np.concatenate([playabilities, non_playabilities])
+
+    # Adding human levels
+    human_levels, human_playabilities = get_human_levels()
+    levels = np.concatenate([levels, human_levels])
+    playabilities = np.concatenate([playabilities, human_playabilities])
+    print(
+        f"Post-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
+    )
 
     b, h, w = levels.shape
     levels_onehot = np.zeros((b, 11, h, w))
@@ -89,36 +114,6 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
     )
 
     return train_dataset, test_dataset, val_dataset
-
-
-# def get_val_data() -> List[t.Tensor]:
-#     df = pd.read_csv("./data/processed/training_levels_results.csv")
-#     df_levels = df.groupby("level")["marioStatus"].mean()
-
-#     # print(f"Unique levels: {len(df_levels.index)}")
-
-#     levels = []
-#     playabilities = []
-#     for l, p in df_levels.iteritems():
-#         levels.append(json.loads(l))
-#         playabilities.append(p)
-
-#     levels = np.array(levels)[:, :, 1:]
-#     playabilities = np.array(playabilities)
-#     # Losing some information.
-#     playabilities[playabilities > 0.0] = 1.0
-
-#     b, h, w = levels.shape
-#     levels_onehot = np.zeros((b, 11, h, w))
-#     for batch, level in enumerate(levels):
-#         for i, j in product(range(h), range(w)):
-#             c = int(level[i, j])
-#             levels_onehot[batch, c, i, j] = 1.0
-
-#     return [
-#         t.from_numpy(levels_onehot).type(t.float),
-#         t.from_numpy(playabilities).type(t.float),
-#     ]
 
 
 class PlayabilityBase(nn.Module):
@@ -156,6 +151,7 @@ class PlayabilityBase(nn.Module):
     def binary_cross_entropy_loss(
         self, y: t.Tensor, p_y_given_x: Bernoulli
     ) -> t.Tensor:
+        y.sg(("B", 1))
         pred_loss = -p_y_given_x.log_prob(y).squeeze(1).sg("B")
         pred_loss_playable = pred_loss[(y == 1).view(-1)].mean()
         pred_loss_non_playable = pred_loss[(y == 0).view(-1)].mean()

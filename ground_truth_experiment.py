@@ -24,20 +24,20 @@ def process(i, z):
     that the VAE generates from z.
     """
     vae = VAEMarioHierarchical(device="cpu")
-    vae.load_state_dict(torch.load(f"./models/hierarchical_final_playable_final.pt"))
+    vae.load_state_dict(torch.load(f"./models/another_vae_final.pt"))
     vae.eval()
     print(f"Testing {z} (index {i})")
 
     # Create the folder for the data
     cwd = Path(".")
-    path_to_exp_folder = cwd / "data" / "ground_truth" / "hierarchical_final_playable"
+    path_to_exp_folder = cwd / "data" / "ground_truth" / "another_vae_final"
     path_to_exp_folder.mkdir(parents=True, exist_ok=True)
 
     # Test the level 5 times
     for iteration in range(5):
         res = test_level_from_z(z, vae)
         thing_to_save = {
-            "model_name": "hierarchical_final_playable",
+            "model_name": "another_vae_final",
             "z": tuple([float(zi) for zi in z.detach().numpy()]),
             "iteration": iteration,
             **res,

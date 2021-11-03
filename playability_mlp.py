@@ -38,5 +38,5 @@ class PlayabilityMLP(PlayabilityBase):
 
 
 if __name__ == "__main__":
-    pc = PlayabilityMLP(batch_size=64)
-    run(pc, name="mlp")
+    pc = PlayabilityMLP(batch_size=128)
+    run(pc, name="mlp_balanced_loss_bs_128_w_data_augmentation")

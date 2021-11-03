@@ -41,4 +41,4 @@ class PlayabilityConvnet(PlayabilityBase):
 if __name__ == "__main__":
     pc = PlayabilityConvnet(batch_size=128)
     # run(pc, name="convnet_w_data_augmentation_w_validation_from_dist")
-    run(pc, name="balanced_loss_bs_128")
+    run(pc, name="balanced_loss_bs_128_w_data_augmentation")
