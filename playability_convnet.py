@@ -17,14 +17,14 @@ class PlayabilityConvnet(PlayabilityBase):
         )
         # This assumes that the data comes as 11x14x14.
         self.logits = nn.Sequential(
-            nn.Conv2d(11, 8, 5),  # output here is (8, 14-5+1, 14-5+1) = (8, 10, 10)
-            nn.Tanh(),
-            nn.Conv2d(8, 3, 5),  # output here is (3, 6, 6)
-            nn.Tanh(),
-            nn.Conv2d(3, 1, 2),  # output here is (1, 5, 5)
-            nn.Tanh(),
+            nn.Conv2d(11, 10, 5),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(10, 8, 4),
+            nn.ReLU(),
+            nn.MaxPool2d(2),  #  (b, 8, 1, 1)
             nn.Flatten(start_dim=1),
-            nn.Linear(5 * 5, 1),
+            nn.Linear(8, 1),
         )
         self.to(self.device)
 
@@ -40,4 +40,4 @@ class PlayabilityConvnet(PlayabilityBase):
 
 if __name__ == "__main__":
     pc = PlayabilityConvnet(batch_size=64)
-    run(pc, name="convnet")
+    run(pc, name="convnet_w_relu_and_maxpool")
