@@ -18,10 +18,12 @@ from sklearn.metrics import confusion_matrix, f1_score
 from shapeguard import ShapeGuard
 from tqdm import tqdm
 
+from playability_data_augmentation import get_more_non_playable_levels
+
 
 def get_level_datasets(random_state=0) -> List[TensorDataset]:
     """
-    Returns train and test datasets.
+    Returns train, test and val datasets.
     """
 
     # Load levels and playabilities
@@ -37,8 +39,22 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
 
     levels = np.array(levels)
     playabilities = np.array(playabilities)
+
     # Losing some information.
     playabilities[playabilities > 0.0] = 1.0
+    # print(
+    #     f"Pre-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
+    # )
+
+    # Data augmentation with non-playable levels
+    # more_non_playable_levels = get_more_non_playable_levels(12000, seed=random_state)
+    # non_playabilities = np.zeros((len(more_non_playable_levels),))
+
+    # levels = np.concatenate([levels, more_non_playable_levels])
+    # playabilities = np.concatenate([playabilities, non_playabilities])
+    # print(
+    #     f"Post-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
+    # )
 
     b, h, w = levels.shape
     levels_onehot = np.zeros((b, 11, h, w))
@@ -48,7 +64,15 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
             levels_onehot[batch, c, i, j] = 1.0
 
     l_train, l_test, p_train, p_test = train_test_split(
-        levels_onehot, playabilities, random_state=random_state, stratify=playabilities
+        levels_onehot,
+        playabilities,
+        test_size=0.33,
+        random_state=random_state,
+        stratify=playabilities,
+    )
+
+    l_test, l_val, p_test, p_val = train_test_split(
+        l_test, p_test, test_size=0.1, random_state=random_state, stratify=p_test
     )
 
     train_dataset = TensorDataset(
@@ -59,38 +83,42 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
         t.from_numpy(l_test).type(t.float),
         t.from_numpy(p_test).type(t.float).view(-1, 1),
     )
+    val_dataset = TensorDataset(
+        t.from_numpy(l_val).type(t.float),
+        t.from_numpy(p_val).type(t.float).view(-1, 1),
+    )
 
-    return train_dataset, test_dataset
+    return train_dataset, test_dataset, val_dataset
 
 
-def get_val_data() -> List[t.Tensor]:
-    df = pd.read_csv("./data/processed/training_levels_results.csv")
-    df_levels = df.groupby("level")["marioStatus"].mean()
+# def get_val_data() -> List[t.Tensor]:
+#     df = pd.read_csv("./data/processed/training_levels_results.csv")
+#     df_levels = df.groupby("level")["marioStatus"].mean()
 
-    # print(f"Unique levels: {len(df_levels.index)}")
+#     # print(f"Unique levels: {len(df_levels.index)}")
 
-    levels = []
-    playabilities = []
-    for l, p in df_levels.iteritems():
-        levels.append(json.loads(l))
-        playabilities.append(p)
+#     levels = []
+#     playabilities = []
+#     for l, p in df_levels.iteritems():
+#         levels.append(json.loads(l))
+#         playabilities.append(p)
 
-    levels = np.array(levels)[:, :, 1:]
-    playabilities = np.array(playabilities)
-    # Losing some information.
-    playabilities[playabilities > 0.0] = 1.0
+#     levels = np.array(levels)[:, :, 1:]
+#     playabilities = np.array(playabilities)
+#     # Losing some information.
+#     playabilities[playabilities > 0.0] = 1.0
 
-    b, h, w = levels.shape
-    levels_onehot = np.zeros((b, 11, h, w))
-    for batch, level in enumerate(levels):
-        for i, j in product(range(h), range(w)):
-            c = int(level[i, j])
-            levels_onehot[batch, c, i, j] = 1.0
+#     b, h, w = levels.shape
+#     levels_onehot = np.zeros((b, 11, h, w))
+#     for batch, level in enumerate(levels):
+#         for i, j in product(range(h), range(w)):
+#             c = int(level[i, j])
+#             levels_onehot[batch, c, i, j] = 1.0
 
-    return [
-        t.from_numpy(levels_onehot).type(t.float),
-        t.from_numpy(playabilities).type(t.float),
-    ]
+#     return [
+#         t.from_numpy(levels_onehot).type(t.float),
+#         t.from_numpy(playabilities).type(t.float),
+#     ]
 
 
 class PlayabilityBase(nn.Module):
@@ -108,11 +136,13 @@ class PlayabilityBase(nn.Module):
         self.random_state = random_state
         self.device = t.device("cuda" if t.cuda.is_available() else "cpu")
 
-        train_dataset, test_dataset = get_level_datasets(random_state=self.random_state)
+        train_dataset, test_dataset, val_dataset = get_level_datasets(
+            random_state=self.random_state
+        )
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
         self.test_loader = DataLoader(test_dataset, batch_size=self.batch_size)
 
-        self.val_l, self.val_p = get_val_data()
+        self.val_l, self.val_p = val_dataset.tensors
 
         # This assumes that the data comes as 11x14x14.
         self.logits = None
@@ -127,16 +157,15 @@ class PlayabilityBase(nn.Module):
         self, y: t.Tensor, p_y_given_x: Bernoulli
     ) -> t.Tensor:
         pred_loss = -p_y_given_x.log_prob(y).squeeze(1).sg("B")
-        return pred_loss.mean()
+        pred_loss_playable = pred_loss[(y == 1).view(-1)].mean()
+        pred_loss_non_playable = pred_loss[(y == 0).view(-1)].mean()
+        return pred_loss_playable + pred_loss_non_playable
 
     def report(self, writer: SummaryWriter, train_loss, test_loss, batch_id):
         writer.add_scalar("Mean Prediction Loss - Train", train_loss, batch_id)
         writer.add_scalar("Mean Prediction Loss - Test", test_loss, batch_id)
 
         # TODO: add reporting stats for validation
-        ## - Validation accuracy
-        ## - confusion matrix
-        ## - histogram of predictions
         ## - plot comparing against ground truth in latent space.
 
         bern = self.forward(self.val_l)
