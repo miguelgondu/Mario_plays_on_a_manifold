@@ -130,6 +130,24 @@ def video_for_tv2(vae: VAEGeometryHierarchical):
     run_level(str(level_for_sim), human_player=True, max_time=zs.shape[0] * 45)
 
 
+def testing_playability():
+    """
+    Tests what's the max height for a block to be playable.
+    Also tests what's the max width of a playable gap.
+    """
+    # basic level.
+    level = 2.0 * torch.ones((14, 14))
+    level[-1, :] = 0.0
+
+    # adding a column.
+    # level[-5:, 7] = 0.0
+
+    # adding a gap
+    # level[-1, :6] = 9.0
+
+    run_level(str(clean_level(level.detach().numpy())), human_player=True)
+
+
 if __name__ == "__main__":
     human_player = True
     z_dim = 2
@@ -148,4 +166,5 @@ if __name__ == "__main__":
     # print(f"Playing {random_z[0]}")
     # res = test_level_from_z(random_z[0], vae, human_player=human_player)
     # print(res)
-    video_for_tv2(vae)
+    # video_for_tv2(vae)
+    testing_playability()
