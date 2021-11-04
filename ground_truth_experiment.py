@@ -51,7 +51,8 @@ from vae_mario_hierarchical import VAEMarioHierarchical
 @click.command()
 @click.option("--model-name", type=str, default="another_vae_final")
 @click.option("--n-samples", type=int, default=5)
-def main(model_name, n_samples):
+@click.option("--argmax/--no-argmax", default=False)
+def main(model_name, n_samples, argmax):
     vae = VAEMarioHierarchical(device="cpu")
     vae.load_state_dict(torch.load(f"./models/{model_name}.pt"))
     vae.eval()
@@ -66,11 +67,15 @@ def main(model_name, n_samples):
     zs = torch.Tensor([[a, b] for a in reversed(z1) for b in z2])
     cat = vae.decode(zs)
 
-    levels = cat.sample((n_samples,)).detach().numpy()
-    levels = levels.reshape(n_grid * n_grid * n_samples, *levels.shape[2:])
+    if not argmax:
+        levels = cat.sample((n_samples,)).detach().numpy()
+        levels = levels.reshape(n_grid * n_grid * n_samples, *levels.shape[2:])
+    else:
+        levels = cat.probs.argmax(dim=-1).detach().numpy()
 
     zs = zs.detach().numpy()
-    zs = np.repeat(zs, n_samples, axis=0)
+    if not argmax:
+        zs = np.repeat(zs, n_samples, axis=0)
 
     print(f"zs: {zs.shape}")
     print(f"levels: {levels.shape}")
@@ -78,7 +83,7 @@ def main(model_name, n_samples):
 
     print(f"Array saved for {model_name}.")
     np.savez(
-        f"./data/arrays/ground_truth_{model_name}.npz",
+        f"./data/arrays/ground_truth_argmax_{argmax}_{model_name}.npz",
         zs=zs,
         levels=levels,
     )
