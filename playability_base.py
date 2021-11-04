@@ -62,9 +62,9 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
 
     # Losing some information.
     playabilities[playabilities > 0.0] = 1.0
-    print(
-        f"Pre-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
-    )
+    # print(
+    #     f"Pre-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
+    # )
 
     # Data augmentation with non-playable levels
     more_non_playable_levels = get_more_non_playable_levels(10000, seed=random_state)
@@ -77,9 +77,9 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
     human_levels, human_playabilities = get_human_levels()
     levels = np.concatenate([levels, human_levels])
     playabilities = np.concatenate([playabilities, human_playabilities])
-    print(
-        f"Post-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
-    )
+    # print(
+    #     f"Post-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
+    # )
 
     b, h, w = levels.shape
     levels_onehot = np.zeros((b, 11, h, w))

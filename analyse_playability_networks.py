@@ -1,14 +1,34 @@
 import json
-from typing import List
+from typing import List, Tuple
 from itertools import product
 from pathlib import Path
 
 import torch as t
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+from mario_utils.plotting import plot_level_from_decoded_tensor
 
+from playability_base import PlayabilityBase
 from playability_convnet import PlayabilityConvnet
 from playability_mlp import PlayabilityMLP
+
+
+def get_random_misclassified(
+    model: PlayabilityBase, levels: t.Tensor, og_p: t.Tensor, n: int = 8
+) -> Tuple[t.Tensor]:
+    og_predictions = model(levels).probs.flatten()
+    predictions = t.zeros_like(og_predictions)
+    predictions[og_predictions > 0.5] = 1.0
+
+    wrongly_classified = levels[predictions != og_p]
+    misclassifications = og_predictions[predictions != og_p]
+    n_misclassified = len(wrongly_classified)
+    range_ = np.random.permutation(n_misclassified)
+    random_levels = wrongly_classified[range_[: min(n, n_misclassified)]]
+    misclassifications = misclassifications[range_[: min(n, n_misclassified)]]
+
+    return random_levels, misclassifications
 
 
 def get_val_data() -> List[t.Tensor]:
@@ -42,12 +62,25 @@ def get_val_data() -> List[t.Tensor]:
 
 
 if __name__ == "__main__":
-    p_net = PlayabilityMLP()
+    # p_net = PlayabilityMLP()
     p_convnet = PlayabilityConvnet()
 
-    p_net.load_state_dict(t.load("./models/playability_net/model_final.pt"))
-    p_convnet.load_state_dict(t.load("./models/playability_convnet/model_final.pt"))
+    # p_net.load_state_dict(
+    #     t.load("./models/playability_nets/16354218527979908_mlp_final.pt")
+    # )
+    p_convnet.load_state_dict(
+        t.load(
+            "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
+        )
+    )
 
     val_l, val_p = get_val_data()
-    pred_net = p_net(val_l)
-    pred_convnet = p_convnet(val_l)
+    wrong_levels, wrong_predictions = get_random_misclassified(p_convnet, val_l, val_p)
+
+    _, axes = plt.subplots(2, 4, figsize=(4 * 7, 2 * 7))
+    for level, prediction, ax in zip(wrong_levels, wrong_predictions, axes.flatten()):
+        plot_level_from_decoded_tensor(level.reshape(1, 11, 14, 14), ax)
+
+    plt.show()
+
+    # print(wrong_predictions)

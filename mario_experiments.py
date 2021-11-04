@@ -1,14 +1,20 @@
 from typing import Tuple, List
+from itertools import product
 import json
 
 import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from mario_utils.plotting import get_img_from_level
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 from vae_geometry_base import VAEGeometryBase
 from vae_geometry_hierarchical import VAEGeometryHierarchical
+
+from playability_base import PlayabilityBase
+from playability_convnet import PlayabilityConvnet
+from playability_mlp import PlayabilityMLP
 
 from geoml.discretized_manifold import DiscretizedManifold
 
@@ -99,6 +105,32 @@ def plot_of_training_results():
     plt.tight_layout()
     plt.savefig("./data/plots/final/test_loss.png", dpi=100, bbox_inches="tight")
     plt.close()
+
+
+def get_ground_truth_from_df(df: pd.DataFrame) -> np.ndarray:
+    playability = df.groupby(["z1", "z2"])["marioStatus"].mean()
+    z1 = np.array(list(set([idx[0] for idx in playability.index.values])))
+    z1 = np.sort(z1)
+    z2 = np.array(list(set([idx[1] for idx in playability.index.values])))
+    z2 = np.sort(z2)
+
+    positions = {
+        (x.item(), y.item()): (i, j)
+        for j, x in enumerate(z1)
+        for i, y in enumerate(reversed(z2))
+    }
+
+    playability_img = np.zeros((len(z1), len(z2)))
+    for z, (i, j) in positions.items():
+        (x, y) = z
+        try:
+            p = playability[(x, y)]
+        except KeyError:
+            print(f"Couldn't get value for key {z}")
+            p = np.nan
+        playability_img[i, j] = p
+
+    return playability_img
 
 
 def get_ground_truth() -> np.ndarray:
@@ -512,6 +544,99 @@ def analyse_diffusion_experiment_on_ground_truth(vae: VAEGeometryHierarchical):
     print(f"Mean playability for geodesic: {np.mean(playability_geometric)}")
 
 
+def plot_grid_after_sampling():
+    """
+    Plots the augmented data for the playability nets.
+    """
+    df = pd.read_csv("./data/array_simulation_results/sampling.csv")
+    zs = np.array([json.loads(z) for z in df["z"].values])
+    df["z1"] = zs[:, 0]
+    df["z2"] = zs[:, 1]
+    playability_img = get_ground_truth_from_df(df)
+
+    _, ax1 = plt.subplots(1, 1, figsize=(1 * 7, 7))
+    ax1.imshow(playability_img, extent=[-5, 5, -5, 5], cmap="Blues")
+    plt.show()
+
+
+def compare_ground_truth_vs_predictions(
+    vae: VAEGeometryBase, pred_net: PlayabilityBase
+):
+    """
+    Compares the ground truth for 'another_vae' with what the pred_net
+    predicts as playable vs. non-playable levels.
+    """
+    df = pd.read_csv(
+        "./data/array_simulation_results/ground_truth_another_vae_final.csv"
+    )
+    zs = np.array([json.loads(z) for z in df["z"].values])
+    df["z1"] = zs[:, 0]
+    df["z2"] = zs[:, 1]
+    playability_img = get_ground_truth_from_df(df)
+
+    _, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=(3 * 7, 7))
+    z1 = np.linspace(-5, 5, 10)
+    z2 = np.linspace(-5, 5, 10)
+
+    zs = t.Tensor([[a, b] for a in reversed(z1) for b in z2])
+    images_dist = vae.decode(zs)
+    images = images_dist.probs.argmax(dim=-1).detach().numpy()
+    images = np.array([get_img_from_level(im) for im in images])
+    zs = zs.detach().numpy()
+    final_img = np.vstack(
+        [
+            np.hstack([im for im in row])
+            for row in images.reshape((10, 10, 16 * 14, 16 * 14, 3))
+        ]
+    )
+    ax0.imshow(final_img, extent=[-5, 5, -5, 5])
+    ax0.set_title(f"Decoded samples (w. argmax)")
+
+    ax1.imshow(playability_img, extent=[-5, 5, -5, 5], cmap="Blues")
+
+    # Now, getting the predictions from levels.
+    levels = df.groupby(["z1", "z2"])["level"].unique()
+    playability_predictions = {}
+    for z, levels_as_string in levels.iteritems():
+        levels_for_z = np.array([json.loads(lvl) for lvl in levels_as_string]).astype(
+            int
+        )
+        B, h, w = levels_for_z.shape
+        levels_onehot_for_z = t.zeros(B, 11, h, w)
+        for b, level in enumerate(levels_for_z):
+            for i, j in product(range(h), range(w)):
+                c = level[i, j]
+                levels_onehot_for_z[b, c, i, j] = 1.0
+
+        predictions_for_z = pred_net.forward(levels_onehot_for_z)
+        playability_predictions[z] = predictions_for_z.probs.mean().item()
+
+    z1 = np.array(list(set([idx[0] for idx in playability_predictions.keys()])))
+    z1 = np.sort(z1)
+    z2 = np.array(list(set([idx[1] for idx in playability_predictions.keys()])))
+    z2 = np.sort(z2)
+
+    positions = {
+        (x.item(), y.item()): (i, j)
+        for j, x in enumerate(z1)
+        for i, y in enumerate(reversed(z2))
+    }
+
+    predictions_img = np.zeros((len(z1), len(z2)))
+    for z, (i, j) in positions.items():
+        (x, y) = z
+        try:
+            p = playability_predictions[(x, y)]
+        except KeyError:
+            print(f"Couldn't get value for key {z}")
+            p = np.nan
+        predictions_img[i, j] = p
+
+    ax2.imshow(predictions_img, extent=[-5, 5, -5, 5], cmap="Blues")
+
+    plt.show()
+
+
 if __name__ == "__main__":
     n_clusters = 500
 
@@ -523,11 +648,22 @@ if __name__ == "__main__":
     # vaeh.load_state_dict(t.load(f"./models/hierarchical_for_log_final.pt"))
     # vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters, only_playable=True)
 
+    vaeh = VAEGeometryHierarchical()
+    vaeh.load_state_dict(t.load(f"./models/another_vae_final.pt"))
+    vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters, only_playable=True)
+
+    p_convnet = PlayabilityConvnet()
+    p_convnet.load_state_dict(
+        t.load(
+            "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
+        )
+    )
+
     # figure_grid_levels(vae, comment="vae_")
     # figure_grid_levels(vaeh, comment="hierarchical_")
 
     # Get test loss plot for these two VAEs
-    plot_of_training_results()
+    # plot_of_training_results()
 
     # figure_metric_for_beta(vaeh, n_clusters=n_clusters)
     # figure_metric_for_different_betas(vaeh, n_clusters=n_clusters)
@@ -540,3 +676,6 @@ if __name__ == "__main__":
     # plot_saved_diffusions(vaeh)
     # run_diffusion_on_ground_truth(vaeh)
     # analyse_diffusion_experiment_on_ground_truth(vaeh)
+
+    compare_ground_truth_vs_predictions(vaeh, p_convnet)
+    # plot_grid_after_sampling()
