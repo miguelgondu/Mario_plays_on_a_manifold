@@ -569,12 +569,17 @@ def compare_ground_truth_vs_predictions(
     df = pd.read_csv(
         "./data/array_simulation_results/ground_truth_another_vae_final.csv"
     )
+    # df = pd.read_csv(
+    #     "./data/array_simulation_results/ground_truth_argmax_True_another_vae_final.csv"
+    # )
     zs = np.array([json.loads(z) for z in df["z"].values])
     df["z1"] = zs[:, 0]
     df["z2"] = zs[:, 1]
     playability_img = get_ground_truth_from_df(df)
 
-    _, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=(3 * 7, 7))
+    _, axes = plt.subplots(2, 2, figsize=(2 * 7, 2 * 7), sharex=True, sharey=True)
+    (ax0, ax1, ax2, ax3) = axes.flatten()
+
     z1 = np.linspace(-5, 5, 10)
     z2 = np.linspace(-5, 5, 10)
 
@@ -590,9 +595,10 @@ def compare_ground_truth_vs_predictions(
         ]
     )
     ax0.imshow(final_img, extent=[-5, 5, -5, 5])
-    ax0.set_title(f"Decoded samples (w. argmax)")
+    ax0.set_title(f"Decoded samples (w. sampling)")
 
     ax1.imshow(playability_img, extent=[-5, 5, -5, 5], cmap="Blues")
+    ax1.set_title("Ground truth of playability (w. sampling)")
 
     # Now, getting the predictions from levels.
     levels = df.groupby(["z1", "z2"])["level"].unique()
@@ -633,8 +639,18 @@ def compare_ground_truth_vs_predictions(
         predictions_img[i, j] = p
 
     ax2.imshow(predictions_img, extent=[-5, 5, -5, 5], cmap="Blues")
+    ax2.set_title("Predictions of our network")
 
+    decision = predictions_img.copy()
+    decision[decision > 0.8] = 1.0
+    decision[decision <= 0.8] = 0.0
+    ax3.imshow(decision, extent=[-5, 5, -5, 5], cmap="Blues")
+    ax3.set_title("Predictions w. decision boundary of 0.8")
+
+    plt.tight_layout()
+    plt.savefig("./data/plots/final/predictions_of_convnet_argmax.png", dpi=100)
     plt.show()
+    plt.close()
 
 
 if __name__ == "__main__":
