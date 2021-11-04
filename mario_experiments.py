@@ -6,16 +6,20 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from mario_utils.plotting import get_img_from_level
+from sklearn.cluster import KMeans
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 from vae_geometry_base import VAEGeometryBase
 from vae_geometry_hierarchical import VAEGeometryHierarchical
+from train_vae import load_data
 
 from playability_base import PlayabilityBase
 from playability_convnet import PlayabilityConvnet
 from playability_mlp import PlayabilityMLP
 
+from mario_utils.plotting import get_img_from_level
 from geoml.discretized_manifold import DiscretizedManifold
 
 from interpolations.linear_interpolation import LinearInterpolation
@@ -559,6 +563,29 @@ def plot_grid_after_sampling():
     plt.show()
 
 
+def save_ground_truth(model_name, plot_name):
+    """
+    Saves a plot with ground truth.
+    """
+    df = pd.read_csv(f"./data/array_simulation_results/ground_truth_{model_name}.csv")
+    zs = np.array([json.loads(z) for z in df["z"].values])
+    df["z1"] = zs[:, 0]
+    df["z2"] = zs[:, 1]
+    playability_img = get_ground_truth_from_df(df)
+
+    fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+    plot = ax.imshow(
+        playability_img, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0
+    )
+    plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
+    ax.axis("off")
+    plt.tight_layout()
+    fig.savefig(f"./data/plots/final/{plot_name}.png", dpi=100, bbox_inches="tight")
+    plt.close(fig)
+
+    return playability_img
+
+
 def compare_ground_truth_vs_predictions(
     vae: VAEGeometryBase, pred_net: PlayabilityBase
 ):
@@ -653,6 +680,178 @@ def compare_ground_truth_vs_predictions(
     plt.close()
 
 
+def fitting_GPC_on_training_levels(model_name):
+    df = pd.read_csv("./data/processed/training_levels_results.csv")
+
+    # Reduce the df to only include the mean marioStatus
+    playability = df.groupby("idx").mean()["marioStatus"]
+    playable_idxs = playability[playability > 0.0].index.values
+    non_playable_idxs = playability[playability == 0.0].index.values
+    # print(playable_idxs)
+    # print(non_playable_idxs)
+
+    training_tensors, test_tensors = load_data()
+    all_levels = t.cat((training_tensors, test_tensors))
+
+    playable_levels = all_levels[playable_idxs]
+    non_playable_levels = all_levels[non_playable_idxs]
+
+    vae = VAEMarioHierarchical(14, 14, z_dim=2)
+    vae.load_state_dict(t.load(f"models/{model_name}.pt"))
+
+    zs_playable = vae.encode(playable_levels).mean
+    zs_non_playable = vae.encode(non_playable_levels).mean
+
+    # print(zs_playable)
+    # print(zs_non_playable)
+
+    zs_p_numpy = zs_playable.detach().numpy()
+    zs_np_numpy = zs_non_playable.detach().numpy()
+
+    # _, ax = plt.subplots(1, 1)
+    # ax.scatter(zs_p_numpy[:, 0], zs_p_numpy[:, 1], marker="x", c="g")
+    # ax.scatter(zs_np_numpy[:, 0], zs_np_numpy[:, 1], marker="x", c="r")
+    # plt.show()
+
+    X = np.vstack((zs_p_numpy, zs_np_numpy))
+    y = np.concatenate((np.ones(zs_p_numpy.shape[0]), np.zeros(zs_np_numpy.shape[0])))
+
+    # X = np.vstack((playable_points, non_playable_points))
+    # y = np.concatenate(
+    #     (
+    #         np.ones((playable_points.shape[0],)),
+    #         np.zeros((non_playable_points.shape[0],)),
+    #     )
+    # )
+
+    x_lims = y_lims = [-5, 5]
+
+    k_means = KMeans(n_clusters=50)
+    k_means.fit(zs_p_numpy)
+
+    kernel = 1.0 * RBF(length_scale=[1.0, 1.0])
+    gpc = GaussianProcessClassifier(kernel=kernel)
+    gpc.fit(X, y)
+
+    n_x, n_y = 50, 50
+    z1 = t.linspace(*x_lims, n_x)
+    z2 = t.linspace(*y_lims, n_x)
+
+    class_image = np.zeros((n_y, n_x))
+    zs = np.array([[x, y] for x in z1 for y in z2])
+    positions = {
+        (x.item(), y.item()): (i, j)
+        for j, x in enumerate(z1)
+        for i, y in enumerate(reversed(z2))
+    }
+
+    classes = gpc.predict(zs)
+    for l, (x, y) in enumerate(zs):
+        i, j = positions[(x.item(), y.item())]
+        class_image[i, j] = classes[l]
+
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    ax.imshow(class_image, extent=[*x_lims, *y_lims], cmap="Blues")
+    ax.scatter(
+        zs_p_numpy[:, 0], zs_p_numpy[:, 1], marker="o", c="#FADADD", label="Playable"
+    )
+    ax.scatter(
+        zs_np_numpy[:, 0], zs_np_numpy[:, 1], marker="o", c="r", label="Not playable"
+    )
+    ax.axis("off")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.savefig(f"./data/plots/final/GPC_on_training_levels_{model_name}.png")
+    plt.show()
+    plt.close()
+
+
+def plot_playability_net_predictions(pred_net: PlayabilityBase):
+    """
+    Plots the prediction of the trained networks on the sampled levels
+    for both sampling and not sampling.
+    """
+    df1 = pd.read_csv(
+        "./data/array_simulation_results/ground_truth_another_vae_final.csv"
+    )
+    df2 = pd.read_csv(
+        "./data/array_simulation_results/ground_truth_argmax_True_another_vae_final.csv"
+    )
+    for df, name in zip((df1, df2), ("sampling", "not_sampling")):
+        zs = np.array([json.loads(z) for z in df["z"].values])
+        df["z1"] = zs[:, 0]
+        df["z2"] = zs[:, 1]
+
+        fig1, ax1 = plt.subplots(1, 1, figsize=(1 * 7, 1 * 7))
+        fig2, ax2 = plt.subplots(1, 1, figsize=(1 * 7, 1 * 7))
+
+        # Now, getting the predictions from levels.
+        levels = df.groupby(["z1", "z2"])["level"].unique()
+        playability_predictions = {}
+        for z, levels_as_string in levels.iteritems():
+            levels_for_z = np.array(
+                [json.loads(lvl) for lvl in levels_as_string]
+            ).astype(int)
+            B, h, w = levels_for_z.shape
+            levels_onehot_for_z = t.zeros(B, 11, h, w)
+            for b, level in enumerate(levels_for_z):
+                for i, j in product(range(h), range(w)):
+                    c = level[i, j]
+                    levels_onehot_for_z[b, c, i, j] = 1.0
+
+            predictions_for_z = pred_net.forward(levels_onehot_for_z)
+            playability_predictions[z] = predictions_for_z.probs.mean().item()
+
+        z1 = np.array(list(set([idx[0] for idx in playability_predictions.keys()])))
+        z1 = np.sort(z1)
+        z2 = np.array(list(set([idx[1] for idx in playability_predictions.keys()])))
+        z2 = np.sort(z2)
+
+        positions = {
+            (x.item(), y.item()): (i, j)
+            for j, x in enumerate(z1)
+            for i, y in enumerate(reversed(z2))
+        }
+
+        predictions_img = np.zeros((len(z1), len(z2)))
+        for z, (i, j) in positions.items():
+            (x, y) = z
+            try:
+                p = playability_predictions[(x, y)]
+            except KeyError:
+                print(f"Couldn't get value for key {z}")
+                p = np.nan
+            predictions_img[i, j] = p
+
+        plot1 = ax1.imshow(
+            predictions_img, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0
+        )
+        plt.colorbar(plot1, ax=ax1, fraction=0.046, pad=0.04)
+
+        ax1.axis("off")
+        fig1.tight_layout()
+        fig1.savefig(
+            f"./data/plots/final/pure_predictions_of_convnet_{name}.png", dpi=100
+        )
+
+        decision = predictions_img.copy()
+        decision[decision > 0.8] = 1.0
+        decision[decision <= 0.8] = 0.0
+        plot2 = ax2.imshow(
+            decision, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0
+        )
+        plt.colorbar(plot2, ax=ax2, fraction=0.046, pad=0.04)
+        ax2.set_title("Decision boundary: 0.8", fontsize=20)
+        ax2.axis("off")
+        fig2.tight_layout()
+        fig2.savefig(
+            f"./data/plots/final/predictions_of_convnet_db_80_{name}.png", dpi=100
+        )
+        # plt.show()
+        plt.close()
+
+
 if __name__ == "__main__":
     n_clusters = 500
 
@@ -663,17 +862,6 @@ if __name__ == "__main__":
     # vaeh = VAEGeometryHierarchical()
     # vaeh.load_state_dict(t.load(f"./models/hierarchical_for_log_final.pt"))
     # vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters, only_playable=True)
-
-    vaeh = VAEGeometryHierarchical()
-    vaeh.load_state_dict(t.load(f"./models/another_vae_final.pt"))
-    vaeh.update_cluster_centers(beta=-3.5, n_clusters=n_clusters, only_playable=True)
-
-    p_convnet = PlayabilityConvnet()
-    p_convnet.load_state_dict(
-        t.load(
-            "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
-        )
-    )
 
     # figure_grid_levels(vae, comment="vae_")
     # figure_grid_levels(vaeh, comment="hierarchical_")
@@ -693,5 +881,24 @@ if __name__ == "__main__":
     # run_diffusion_on_ground_truth(vaeh)
     # analyse_diffusion_experiment_on_ground_truth(vaeh)
 
-    compare_ground_truth_vs_predictions(vaeh, p_convnet)
+    # -------------------- Saving ground truths ---------------------
+    # print("Saving ground truths")
+    # save_ground_truth("another_vae_final", "ground_truth_w_sampling")
+    # save_ground_truth("argmax_True_another_vae_final", "ground_truth_no_sampling")
+
+    # # Fitting a gpc on training levels
+    # print("Fitting a GPC")
+    # fitting_GPC_on_training_levels(f"another_vae_final")
+
+    # --------- Getting convnet predictions ---------
+
+    # compare_ground_truth_vs_predictions(vaeh, p_convnet)
+    p_convnet = PlayabilityConvnet()
+    p_convnet.load_state_dict(
+        t.load(
+            "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
+        )
+    )
+    plot_playability_net_predictions(p_convnet)
+
     # plot_grid_after_sampling()
