@@ -6,16 +6,18 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 from sklearn.cluster import KMeans
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
+from sklearn.metrics import confusion_matrix, f1_score
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 from vae_geometry_base import VAEGeometryBase
 from vae_geometry_hierarchical import VAEGeometryHierarchical
 from train_vae import load_data
 
-from playability_base import PlayabilityBase
+from playability_base import PlayabilityBase, get_human_levels
 from playability_convnet import PlayabilityConvnet
 from playability_mlp import PlayabilityMLP
 
@@ -30,6 +32,17 @@ from diffusions.geometric_difussion import GeometricDifussion
 
 from metric_approximation_with_jacobians import approximate_metric, plot_approximation
 from toy_experiment import get_random_pairs, get_interpolations
+
+
+def int_array_to_onehot_tensor(array: np.ndarray) -> t.Tensor:
+    B, h, w = array.shape
+    res = t.zeros((B, 11, h, w))
+    for b, level in enumerate(array.astype(int)):
+        for i, j in product(range(h), range(w)):
+            c = level[i, j]
+            res[b, c, i, j] = 1.0
+
+    return res
 
 
 def figure_grid_levels(vae: VAEGeometryHierarchical, comment: str = ""):
@@ -767,7 +780,9 @@ def fitting_GPC_on_training_levels(model_name):
     plt.close()
 
 
-def plot_playability_net_predictions(pred_net: PlayabilityBase):
+def plot_playability_net_predictions(
+    pred_net: PlayabilityBase, comment: str = "convnet", decision_boundary: float = 0.8
+):
     """
     Plots the prediction of the trained networks on the sampled levels
     for both sampling and not sampling.
@@ -832,24 +847,83 @@ def plot_playability_net_predictions(pred_net: PlayabilityBase):
         ax1.axis("off")
         fig1.tight_layout()
         fig1.savefig(
-            f"./data/plots/final/pure_predictions_of_convnet_{name}.png", dpi=100
+            f"./data/plots/final/pure_predictions_of_{comment}_{name}.png", dpi=100
         )
 
         decision = predictions_img.copy()
-        decision[decision > 0.8] = 1.0
-        decision[decision <= 0.8] = 0.0
+        decision[decision > decision_boundary] = 1.0
+        decision[decision <= decision_boundary] = 0.0
         plot2 = ax2.imshow(
             decision, extent=[-5, 5, -5, 5], cmap="Blues", vmin=0.0, vmax=1.0
         )
         plt.colorbar(plot2, ax=ax2, fraction=0.046, pad=0.04)
-        ax2.set_title("Decision boundary: 0.8", fontsize=20)
+        ax2.set_title(f"Decision boundary: {decision_boundary:.1f}", fontsize=20)
         ax2.axis("off")
         fig2.tight_layout()
         fig2.savefig(
-            f"./data/plots/final/predictions_of_convnet_db_80_{name}.png", dpi=100
+            f"./data/plots/final/predictions_of_{comment}_db_{int(10*decision_boundary):2d}_{name}.png",
+            dpi=100,
         )
-        # plt.show()
-        plt.close()
+        plt.close("all")
+
+
+def plot_confusion_matrix_on_human_levels(
+    pred_net: PlayabilityBase, decision=0.5, name="cnn_data_augmented_balanced"
+):
+    h_levels, h_playabilities = get_human_levels()
+    h_levels_onehot = int_array_to_onehot_tensor(h_levels)
+
+    bern = pred_net.forward(h_levels_onehot)
+    true_labels = h_playabilities
+    preds = bern.probs.detach().numpy()
+    preds[preds > decision] = 1.0
+    preds[preds <= decision] = 0.0
+    predicted_labels = preds.squeeze(1)
+
+    t = predicted_labels == true_labels
+    val_acc = np.count_nonzero(t) / len(t)
+    print(f"Validation accuracy (decision boundary {decision}): {val_acc}")
+
+    C = confusion_matrix(true_labels, predicted_labels)
+    fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+    sns.heatmap(C, ax=ax, annot=True)
+    ax.set_title(
+        f"Validation accuracy: {val_acc:.2f} (decision at {decision:.1f})", fontsize=15
+    )
+    fig.tight_layout()
+    fig.savefig(
+        f"./data/plots/final/confusion_matrix_human_levels_{name}.png",
+        dpi=100,
+        bbox_inches="tight",
+    )
+
+
+def plot_confusion_matrix_on_augmented_levels(
+    pred_net: PlayabilityBase, name: str = "convnet", decision: float = 0.5
+):
+    bern = pred_net.forward(pred_net.val_l)
+    true_labels = pred_net.val_p.squeeze(1).detach().numpy()
+    preds = bern.probs.detach().numpy()
+    preds[preds > decision] = 1.0
+    preds[preds <= decision] = 0.0
+    predicted_labels = preds.squeeze(1)
+
+    t = predicted_labels == true_labels
+    val_acc = np.count_nonzero(t) / len(t)
+    print(f"Validation accuracy (decision boundary {decision}): {val_acc}")
+
+    C = confusion_matrix(true_labels, predicted_labels)
+    fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+    sns.heatmap(C, ax=ax, annot=True)
+    ax.set_title(
+        f"Validation accuracy: {val_acc:.2f} (decision at {decision:.1f})", fontsize=15
+    )
+    fig.tight_layout()
+    fig.savefig(
+        f"./data/plots/final/confusion_matrix_augmented_{name}_db_{int(10*decision):2d}.png",
+        dpi=100,
+        bbox_inches="tight",
+    )
 
 
 if __name__ == "__main__":
@@ -893,12 +967,71 @@ if __name__ == "__main__":
     # --------- Getting convnet predictions ---------
 
     # compare_ground_truth_vs_predictions(vaeh, p_convnet)
+    # p_mlp = PlayabilityMLP()
+    # p_mlp.load_state_dict(
+    #     t.load(
+    #         "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
+    #     )
+    # )
+    # p_convnet = PlayabilityConvnet()
+    # p_convnet.load_state_dict(
+    #     t.load(
+    #         "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
+    #     )
+    # )
+    # for db in range(3, 9):
+    #     decision_boundary = db * 1e-1
+    #     plot_playability_net_predictions(
+    #         p_mlp, comment="mlp", decision_boundary=decision_boundary
+    #     )
+    #     plot_playability_net_predictions(
+    #         p_convnet, comment="convnet", decision_boundary=decision_boundary
+    #     )
+
+    # --------- Getting convnet confusion matrix on human levels ---------
+
+    # p_mlp = PlayabilityMLP()
+    # p_mlp.load_state_dict(
+    #     t.load(
+    #         "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
+    #     )
+    # )
+    # p_convnet = PlayabilityConvnet()
+    # p_convnet.load_state_dict(
+    #     t.load(
+    #         "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
+    #     )
+    # )
+    # for decision in range(3, 9):
+    #     plot_confusion_matrix_on_human_levels(
+    #         p_convnet, decision * 1e-1, name=f"cnn_augmented_balanced_db_{decision}0"
+    #     )
+    #     plot_confusion_matrix_on_human_levels(
+    #         p_mlp, decision * 1e-1, name=f"mlp_augmented_balanced_db_{decision}0"
+    #     )
+
+    # --- Getting prednets confusion matrix on augmented levels ---
+
+    p_mlp = PlayabilityMLP()
+    p_mlp.load_state_dict(
+        t.load(
+            "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
+        )
+    )
     p_convnet = PlayabilityConvnet()
     p_convnet.load_state_dict(
         t.load(
             "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
         )
     )
-    plot_playability_net_predictions(p_convnet)
-
-    # plot_grid_after_sampling()
+    for decision in range(3, 9):
+        plot_confusion_matrix_on_augmented_levels(
+            p_convnet,
+            decision=decision * 1e-1,
+            name=f"cnn_augmented_balanced_db_{decision}0",
+        )
+        plot_confusion_matrix_on_augmented_levels(
+            p_mlp,
+            decision=decision * 1e-1,
+            name=f"mlp_augmented_balanced_db_{decision}0",
+        )
