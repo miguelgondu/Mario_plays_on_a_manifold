@@ -7,13 +7,15 @@ from shapeguard import ShapeGuard
 
 
 class PlayabilityMLP(PlayabilityBase):
-    def __init__(self, batch_size: int = 64, random_state: int = 0):
+    def __init__(
+        self, batch_size: int = 64, random_state: int = 0, augment: bool = True
+    ):
         """
         An MLP used to predict playability of SMB levels.
         Adapted from the code I wrote for Rasmus' paper.
         """
         super(PlayabilityMLP, self).__init__(
-            batch_size=batch_size, random_state=random_state
+            batch_size=batch_size, random_state=random_state, augment=augment
         )
 
         # This assumes that the data comes as 11x14x14.

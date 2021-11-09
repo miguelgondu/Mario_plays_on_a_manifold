@@ -926,6 +926,34 @@ def plot_confusion_matrix_on_augmented_levels(
     )
 
 
+def plot_confusion_matrix_on_non_augmented_levels(
+    pred_net: PlayabilityBase, name: str = "convnet", decision: float = 0.5
+):
+    bern = pred_net.forward(pred_net.val_l)
+    true_labels = pred_net.val_p.squeeze(1).detach().numpy()
+    preds = bern.probs.detach().numpy()
+    preds[preds > decision] = 1.0
+    preds[preds <= decision] = 0.0
+    predicted_labels = preds.squeeze(1)
+
+    t = predicted_labels == true_labels
+    val_acc = np.count_nonzero(t) / len(t)
+    print(f"Validation accuracy (decision boundary {decision}): {val_acc}")
+
+    C = confusion_matrix(true_labels, predicted_labels)
+    fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+    sns.heatmap(C, ax=ax, annot=True)
+    ax.set_title(
+        f"Validation accuracy: {val_acc:.2f} (decision at {decision:.1f})", fontsize=15
+    )
+    fig.tight_layout()
+    fig.savefig(
+        f"./data/plots/final/confusion_matrix_augmented_{name}_db_{int(100*decision)}.png",
+        dpi=100,
+        bbox_inches="tight",
+    )
+
+
 if __name__ == "__main__":
     n_clusters = 500
 
@@ -1012,7 +1040,32 @@ if __name__ == "__main__":
 
     # --- Getting prednets confusion matrix on augmented levels ---
 
-    p_mlp = PlayabilityMLP()
+    # p_mlp = PlayabilityMLP()
+    # p_mlp.load_state_dict(
+    #     t.load(
+    #         "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
+    #     )
+    # )
+    # p_convnet = PlayabilityConvnet()
+    # p_convnet.load_state_dict(
+    #     t.load(
+    #         "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
+    #     )
+    # )
+    # for decision in range(3, 9):
+    #     plot_confusion_matrix_on_augmented_levels(
+    #         p_convnet,
+    #         decision=decision * 1e-1,
+    #         name=f"cnn_augmented_balanced_db_{decision}0",
+    #     )
+    #     plot_confusion_matrix_on_augmented_levels(
+    #         p_mlp,
+    #         decision=decision * 1e-1,
+    #         name=f"mlp_augmented_balanced_db_{decision}0",
+    #     )
+
+    # ---- Getting prednets confusion matrix on original dataset, prior to augmenting ---
+    p_mlp = PlayabilityMLP(augment=False)
     p_mlp.load_state_dict(
         t.load(
             "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
@@ -1025,13 +1078,13 @@ if __name__ == "__main__":
         )
     )
     for decision in range(3, 9):
-        plot_confusion_matrix_on_augmented_levels(
+        plot_confusion_matrix_on_non_augmented_levels(
             p_convnet,
             decision=decision * 1e-1,
-            name=f"cnn_augmented_balanced_db_{decision}0",
+            name=f"cnn_non_augmented",
         )
-        plot_confusion_matrix_on_augmented_levels(
+        plot_confusion_matrix_on_non_augmented_levels(
             p_mlp,
             decision=decision * 1e-1,
-            name=f"mlp_augmented_balanced_db_{decision}0",
+            name=f"mlp_non_augmented",
         )

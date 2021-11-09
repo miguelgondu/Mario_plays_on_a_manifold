@@ -41,7 +41,7 @@ def get_human_levels() -> List[np.ndarray]:
     return [levels, playabilities]
 
 
-def get_level_datasets(random_state=0) -> List[TensorDataset]:
+def get_level_datasets(random_state=0, augment=True) -> List[TensorDataset]:
     """
     Returns train, test and val datasets.
     """
@@ -67,16 +67,20 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
     # )
 
     # Data augmentation with non-playable levels
-    more_non_playable_levels = get_more_non_playable_levels(10000, seed=random_state)
-    non_playabilities = np.zeros((len(more_non_playable_levels),))
+    if augment:
+        more_non_playable_levels = get_more_non_playable_levels(
+            10000, seed=random_state
+        )
+        non_playabilities = np.zeros((len(more_non_playable_levels),))
 
-    levels = np.concatenate([levels, more_non_playable_levels])
-    playabilities = np.concatenate([playabilities, non_playabilities])
+        levels = np.concatenate([levels, more_non_playable_levels])
+        playabilities = np.concatenate([playabilities, non_playabilities])
 
-    # Adding human levels
-    human_levels, human_playabilities = get_human_levels()
-    levels = np.concatenate([levels, human_levels])
-    playabilities = np.concatenate([playabilities, human_playabilities])
+        # Adding human levels
+        human_levels, human_playabilities = get_human_levels()
+        levels = np.concatenate([levels, human_levels])
+        playabilities = np.concatenate([playabilities, human_playabilities])
+
     # print(
     #     f"Post-data augmentation playable levels: {np.count_nonzero(playabilities)}/{len(playabilities)}"
     # )
@@ -117,7 +121,9 @@ def get_level_datasets(random_state=0) -> List[TensorDataset]:
 
 
 class PlayabilityBase(nn.Module):
-    def __init__(self, batch_size: int = 64, random_state: int = 0):
+    def __init__(
+        self, batch_size: int = 64, random_state: int = 0, augment: bool = True
+    ):
         """
         An MLP used to predict playability of SMB levels.
         Adapted from the code I wrote for Rasmus' paper.
@@ -132,7 +138,7 @@ class PlayabilityBase(nn.Module):
         self.device = t.device("cuda" if t.cuda.is_available() else "cpu")
 
         train_dataset, test_dataset, val_dataset = get_level_datasets(
-            random_state=self.random_state
+            random_state=self.random_state, augment=augment
         )
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
         self.test_loader = DataLoader(test_dataset, batch_size=self.batch_size)
