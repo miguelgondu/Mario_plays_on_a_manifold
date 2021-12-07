@@ -87,9 +87,9 @@ class VAEMarioHierarchicalDirichlet(nn.Module):
             nn.Linear(512, self.input_dim),
             nn.Tanh(),
         ).to(self.device)
-        self.dec_concentrations = nn.Linear(self.input_dim, self.input_dim).to(
-            self.device
-        )
+        self.dec_concentrations = nn.Sequential(
+            nn.Linear(self.input_dim, self.input_dim), nn.Softplus()
+        ).to(self.device)
 
         self.p_z = Normal(
             torch.zeros(self.z_dim, device=self.device),
