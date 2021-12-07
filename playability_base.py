@@ -266,3 +266,30 @@ def run(
         if n_without_improvement > 20:
             print(f"Stopping early. Best loss: {best_loss}")
             break
+
+
+if __name__ == "__main__":
+    # Counts percentages.
+    print("=" * 30 + " VAE levels " + "=" * 30)
+    train, test, val = get_level_datasets(augment=False)
+    p = t.cat([ds.tensors[1] for ds in [train, test, val]])
+    print(f"Total levels: {len(p)}")
+    print(f"Total playable levels: {p.count_nonzero()}")
+    print(f"Percentage: {p.count_nonzero() / len(p)}")
+    # print(p)
+
+    # Counts percentages after augmenting
+    print("=" * 30 + " VAE levels augmented " + "=" * 30)
+    train, test, val = get_level_datasets(augment=True)
+    p = t.cat([ds.tensors[1] for ds in [train, test, val]])
+    print(f"Total levels: {len(p)}")
+    print(f"Total playable levels: {p.count_nonzero()}")
+    print(f"Percentage: {p.count_nonzero() / len(p)}")
+    # print(p)
+
+    print("=" * 30 + " Human levels " + "=" * 30)
+    _, p = get_human_levels()
+    n_playable = len(p.nonzero()[0])
+    print(f"Total levels: {len(p)}")
+    print(f"Total playable levels: {n_playable}")
+    print(f"Percentage: {n_playable / len(p)}")

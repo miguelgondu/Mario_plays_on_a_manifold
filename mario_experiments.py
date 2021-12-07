@@ -995,26 +995,26 @@ if __name__ == "__main__":
     # --------- Getting convnet predictions ---------
 
     # compare_ground_truth_vs_predictions(vaeh, p_convnet)
-    # p_mlp = PlayabilityMLP()
-    # p_mlp.load_state_dict(
-    #     t.load(
-    #         "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
-    #     )
-    # )
-    # p_convnet = PlayabilityConvnet()
-    # p_convnet.load_state_dict(
-    #     t.load(
-    #         "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
-    #     )
-    # )
-    # for db in range(3, 9):
-    #     decision_boundary = db * 1e-1
-    #     plot_playability_net_predictions(
-    #         p_mlp, comment="mlp", decision_boundary=decision_boundary
-    #     )
-    #     plot_playability_net_predictions(
-    #         p_convnet, comment="convnet", decision_boundary=decision_boundary
-    #     )
+    p_mlp = PlayabilityMLP()
+    p_mlp.load_state_dict(
+        t.load(
+            "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
+        )
+    )
+    p_convnet = PlayabilityConvnet()
+    p_convnet.load_state_dict(
+        t.load(
+            "models/playability_nets/1636455554451415_balanced_loss_data_augmented_no_maxpooling_final.pt"
+        )
+    )
+    for db in range(3, 9):
+        decision_boundary = db * 1e-1
+        plot_playability_net_predictions(
+            p_mlp, comment="mlp", decision_boundary=decision_boundary
+        )
+        plot_playability_net_predictions(
+            p_convnet, comment="convnet", decision_boundary=decision_boundary
+        )
 
     # --------- Getting convnet confusion matrix on human levels ---------
 
@@ -1027,7 +1027,7 @@ if __name__ == "__main__":
     # p_convnet = PlayabilityConvnet()
     # p_convnet.load_state_dict(
     #     t.load(
-    #         "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
+    #         "models/playability_nets/1636455554451415_balanced_loss_data_augmented_no_maxpooling_final.pt"
     #     )
     # )
     # for decision in range(3, 9):
@@ -1049,7 +1049,7 @@ if __name__ == "__main__":
     # p_convnet = PlayabilityConvnet()
     # p_convnet.load_state_dict(
     #     t.load(
-    #         "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
+    #         "models/playability_nets/1636455554451415_balanced_loss_data_augmented_no_maxpooling_final.pt"
     #     )
     # )
     # for decision in range(3, 9):
@@ -1065,26 +1065,26 @@ if __name__ == "__main__":
     #     )
 
     # ---- Getting prednets confusion matrix on original dataset, prior to augmenting ---
-    p_mlp = PlayabilityMLP(augment=False)
-    p_mlp.load_state_dict(
-        t.load(
-            "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
-        )
-    )
-    p_convnet = PlayabilityConvnet()
-    p_convnet.load_state_dict(
-        t.load(
-            "./models/playability_nets/1635948364556223_convnet_w_data_augmentation_w_validation_from_dist_final.pt"
-        )
-    )
-    for decision in range(3, 9):
-        plot_confusion_matrix_on_non_augmented_levels(
-            p_convnet,
-            decision=decision * 1e-1,
-            name=f"cnn_non_augmented",
-        )
-        plot_confusion_matrix_on_non_augmented_levels(
-            p_mlp,
-            decision=decision * 1e-1,
-            name=f"mlp_non_augmented",
-        )
+    # p_mlp = PlayabilityMLP(augment=False)
+    # p_mlp.load_state_dict(
+    #     t.load(
+    #         "./models/playability_nets/1635952448934283_mlp_balanced_loss_bs_128_w_data_augmentation_final.pt"
+    #     )
+    # )
+    # p_convnet = PlayabilityConvnet(augment=False)
+    # p_convnet.load_state_dict(
+    #     t.load(
+    #         "models/playability_nets/1636455554451415_balanced_loss_data_augmented_no_maxpooling_final.pt"
+    #     )
+    # )
+    # for decision in range(3, 9):
+    #     plot_confusion_matrix_on_non_augmented_levels(
+    #         p_convnet,
+    #         decision=decision * 1e-1,
+    #         name=f"cnn_non_augmented",
+    #     )
+    #     plot_confusion_matrix_on_non_augmented_levels(
+    #         p_mlp,
+    #         decision=decision * 1e-1,
+    #         name=f"mlp_non_augmented",
+    #     )

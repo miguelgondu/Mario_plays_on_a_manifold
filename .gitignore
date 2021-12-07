@@ -30,6 +30,7 @@ src/
 MarioGANNoCap.jar
 MarioGANOld.jar
 sprites.json
+*.ipynb
 # !data/processed/playable_levels_idxs.json
 
 # Simulator

@@ -20,6 +20,9 @@ class VAEGeometryDirichlet(VAEGeometryBase):
         super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
 
     def reweight(self, z: Tensor) -> Categorical:
+        """
+        Random dirichlet noise.
+        """
         similarity = self.translated_sigmoid(self.min_distance(z)).view(-1, 1, 1, 1)
         dec_categorical = self.decode(z)
         dec_probs = dec_categorical.probs
