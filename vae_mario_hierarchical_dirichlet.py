@@ -119,10 +119,8 @@ class VAEMarioHierarchicalDirichlet(nn.Module):
     def decode(self, z: Tensor) -> Categorical:
         # Returns p(x | z) = Cat(logits=samples from _intermediate_distribution)
         dec_dist = self._intermediate_distribution(z.to(self.device))
-        samples = dec_dist.rsample()
-        p_x_given_z = Categorical(
-            logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
-        )
+        samples = dec_dist.rsample().reshape(-1, self.h, self.w, self.n_sprites)
+        p_x_given_z = Categorical(logits=samples)
 
         return p_x_given_z
 
