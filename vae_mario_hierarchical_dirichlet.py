@@ -120,7 +120,7 @@ class VAEMarioHierarchicalDirichlet(nn.Module):
         # Returns p(x | z) = Cat(logits=samples from _intermediate_distribution)
         dec_dist = self._intermediate_distribution(z.to(self.device))
         samples = dec_dist.rsample().reshape(-1, self.h, self.w, self.n_sprites)
-        p_x_given_z = Categorical(logits=samples)
+        p_x_given_z = Categorical(probs=samples)
 
         return p_x_given_z
 
