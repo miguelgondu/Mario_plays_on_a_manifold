@@ -93,7 +93,7 @@ def test(
 
 
 @click.command()
-@click.option("--model", type=str, default="dirichlet")
+@click.option("--model", type=str, default="normal")
 @click.option("--z-dim", type=int, default=2)
 @click.option("--comment", type=str, default=None)
 @click.option("--max-epochs", type=int, default=200)
@@ -103,7 +103,7 @@ def test(
 @click.option("--scale", type=float, default=1.0)
 @click.option("--save-every", type=int, default=20)
 @click.option("--overfit/--no-overfit", default=False)
-@click.option("--playable/--no-playable", default=False)
+@click.option("--playable/--no-playable", default=True)
 def run(
     model,
     z_dim,
@@ -147,6 +147,8 @@ def run(
         vae = VAEMarioHierarchical(z_dim=z_dim)
     elif model == "dirichlet":
         vae = VAEMarioHierarchicalDirichlet(z_dim=z_dim)
+    else:
+        raise ValueError("expected normal or dirichlet.")
 
     print(vae)
     optimizer = optim.Adam(vae.parameters(), lr=lr)

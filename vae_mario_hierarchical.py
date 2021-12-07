@@ -151,6 +151,9 @@ class VAEMarioHierarchical(nn.Module):
         sample=False,
         ax=None,
     ):
+        if self.z_dim != 2:
+            return np.zeros((16 * 14, 16 * 14, 3))
+
         z1 = np.linspace(*x_lims, n_cols)
         z2 = np.linspace(*y_lims, n_rows)
 
