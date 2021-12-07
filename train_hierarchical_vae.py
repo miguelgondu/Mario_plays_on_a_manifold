@@ -17,6 +17,8 @@ from tqdm import tqdm
 from vae_mario_hierarchical import VAEMarioHierarchical
 from torch.utils.tensorboard import SummaryWriter
 
+from vae_mario_hierarchical_dirichlet import VAEMarioHierarchicalDirichlet
+
 # Data types.
 Tensor = torch.Tensor
 
@@ -91,6 +93,7 @@ def test(
 
 
 @click.command()
+@click.option("--model", type=str, default="dirichlet")
 @click.option("--z-dim", type=int, default=2)
 @click.option("--comment", type=str, default=None)
 @click.option("--max-epochs", type=int, default=200)
@@ -102,6 +105,7 @@ def test(
 @click.option("--overfit/--no-overfit", default=False)
 @click.option("--playable/--no-playable", default=False)
 def run(
+    model,
     z_dim,
     comment,
     max_epochs,
@@ -119,9 +123,9 @@ def run(
     # Defining the name of the experiment
     timestamp = str(time()).replace(".", "")
     if comment is None:
-        comment = f"{timestamp}_mariovae_zdim_{z_dim}"
+        comment = f"{timestamp}_mariovae_zdim_{z_dim}_{model}"
 
-    writer = SummaryWriter(log_dir=f"./runs/{timestamp}_{comment}")
+    writer = SummaryWriter(log_dir=f"./runs/{comment}")
 
     # Setting up the hyperparameters
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -139,7 +143,12 @@ def run(
 
     # Loading the model
     print("Model:")
-    vae = VAEMarioHierarchical(z_dim=z_dim)
+    if model == "normal":
+        vae = VAEMarioHierarchical(z_dim=z_dim)
+    elif model == "dirichlet":
+        vae = VAEMarioHierarchicalDirichlet(z_dim=z_dim)
+
+    print(vae)
     optimizer = optim.Adam(vae.parameters(), lr=lr)
 
     # Training and testing.
