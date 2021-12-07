@@ -112,12 +112,7 @@ class VAEMarioHierarchicalDirichlet(nn.Module):
         Returns Dir(dec(z))
         """
         result = self.decoder(z.to(self.device))
-        concentrations = self.dec_concentrations(result)
-        print("debugging concentrations")
-        print("min")
-        print(concentrations.min())
-        print("all strictly positive")
-        print((concentrations > 0).all())
+        concentrations = self.dec_concentrations(result) + 1e-10
         return Dirichlet(concentrations)
 
     def decode(self, z: Tensor) -> Categorical:
