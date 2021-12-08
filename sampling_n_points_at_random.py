@@ -15,18 +15,19 @@ models = {
     64: "16388929591033669_mariovae_zdim_64_normal_final",
 }
 
-for z_dim, model_name in models.items():
-    vae = VAEMarioHierarchical(z_dim=z_dim)
-    vae.load_state_dict(t.load(f"./models/{model_name}.pt"))
-    vae.eval()
+if __name__ == "__main__":
+    for z_dim, model_name in models.items():
+        vae = VAEMarioHierarchical(z_dim=z_dim)
+        vae.load_state_dict(t.load(f"./models/{model_name}.pt"))
+        vae.eval()
 
-    zs = vae.p_z.sample((1000,))
-    levels = vae.decode(zs).probs.argmax(dim=-1)
+        zs = vae.p_z.sample((1000,))
+        levels = vae.decode(zs).probs.argmax(dim=-1)
 
-    np.savez(
-        f"./data/arrays/{model_name}.npz",
-        zs=zs.detach().numpy(),
-        levels=levels.detach().numpy(),
-    )
+        np.savez(
+            f"./data/arrays/{model_name}.npz",
+            zs=zs.detach().numpy(),
+            levels=levels.detach().numpy(),
+        )
 
-    print(f"Saved array for model {model_name}.")
+        print(f"Saved array for model {model_name}.")

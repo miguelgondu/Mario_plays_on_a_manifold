@@ -1,5 +1,5 @@
 .DS_Store
-.vscode/
+.vscode/*.json
 data/processed/text
 data/processed/*.npz
 data/processed/sequences_*.json

@@ -1,3 +1,11 @@
+"""
+This script was supposed to contain all code for tables
+and visualization in one of the paper attempts we did.
+
+Now (8/12/2021) I prefer to split it into smaller scripts,
+each with their own specialty.
+"""
+
 from typing import Tuple, List
 from itertools import product
 import json
