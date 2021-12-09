@@ -57,7 +57,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
         line = li.interpolate(z1, z2)
         levels_in_line = vae.decode(line).probs.argmax(dim=-1)
         np.savez(
-            f"./data/arrays/{model_name}_linear_interpolation_{line_i:03d}.npz",
+            f"./data/arrays/baselines/{model_name}_linear_interpolation_{line_i:03d}.npz",
             zs=line.detach().numpy(),
             levels=levels_in_line.detach().numpy(),
         )
@@ -70,7 +70,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
         normal_diffusion = nd.run(encodings)
         levels_normal = vae.decode(normal_diffusion).probs.argmax(dim=-1)
         np.savez(
-            f"./data/arrays/{model_name}_normal_diffusion_{run_i:03d}.npz",
+            f"./data/arrays/baselines/{model_name}_normal_diffusion_{run_i:03d}.npz",
             zs=normal_diffusion.detach().numpy(),
             levels=levels_normal.detach().numpy(),
         )
@@ -78,7 +78,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
         baseline_diffusion = bd.run(encodings)
         levels_baseline = vae.decode(baseline_diffusion).probs.argmax(dim=-1)
         np.savez(
-            f"./data/arrays/{model_name}_baseline_diffusion_{run_i:03d}.npz",
+            f"./data/arrays/baselines/{model_name}_baseline_diffusion_{run_i:03d}.npz",
             zs=baseline_diffusion.detach().numpy(),
             levels=levels_baseline.detach().numpy(),
         )
@@ -102,7 +102,9 @@ def inspect_z_dim_2():
 
     # Loading up the arrays:
     for line_i in range(100):
-        line = np.load(f"./data/arrays/{model_2}_linear_interpolation_{line_i:03d}.npz")
+        line = np.load(
+            f"./data/arrays/baselines/{model_2}_linear_interpolation_{line_i:03d}.npz"
+        )
         zs = line["zs"]
         ax.scatter(zs[:, 0], zs[:, 1])
 
@@ -112,9 +114,11 @@ def inspect_z_dim_2():
     ax2.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
     ax3.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
     for run_i in range(100):
-        normal_d = np.load(f"./data/arrays/{model_2}_normal_diffusion_{run_i:03d}.npz")
+        normal_d = np.load(
+            f"./data/arrays/baselines/{model_2}_normal_diffusion_{run_i:03d}.npz"
+        )
         baseline_d = np.load(
-            f"./data/arrays/{model_2}_baseline_diffusion_{run_i:03d}.npz"
+            f"./data/arrays/baselines/{model_2}_baseline_diffusion_{run_i:03d}.npz"
         )
         zs_n = normal_d["zs"]
         zs_b = baseline_d["zs"]
@@ -130,4 +134,4 @@ if __name__ == "__main__":
     for z_dim, model_name in models.items():
         save_arrays_for_model(model_name, z_dim)
 
-    # inspect_z_dim_2()
+    inspect_z_dim_2()
