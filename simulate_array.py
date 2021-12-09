@@ -22,22 +22,7 @@ def test_level(i: int, z: np.ndarray, level: np.ndarray, array_name: str):
     return res
 
 
-@click.command()
-@click.argument(
-    "array_path", type=str, default="./data/arrays/samples_for_playability.npz"
-)
-@click.option("--processes", type=int, default=5)
-@click.option("--repetitions_per_level", type=int, default=1)
-def simulate_array(array_path, processes, repetitions_per_level):
-    """
-    Takes an array stored as an .npz with
-    the keys "zs" and "levels" and simulates it,
-    storing the results in a csv with the same name
-    as the array in ./data/array_simulation_results.
-
-    In the process, saves each individual result in
-    ./data/array_simulation_jsons.
-    """
+def _simulate_array(array_path, processes, repetitions_per_level):
     array_path = Path(array_path)
     array_name = array_path.name.replace(".npz", "")
 
@@ -66,6 +51,24 @@ def simulate_array(array_path, processes, repetitions_per_level):
     df.to_csv(f"./data/array_simulation_results/{array_name}.csv")
 
 
+@click.command()
+@click.argument(
+    "array_path", type=str, default="./data/arrays/samples_for_playability.npz"
+)
+@click.option("--processes", type=int, default=5)
+@click.option("--repetitions_per_level", type=int, default=1)
+def simulate_array(array_path, processes, repetitions_per_level):
+    """
+    Takes an array stored as an .npz with
+    the keys "zs" and "levels" and simulates it,
+    storing the results in a csv with the same name
+    as the array in ./data/array_simulation_results.
+
+    In the process, saves each individual result in
+    ./data/array_simulation_jsons.
+    """
+    _simulate_array(array_path, processes, repetitions_per_level)
+
+
 if __name__ == "__main__":
-    # simulate_array()
     simulate_array()
