@@ -1,6 +1,8 @@
 """
 This script saves the arrays for all baseline experiments,
 for several dimensions.
+
+See table [ref] in the research log.
 """
 from typing import List
 
@@ -50,7 +52,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
 
     # Saving linear interpolations
     li = LinearInterpolation()
-    zs_1, zs_2 = get_random_pairs(encodings, n_pairs=1000)
+    zs_1, zs_2 = get_random_pairs(encodings, n_pairs=100)
     for line_i, (z1, z2) in enumerate(zip(zs_1, zs_2)):
         line = li.interpolate(z1, z2)
         levels_in_line = vae.decode(line).probs.argmax(dim=-1)
@@ -84,10 +86,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
     print(f"Arrays saved for model {model_name}")
 
 
-if __name__ == "__main__":
-    for z_dim, model_name in models.items():
-        save_arrays_for_model(model_name, z_dim)
-
+def inspect_z_dim_2():
     # Visual inspection for 2 dimensions
     model_2 = models[2]
     _, ax = plt.subplots(1, 1)
@@ -107,4 +106,28 @@ if __name__ == "__main__":
         zs = line["zs"]
         ax.scatter(zs[:, 0], zs[:, 1])
 
+    # New fig. for the diffusions.
+    _, ax2 = plt.subplots(1, 1)
+    _, ax3 = plt.subplots(1, 1)
+    ax2.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
+    ax3.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
+    for run_i in range(100):
+        normal_d = np.load(f"./data/arrays/{model_2}_normal_diffusion_{run_i:03d}.npz")
+        baseline_d = np.load(
+            f"./data/arrays/{model_2}_baseline_diffusion_{run_i:03d}.npz"
+        )
+        zs_n = normal_d["zs"]
+        zs_b = baseline_d["zs"]
+
+        ax2.scatter(zs_n[:, 0], zs_n[:, 1], c="red", alpha=0.5)
+        ax3.scatter(zs_b[:, 0], zs_b[:, 1], c="red", alpha=0.5)
+
     plt.show()
+    plt.close()
+
+
+if __name__ == "__main__":
+    for z_dim, model_name in models.items():
+        save_arrays_for_model(model_name, z_dim)
+
+    # inspect_z_dim_2()
