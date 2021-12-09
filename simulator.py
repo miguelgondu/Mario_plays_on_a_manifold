@@ -1,6 +1,8 @@
 """
 This script will send things to
 the MarioGAN.jar compiled simulator.
+
+When ran, it lets a human play a level.
 """
 import subprocess
 import json

@@ -1,3 +1,9 @@
+"""
+This script contains everything related to
+the toy experiment. It computes Table [ref table:toy_experiment],
+and all figures in Sec. [ref sec:toy_experiment]
+"""
+
 from typing import List, Tuple
 import json
 
@@ -11,6 +17,7 @@ from vae_geometry_text import VAEGeometryText
 from vae_geometry_hierarchical_text import VAEGeometryHierarchicalText
 
 from geoml.discretized_manifold import DiscretizedManifold
+from metric_approximation_with_jacobians import plot_approximation
 
 from interpolations.base_interpolation import BaseInterpolation
 from interpolations.linear_interpolation import LinearInterpolation
@@ -418,6 +425,40 @@ def test_determinism(vae, seed):
     assert sequences_1 == sequences_2
 
     print("Success!")
+
+
+def several_betas():
+    # Plotting one with no UQ.
+    vaetext = VAEGeometryHierarchicalText()
+    vaetext.load_state_dict(t.load(f"./models/hierarchical_text_final.pt"))
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    plot_approximation(vaetext, function=vaetext.decode, ax=ax)
+    # zs = vae.encodings.detach().numpy()
+    # ax.scatter(zs[:, 0], zs[:, 1], marker="x", c="#DC851F")
+    ax.set_title("No UQ", fontsize=20)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.savefig(
+        f"./data/plots/final/text_model_no_UQ.png", dpi=100, bbox_inches="tight"
+    )
+    plt.close()
+
+    for beta in [-1.0, -2.0, -3.0, -4.0]:
+        vaetext = VAEGeometryHierarchicalText()
+        vaetext.load_state_dict(t.load(f"./models/hierarchical_text_final.pt"))
+        vaetext.update_cluster_centers(beta=beta, n_clusters=500)
+
+        fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+        vaetext.plot_metric_volume(ax=ax)
+        ax.set_title(r"$\beta=$" + f"{beta}", fontsize=20)
+        ax.axis("off")
+        plt.tight_layout()
+        fig.savefig(
+            f"./data/plots/final/text_model_beta_{beta}.png",
+            dpi=100,
+            bbox_inches="tight",
+        )
+        plt.close()
 
 
 if __name__ == "__main__":
