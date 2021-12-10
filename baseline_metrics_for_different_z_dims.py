@@ -27,7 +27,7 @@ models = {
 
 
 def get_random_pairs(
-    points: t.Tensor, n_pairs: int = 100, seed: int = None
+    points: t.Tensor, n_pairs: int = 20, seed: int = None
 ) -> List[t.Tensor]:
     if seed is not None:
         np.random.seed(seed)
@@ -52,7 +52,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
 
     # Saving linear interpolations
     li = LinearInterpolation()
-    zs_1, zs_2 = get_random_pairs(encodings, n_pairs=100)
+    zs_1, zs_2 = get_random_pairs(encodings, n_pairs=20)
     for line_i, (z1, z2) in enumerate(zip(zs_1, zs_2)):
         line = li.interpolate(z1, z2)
         levels_in_line = vae.decode(line).probs.argmax(dim=-1)
@@ -63,10 +63,10 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
         )
 
     # Saving diffusions
-    nd = NormalDifussion(100, scale=0.5)
-    bd = BaselineDiffusion(100, step_size=0.5)
+    nd = NormalDifussion(10, scale=0.5)
+    bd = BaselineDiffusion(10, step_size=0.5)
 
-    for run_i in range(100):
+    for run_i in range(20):
         normal_diffusion = nd.run(encodings)
         levels_normal = vae.decode(normal_diffusion).probs.argmax(dim=-1)
         np.savez(
@@ -101,7 +101,7 @@ def inspect_z_dim_2():
     ax.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
 
     # Loading up the arrays:
-    for line_i in range(100):
+    for line_i in range(20):
         line = np.load(
             f"./data/arrays/baselines/{model_2}_linear_interpolation_{line_i:03d}.npz"
         )
@@ -113,7 +113,7 @@ def inspect_z_dim_2():
     _, ax3 = plt.subplots(1, 1)
     ax2.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
     ax3.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
-    for run_i in range(100):
+    for run_i in range(20):
         normal_d = np.load(
             f"./data/arrays/baselines/{model_2}_normal_diffusion_{run_i:03d}.npz"
         )
