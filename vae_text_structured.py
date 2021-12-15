@@ -1,5 +1,5 @@
 """
-A hierarchical version of the text VAE.
+A structured uncertainty version of the text VAE
 """
 import random
 from typing import List
@@ -7,7 +7,13 @@ from itertools import product
 
 import numpy as np
 import torch as t
-from torch.distributions import Distribution, Normal, Categorical, kl_divergence
+from torch.distributions import (
+    Distribution,
+    Normal,
+    MultivariateNormal,
+    Categorical,
+    kl_divergence,
+)
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
@@ -60,14 +66,14 @@ def load_data(n_sequences: int, max_length: int = 10, seed=0):
     return train_seqs, test_seqs
 
 
-class VAEHierarchicalText(nn.Module):
+class VAEStructuredText(nn.Module):
     def __init__(
         self,
         length: int = 10,
         z_dim: int = 2,
         device: str = None,
     ):
-        super(VAEHierarchicalText, self).__init__()
+        super(VAEStructuredText, self).__init__()
         self.encoding = {
             "0": 0,
             "1": 1,
@@ -92,6 +98,11 @@ class VAEHierarchicalText(nn.Module):
         self.z_dim = z_dim
         self.device = device or t.device("cuda" if t.cuda.is_available() else "cpu")
 
+        all_indices = t.tril_indices(self.input_dim, self.input_dim)
+        mask = all_indices[0, :] != all_indices[1, :]
+        self.L_lower_indices = all_indices[:, mask]
+        self.L_diagonal_indices = all_indices[:, t.logical_not(mask)]
+
         self.encoder = nn.Sequential(
             nn.Linear(self.input_dim, 64),
             nn.Tanh(),
@@ -106,7 +117,14 @@ class VAEHierarchicalText(nn.Module):
             nn.Tanh(),
         ).to(self.device)
         self.dec_mu = nn.Linear(self.input_dim, self.input_dim).to(self.device)
-        self.dec_var = nn.Linear(self.input_dim, self.input_dim).to(self.device)
+        self.dec_lower = nn.Linear(
+            self.input_dim,
+            (self.input_dim * (self.input_dim - 1)) // 2,
+        )
+        self.dec_diagonal = nn.Sequential(
+            nn.Linear(self.input_dim, self.input_dim),
+            nn.Softplus(),
+        )
 
         self.p_z = Normal(
             t.zeros(self.z_dim, device=self.device),
@@ -142,12 +160,18 @@ class VAEHierarchicalText(nn.Module):
 
         return Normal(mu, t.exp(0.5 * log_var))
 
-    def _intermediate_distribution(self, z: t.Tensor) -> Normal:
+    def _intermediate_distribution(self, z: t.Tensor) -> MultivariateNormal:
+        b, _ = z.shape
         res = self.decoder(z.to(self.device))
         mu = self.dec_mu(res)
-        log_var = self.dec_var(res)
+        dec_L = self.dec_lower(res)
+        dec_L_diag = self.dec_diagonal(res)
 
-        return Normal(mu, t.exp(0.5 * log_var))
+        L = t.zeros((b, self.input_dim, self.input_dim))
+        L[:, self.L_lower_indices[0, :], self.L_lower_indices[1, :]] = dec_L
+        L[:, self.L_diagonal_indices[0, :], self.L_diagonal_indices[1, :]] = dec_L_diag
+
+        return MultivariateNormal(loc=mu, scale_tril=L)
 
     def decode(self, z: t.Tensor) -> Categorical:
         # Decodes z, returning p(x|z)

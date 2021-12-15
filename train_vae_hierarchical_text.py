@@ -16,6 +16,8 @@ from tqdm import tqdm
 from vae_hierarchical_text import VAEHierarchicalText, load_data
 from torch.utils.tensorboard import SummaryWriter
 
+from vae_text_structured import VAEStructuredText
+
 # Data types.
 Tensor = torch.Tensor
 
@@ -65,6 +67,7 @@ def test(
 
 
 @click.command()
+@click.option("--model-type", type=str, default="structured")
 @click.option("--z-dim", type=int, default=2)
 @click.option("--comment", type=str, default=None)
 @click.option("--max-epochs", type=int, default=200)
@@ -76,6 +79,7 @@ def test(
 @click.option("--overfit/--no-overfit", default=False)
 @click.option("--playable/--no-playable", default=False)
 def run(
+    model_type,
     z_dim,
     comment,
     max_epochs,
@@ -104,7 +108,10 @@ def run(
 
     # Loading the model
     print("Model:")
-    vae = VAEHierarchicalText(z_dim=z_dim)
+    if model_type == "normal":
+        vae = VAEHierarchicalText(z_dim=z_dim)
+    elif model_type == "structured":
+        vae = VAEStructuredText(z_dim=z_dim)
     optimizer = optim.Adam(vae.parameters(), lr=lr)
 
     # Creting the datasets

@@ -18,6 +18,7 @@ from vae_mario_hierarchical import VAEMarioHierarchical
 from torch.utils.tensorboard import SummaryWriter
 
 from vae_mario_hierarchical_dirichlet import VAEMarioHierarchicalDirichlet
+from vae_structured import VAEStructured
 
 # Data types.
 Tensor = torch.Tensor
@@ -93,7 +94,7 @@ def test(
 
 
 @click.command()
-@click.option("--model", type=str, default="normal")
+@click.option("--model", type=str, default="structured")
 @click.option("--z-dim", type=int, default=2)
 @click.option("--comment", type=str, default=None)
 @click.option("--max-epochs", type=int, default=200)
@@ -147,8 +148,10 @@ def run(
         vae = VAEMarioHierarchical(z_dim=z_dim)
     elif model == "dirichlet":
         vae = VAEMarioHierarchicalDirichlet(z_dim=z_dim)
+    elif model == "structured":
+        vae = VAEStructured(z_dim=z_dim)
     else:
-        raise ValueError("expected normal or dirichlet.")
+        raise ValueError("expected normal, dirichlet or structured.")
 
     print(vae)
     optimizer = optim.Adam(vae.parameters(), lr=lr)
