@@ -3,7 +3,7 @@ This script loads and analyses all 'baselines',
 which are in the ../data/array_simulation_results/baselines/*.csv
 """
 import random
-from typing import List
+from typing import Dict, List
 import json
 from pathlib import Path
 
@@ -41,6 +41,25 @@ def get_all_levels(experiment: List[Path]) -> List[np.ndarray]:
     return levels_as_arrays
 
 
+def similarity(level_a: np.ndarray, level_b: np.ndarray) -> float:
+    w, h = level_a.shape
+    coincide = np.count_nonzero(level_a == level_b)
+
+    return (1 / (w * h)) * coincide
+
+
+def get_mean_similarities(experiment: List[Path]) -> float:
+    levels = get_all_levels(experiment)
+
+    similarities = []
+    for a, level in enumerate(levels):
+        for another_level in levels[a + 1 :]:
+            sim_ = similarity(level, another_level)
+            similarities.append(sim_)
+
+    return np.mean(similarities)
+
+
 def summarize(res: List[Path]):
     """
     Grabs a list of all the paths related to one dimension,
@@ -48,14 +67,19 @@ def summarize(res: List[Path]):
     linear interpolations and the two baseline diffusions.
     """
     row = {}
-    linear_interpolations = filter(lambda x: "_linear_interpolation_" in x.name, res)
-    row["linear interpolation mean"] = get_mean_playability(linear_interpolations)
+    linear_interpolations = list(
+        filter(lambda x: "_linear_interpolation_" in x.name, res)
+    )
+    normal_diffusions = list(filter(lambda x: "_normal_diffusion_" in x.name, res))
+    baseline_diffusions = list(filter(lambda x: "_baseline_diffusion_" in x.name, res))
 
-    normal_diffusions = filter(lambda x: "_normal_diffusion_" in x.name, res)
-    row["normal diffusions mean"] = get_mean_playability(normal_diffusions)
+    row["L.I. mean"] = get_mean_playability(linear_interpolations)
+    row["N.D. mean"] = get_mean_playability(normal_diffusions)
+    row["B.D. mean"] = get_mean_playability(baseline_diffusions)
 
-    baseline_diffusions = filter(lambda x: "_baseline_diffusion_" in x.name, res)
-    row["baseline diffusions mean"] = get_mean_playability(baseline_diffusions)
+    row["L.I. sim"] = get_mean_similarities(linear_interpolations)
+    row["N.D. sim"] = get_mean_similarities(normal_diffusions)
+    row["B.D. sim"] = get_mean_similarities(baseline_diffusions)
 
     print(row)
     return row
