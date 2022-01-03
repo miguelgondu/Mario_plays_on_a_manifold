@@ -94,13 +94,12 @@ def test(
 
 
 @click.command()
-@click.option("--model", type=str, default="structured")
+@click.option("--model", type=str, default="normal")
 @click.option("--z-dim", type=int, default=2)
 @click.option("--comment", type=str, default=None)
 @click.option("--max-epochs", type=int, default=200)
 @click.option("--batch-size", type=int, default=64)
 @click.option("--lr", type=float, default=1e-3)
-@click.option("--seed", type=int, default=0)
 @click.option("--scale", type=float, default=1.0)
 @click.option("--save-every", type=int, default=20)
 @click.option("--overfit/--no-overfit", default=False)
@@ -112,14 +111,13 @@ def run(
     max_epochs,
     batch_size,
     lr,
-    seed,
     scale,
     save_every,
     overfit,
     playable,
 ):
     # Setting up the seeds
-    torch.manual_seed(seed)
+    # torch.manual_seed(seed)
 
     # Defining the name of the experiment
     timestamp = str(time()).replace(".", "")
@@ -133,7 +131,7 @@ def run(
 
     # Loading the data.
     training_tensors, test_tensors = load_data(
-        shuffle_seed=seed, only_playable=playable
+        shuffle_seed=None, only_playable=playable
     )
 
     # Creating datasets.

@@ -190,11 +190,12 @@ class VAEMarioHierarchical(nn.Module):
         writer.add_scalar("train loss", train_loss, step_id)
         writer.add_scalar("test loss", test_loss, step_id)
 
-        grid = self.plot_grid()
-        grid = 255 - grid
-        writer.add_image(
-            "grid", grid.reshape(1, *grid.shape), step_id, dataformats="NHWC"
-        )
+        if self.z_dim == 2:
+            grid = self.plot_grid()
+            grid = 255 - grid
+            writer.add_image(
+                "grid", grid.reshape(1, *grid.shape), step_id, dataformats="NHWC"
+            )
 
         zs = self.p_z.sample((64,)).to(self.device)
         samples_dist = self.decode(zs)
