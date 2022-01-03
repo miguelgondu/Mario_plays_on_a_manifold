@@ -92,7 +92,7 @@ def run(
     playable,
 ):
     # Setting up the seeds
-    torch.manual_seed(seed)
+    # torch.manual_seed(seed)
 
     # Defining the name of the experiment
     timestamp = str(time()).replace(".", "")
