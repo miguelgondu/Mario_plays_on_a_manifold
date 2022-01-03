@@ -4,6 +4,7 @@ A structured uncertainty version of the text VAE
 import random
 from typing import List
 from itertools import product
+from time import time
 
 import numpy as np
 import torch as t
@@ -16,6 +17,9 @@ from torch.distributions import (
 )
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import TensorDataset, DataLoader
+
+from train_vae_text import fit, test
 
 
 def generate(max_terms, symbols="+-*"):
@@ -275,5 +279,70 @@ class VAEStructuredText(nn.Module):
         return correctness_image
 
 
+def run():
+    # Hyperparameters
+    z_dim = 2
+    batch_size = 64
+    lr = 0.002
+    max_epochs = 1000
+    overfit = True
+    save_every = 100
+
+    # Logging
+    comment = f"vae_text_structured_zdim_{z_dim}"
+    timestamp = str(time()).replace(".", "")
+    writer = SummaryWriter(log_dir=f"./runs/{timestamp}_{comment}")
+
+    device = t.device("cuda" if t.cuda.is_available() else "cpu")
+
+    # Loading the model
+    print("Model:")
+    vae = VAEStructuredText(z_dim=z_dim, device=device)
+    optimizer = t.optim.Adam(vae.parameters(), lr=lr)
+
+    # Creting the datasets
+    dataset = TensorDataset(vae.train_tensor)
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    test_dataset = TensorDataset(vae.test_tensor)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
+    # Training and testing.
+    print(f"Training experiment {comment}")
+    best_loss = np.Inf
+    n_without_improvement = 0
+    for epoch in range(max_epochs):
+        print(f"Epoch {epoch + 1} of {max_epochs}.")
+        train_loss = fit(vae, optimizer, data_loader, device)
+        test_loss = test(vae, test_loader, test_dataset, device, epoch)
+        if test_loss < best_loss:
+            best_loss = test_loss
+            n_without_improvement = 0
+
+            # Saving the best model so far.
+            t.save(vae.state_dict(), f"./models/text/{comment}_final.pt")
+        else:
+            if not overfit:
+                n_without_improvement += 1
+
+        # Reporting
+        vae.report(
+            writer,
+            epoch,
+            train_loss / len(dataset),
+            test_loss / len(test_dataset),
+        )
+
+        if epoch % save_every == 0 and epoch != 0:
+            # Saving the model
+            print(f"Saving the model at checkpoint {epoch}.")
+            t.save(vae.state_dict(), f"./models/text/{comment}_epoch_{epoch}.pt")
+
+        # Early stopping:
+        if n_without_improvement == 25:
+            print("Stopping early")
+            break
+
+
 if __name__ == "__main__":
-    load_data(100)
+    # load_data(100)
+    run()

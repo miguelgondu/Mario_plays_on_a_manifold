@@ -9,11 +9,8 @@ from typing import List
 from itertools import product
 
 import numpy as np
-import matplotlib.pyplot as plt
-from numpy.lib.function_base import _corrcoef_dispatcher
 import torch as t
 from torch.distributions import Distribution, Normal, Categorical, kl_divergence
-from torch.nn import functional as F
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
