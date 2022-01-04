@@ -6,6 +6,7 @@ from vae_mario_hierarchical import VAEMarioHierarchical
 
 from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
+from geoml.manifold import Manifold
 from vae_mario import VAEMario, load_data
 
 from geoml.discretized_manifold import DiscretizedManifold
@@ -16,7 +17,7 @@ from metric_approximation_with_jacobians import approximate_metric, plot_approxi
 Tensor = torch.Tensor
 
 
-class VAEGeometryHierarchical(VAEMarioHierarchical):
+class VAEGeometryHierarchical(VAEMarioHierarchical, Manifold):
     def __init__(
         self,
         w: int = 14,
@@ -27,7 +28,8 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
     ):
         super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
 
-    def reweight(self, z: Tensor) -> Categorical:
+    # This method overwrites the decode of the vanilla one.
+    def decode(self, z: Tensor) -> Categorical:
         similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
         intermediate_normal = self._intermediate_distribution(z)
         dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
@@ -101,12 +103,12 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         return min_dist.view(zsh[:-1])
 
     def metric(self, z: torch.Tensor) -> torch.Tensor:
-        return approximate_metric(self.reweight, z)
+        return approximate_metric(self.decode, z)
         # return self.metric_approximation(z)
 
-    def curve_length(self, curve):
+    def curve_energy(self, curve):
         dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
-        full_cat = self.reweight(curve)
+        full_cat = self.decode(curve)
         probs = full_cat.probs
 
         cat1 = Categorical(probs=probs[:-1])
@@ -137,7 +139,7 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
             for i, y in enumerate(reversed(z2))
         }
 
-        dist_ = self.reweight(zs)
+        dist_ = self.decode(zs)
         entropy_ = dist_.entropy().mean(axis=1).mean(axis=1)
         if len(entropy_.shape) > 1:
             entropy_ = torch.mean(entropy_, dim=1)
@@ -157,23 +159,18 @@ class VAEGeometryHierarchical(VAEMarioHierarchical):
         # plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
         # cbar.ax.set_yticklabels([entropy_K.min(), entropy_K.max()])
 
-    def plot_w_geodesics(self, ax=None, plot_points=True, n_geodesics=20):
+    def plot_w_geodesics(self, ax=None, plot_points=True, n_geodesics=5):
         if ax is None:
             _, ax = plt.subplots(1, 1)
 
         self.plot_latent_space(ax=ax, plot_points=plot_points)
 
-        grid = [torch.linspace(-5, 5, 50), torch.linspace(-5, 5, 50)]
-        Mx, My = torch.meshgrid(grid[0], grid[1])
-        grid2 = torch.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
-
-        DM = DiscretizedManifold(self, grid2, use_diagonals=True)
         data = self.encodings
         N = data.shape[0]
         for _ in range(n_geodesics):
             idx = torch.randint(N, (2,))
             try:
-                c = DM.connecting_geodesic(data[idx[0]], data[idx[1]])
+                c, _ = self.connecting_geodesic(data[idx[0]], data[idx[1]])
                 c.plot(ax=ax, c="red", linewidth=2.0)
             except Exception as e:
                 print(f"Couldn't, got {e}")
