@@ -52,7 +52,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
 
     # Saving linear interpolations
     li = LinearInterpolation()
-    zs_1, zs_2 = get_random_pairs(encodings, n_pairs=20)
+    zs_1, zs_2 = get_random_pairs(encodings, n_pairs=50)
     for line_i, (z1, z2) in enumerate(zip(zs_1, zs_2)):
         line = li.interpolate(z1, z2)
         levels_in_line = vae.decode(line).probs.argmax(dim=-1)
@@ -66,7 +66,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
     nd = NormalDifussion(10, scale=0.5)
     bd = BaselineDiffusion(10, step_size=0.5)
 
-    for run_i in range(20):
+    for run_i in range(50):
         normal_diffusion = nd.run(encodings)
         levels_normal = vae.decode(normal_diffusion).probs.argmax(dim=-1)
         np.savez(

@@ -55,7 +55,7 @@ def save_arrays_for_model(model_name: str, z_dim: int, beta: float = -3.0) -> No
     encodings = vae.encode(levels).mean
 
     gi = GeodesicInterpolation(vae)
-    zs_1, zs_2 = get_random_pairs(encodings, n_pairs=20)
+    zs_1, zs_2 = get_random_pairs(encodings, n_pairs=50)
     for line_i, (z1, z2) in enumerate(zip(zs_1, zs_2)):
         line = gi.interpolate(z1, z2)
         levels_in_line = vae.decode(line).probs.argmax(dim=-1)
@@ -66,9 +66,12 @@ def save_arrays_for_model(model_name: str, z_dim: int, beta: float = -3.0) -> No
         )
 
     # Saving diffusions
-    gd = GeometricDifussion(10, scale=2.0)
+    if z_dim == 2:
+        gd = GeometricDifussion(10, scale=2.0)
+    else:
+        gd = GeometricDifussion(10, scale=1.0)
 
-    for run_i in range(20):
+    for run_i in range(50):
         geometric_diffusion = gd.run(vae)
         levels_geometric = vae.decode(geometric_diffusion).probs.argmax(dim=-1)
         np.savez(
@@ -95,7 +98,7 @@ def inspect_z_dim_2():
     ax.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
 
     # Loading up the arrays:
-    for line_i in range(20):
+    for line_i in range(50):
         line = np.load(
             f"./data/arrays/geometric/{model_2}_beta_-30_geodesic_interpolation_{line_i:03d}.npz"
         )
@@ -105,7 +108,7 @@ def inspect_z_dim_2():
     # New fig. for the diffusions.
     _, ax2 = plt.subplots(1, 1)
     ax2.scatter(encodings[:, 0], encodings[:, 1], alpha=0.2)
-    for run_i in range(20):
+    for run_i in range(50):
         geometric_d = np.load(
             f"./data/arrays/geometric/{model_2}_beta_-30_geometric_diffusion_{run_i:03d}.npz"
         )
@@ -118,7 +121,7 @@ def inspect_z_dim_2():
 
 
 if __name__ == "__main__":
-    for (z_dim, model_name), beta in product(models.items(), [-2.0, -3.0]):
-        save_arrays_for_model(model_name, z_dim, beta=beta)
+    # for (z_dim, model_name), beta in product(models.items(), [-2.0, -3.0]):
+    #     save_arrays_for_model(model_name, z_dim, beta=beta)
 
     inspect_z_dim_2()
