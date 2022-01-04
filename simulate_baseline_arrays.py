@@ -32,7 +32,12 @@ def get_all_array_paths(model_name, skip_simulated=False) -> List[str]:
 
 
 if __name__ == "__main__":
-    for _, model_name in models.items():
-        for path in get_all_array_paths(model_name):
-            print(f"Simulating array {path}")
-            _simulate_array(path, 32, 5, exp_folder="baselines")
+    # for _, model_name in models.items():
+    #     for path in get_all_array_paths(model_name):
+    #         print(f"Simulating array {path}")
+    #         _simulate_array(path, 32, 5, exp_folder="baselines")
+
+    # Simulating only the 2dim one.
+    for path in get_all_array_paths(models[2]):
+        print(f"Simulating array {path}")
+        _simulate_array(path, 32, 5, exp_folder="baselines")
