@@ -12,10 +12,15 @@ from baseline_metrics_for_different_z_dims import models
 from simulate_array import _simulate_array
 
 
-def get_all_array_paths(model_name) -> List[str]:
+def get_all_array_paths(model_name, skip_simulated=False) -> List[str]:
     # Clean previously simulated stuff
-    res_path = Path("./data/array_simulation_results/geometric")
-    already_simulated = [s.name.replace(".csv", ".npz") for s in res_path.glob("*.csv")]
+    if skip_simulated:
+        res_path = Path("./data/array_simulation_results/geometric")
+        already_simulated = [
+            s.name.replace(".csv", ".npz") for s in res_path.glob("*.csv")
+        ]
+    else:
+        already_simulated = []
 
     paths = [
         str(s)
