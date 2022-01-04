@@ -13,8 +13,14 @@ from simulate_array import _simulate_array
 
 
 def get_all_array_paths(model_name) -> List[str]:
+    # Clean previously simulated stuff
+    res_path = Path("./data/array_simulation_results/geometric")
+    already_simulated = [s.name.replace(".csv", ".npz") for s in res_path.glob("*.csv")]
+
     paths = [
-        str(s) for s in Path("./data/arrays/geometric").glob(f"{model_name}_*.npz")
+        str(s)
+        for s in Path("./data/arrays/geometric").glob(f"{model_name}_*.npz")
+        if s.name not in already_simulated
     ]
 
     return paths
