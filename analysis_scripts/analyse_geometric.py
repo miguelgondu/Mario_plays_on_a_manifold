@@ -1,9 +1,9 @@
 """
 This script loads and analyses all 'baselines',
-which are in the ../data/array_simulation_results/baselines/*.csv
+which are in the ../data/array_simulation_results/geometric/*.csv
 """
 import random
-from typing import Dict, List
+from typing import List
 import json
 from pathlib import Path
 
@@ -15,12 +15,6 @@ from mario_utils.plotting import get_img_from_level
 
 
 def get_mean_playability(experiment: List[Path]) -> float:
-    """
-    TODO: should I reduce by level first? We do it on the other
-    computations I think.
-
-    Which other computations?! This are the basis!
-    """
     means = []
     for p in experiment:
         df = pd.read_csv(p)
@@ -68,19 +62,29 @@ def summarize(res: List[Path]):
     """
     row = {}
     linear_interpolations = list(
-        filter(lambda x: "_linear_interpolation_" in x.name, res)
+        filter(lambda x: "_geodesic_interpolation_" in x.name, res)
     )
-    normal_diffusions = list(filter(lambda x: "_normal_diffusion_" in x.name, res))
-    baseline_diffusions = list(filter(lambda x: "_baseline_diffusion_" in x.name, res))
+    geometric_diffusions = list(
+        filter(lambda x: "_geometric_diffusion_" in x.name, res)
+    )
 
-    row["L.I. mean"] = get_mean_playability(linear_interpolations)
-    row["N.D. mean"] = get_mean_playability(normal_diffusions)
-    row["B.D. mean"] = get_mean_playability(baseline_diffusions)
+    lis_beta_30 = list(filter(lambda x: "_beta_-30_" in x.name, linear_interpolations))
+    lis_beta_20 = list(filter(lambda x: "_beta_-20_" in x.name, linear_interpolations))
 
-    row["L.I. sim"] = 1 - get_mean_similarities(linear_interpolations)
-    row["N.D. sim"] = 1 - get_mean_similarities(normal_diffusions)
-    row["B.D. sim"] = 1 - get_mean_similarities(baseline_diffusions)
+    gds_beta_30 = list(filter(lambda x: "_beta_-30_" in x.name, geometric_diffusions))
+    gds_beta_20 = list(filter(lambda x: "_beta_-20_" in x.name, geometric_diffusions))
 
+    # We also have to filter by beta
+
+    # row["G.I. (beta -2.0) mean"] = get_mean_playability(lis_beta_20)
+    # row["G.I. (beta -3.0) mean"] = get_mean_playability(lis_beta_30)
+    row["G.D. (beta -2.0) mean"] = get_mean_playability(gds_beta_20)
+    row["G.D. (beta -3.0) mean"] = get_mean_playability(gds_beta_30)
+
+    # row["G.I. (beta -2.0) sim"] = get_mean_similarities(lis_beta_20)
+    # row["G.I. (beta -3.0) sim"] = get_mean_similarities(lis_beta_30)
+    row["G.D. (beta -2.0) sim"] = 1 - get_mean_similarities(gds_beta_20)
+    row["G.D. (beta -3.0) sim"] = 1 - get_mean_similarities(gds_beta_30)
     print(row)
     return row
 
@@ -94,41 +98,33 @@ def plot_random_levels(axes, levels):
 
 
 def print_levels(res: List[Path], comment: str):
-    linear_interpolations = filter(lambda x: "_linear_interpolation_" in x.name, res)
-    levels_l = get_all_levels(linear_interpolations)
+    geodesic_interpolations = filter(
+        lambda x: "_geodesic_interpolation_" in x.name, res
+    )
+    levels_l = get_all_levels(geodesic_interpolations)
 
-    normal_diffusions = filter(lambda x: "_normal_diffusion_" in x.name, res)
-    levels_nd = get_all_levels(normal_diffusions)
-
-    baseline_diffusions = filter(lambda x: "_baseline_diffusion_" in x.name, res)
-    levels_bd = get_all_levels(baseline_diffusions)
+    geometric_diffusions = filter(lambda x: "_geometric_diffusion_" in x.name, res)
+    levels_nd = get_all_levels(geometric_diffusions)
 
     fig1, axes1 = plt.subplots(8, 8, figsize=(8 * 5, 8 * 5))
     plot_random_levels(axes1, levels_l)
     fig1.tight_layout()
     fig1.savefig(
-        f"./data/plots/random_levels_in_baselines/{comment}_random_linear_interpolation.jpg"
+        f"./data/plots/random_levels_in_geometric/{comment}_random_geodesic_interpolation.jpg"
     )
 
     fig2, axes2 = plt.subplots(8, 8, figsize=(8 * 5, 8 * 5))
     plot_random_levels(axes2, levels_nd)
     fig2.tight_layout()
     fig2.savefig(
-        f"./data/plots/random_levels_in_baselines/{comment}_random_normal_diffusion.jpg"
-    )
-
-    fig3, axes3 = plt.subplots(8, 8, figsize=(8 * 5, 8 * 5))
-    plot_random_levels(axes3, levels_bd)
-    fig3.tight_layout()
-    fig3.savefig(
-        f"./data/plots/random_levels_in_baselines/{comment}_random_baseline_diffusion.jpg"
+        f"./data/plots/random_levels_in_geometric/{comment}_random_geometric_diffusion.jpg"
     )
 
     plt.close()
 
 
 if __name__ == "__main__":
-    results_ = list(Path("./data/array_simulation_results/baselines/").glob("*.csv"))
+    results_ = list(Path("./data/array_simulation_results/geometric/").glob("*.csv"))
     res_2 = list(filter(lambda x: "_zdim_2_" in x.name, results_))
     res_8 = list(filter(lambda x: "_zdim_8_" in x.name, results_))
     res_32 = list(filter(lambda x: "_zdim_32_" in x.name, results_))
@@ -143,7 +139,7 @@ if __name__ == "__main__":
 
     print(pd.DataFrame(rows))
 
-    print_levels(res_2, "zdim_2")
-    print_levels(res_8, "zdim_8")
-    print_levels(res_32, "zdim_32")
-    print_levels(res_64, "zdim_64")
+    # print_levels(res_2, "zdim_2")
+    # print_levels(res_8, "zdim_8")
+    # print_levels(res_32, "zdim_32")
+    # print_levels(res_64, "zdim_64")
