@@ -28,6 +28,8 @@ def get_all_array_paths(model_name) -> List[str]:
 
 if __name__ == "__main__":
     for _, model_name in models.items():
-        for path in get_all_array_paths(model_name):
+        all_paths_to_simulate = get_all_array_paths(model_name)
+        print(f"Simulating {len(all_paths_to_simulate)} files")
+        for path in all_paths_to_simulate:
             print(f"Simulating array {path}")
             _simulate_array(path, 32, 5, exp_folder="geometric")
