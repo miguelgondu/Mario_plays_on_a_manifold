@@ -26,7 +26,7 @@ def get_mean_playability(experiment: List[Path]) -> float:
         df = pd.read_csv(p)
         means.append(df["marioStatus"].mean())
 
-    assert len(means) == 20
+    assert len(means) in [20, 50]
     return np.mean(means)
 
 
