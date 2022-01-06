@@ -219,6 +219,11 @@ def MVP():
     # get_ground_truth(plot=True)
 
 
+def load_trace(path: str) -> Tuple[np.ndarray]:
+    a = np.load(path)
+    return a["zs"], a["playabilities"]
+
+
 def query(gpc) -> np.ndarray:
     z1s = np.linspace(-5, 5, 50)
     z2s = np.linspace(-5, 5, 50)
@@ -246,7 +251,7 @@ def run(
 
     for _ in range(n_iterations):
         # Get next point to query
-        next_point = query(gpc)
+        (next_point,) = query(gpc)
         next_level = vae.decode(t.Tensor(next_point)).probs.argmax(dim=-1)
         p = simulate_level(next_level, 5, 5)
         if zs is None:
@@ -266,4 +271,5 @@ def run(
 
 
 if __name__ == "__main__":
-    run({"kernel": None}, 100)
+    zs, playabilities = load_trace("./data/evolution_traces/trace.npz")
+    run({"kernel": None}, 300, zs=zs, playabilities=playabilities, name="bigger_trace")

@@ -7,7 +7,7 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from evolving_playability import get_ground_truth
 
 
-array = np.load("./data/evolution_traces/trace.npz")
+array = np.load("./data/evolution_traces/bigger_trace.npz")
 zs = array["zs"]
 playabilities = array["playabilities"]
 
