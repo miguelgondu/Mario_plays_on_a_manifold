@@ -18,6 +18,7 @@ data/interpolation_experiment
 data/training_results/
 data/compressed_results/
 data/plots/
+data/evolution_traces/
 simulator_experiment/
 models/
 models_experiment/
