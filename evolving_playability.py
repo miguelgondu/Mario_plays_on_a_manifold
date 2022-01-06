@@ -35,7 +35,7 @@ def load_vae() -> VAEMarioHierarchical:
     return vae
 
 
-def simulate_level(level: np.ndarray, processes: int, repeats: int) -> int:
+def simulate_level(level: t.Tensor, processes: int, repeats: int) -> int:
     levels = np.repeat(level.reshape(1, 14, 14), repeats, axis=0)
     with mp.Pool(processes) as p:
         results = p.map(test_level_from_decoded_tensor, levels)
@@ -110,7 +110,7 @@ def get_ground_truth(plot=False) -> np.ndarray:
     return p_img
 
 
-if __name__ == "__main__":
+def MVP():
     # get_initial_data()
     zs, playabilities = load_initial_data()
 
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         ax2.scatter([next_point[0]], [next_point[1]], c="red", marker="x")
         ax2.axis("off")
 
-        ax3.imshow(p_img, extent=[-5, 5, -5, 5], vmin=0.0, vmax=1.0, cmap="Blues")
+        ax3.imshow(pred_img, extent=[-5, 5, -5, 5], vmin=0.0, vmax=1.0, cmap="Blues")
         ax3.scatter([next_point[0]], [next_point[1]], c="red", marker="x")
         ax3.axis("off")
         # plt.show()
@@ -217,3 +217,53 @@ if __name__ == "__main__":
     # raise
 
     # get_ground_truth(plot=True)
+
+
+def query(gpc) -> np.ndarray:
+    z1s = np.linspace(-5, 5, 50)
+    z2s = np.linspace(-5, 5, 50)
+
+    bigger_grid = np.array([[z1, z2] for z1, z2 in product(z1s, z2s)])
+    _, var = gpc.predict_proba(bigger_grid, return_var=True)
+    next_point = bigger_grid[np.argmax(var)]
+
+    return next_point
+
+
+def run(
+    gpc_kwargs: dict,
+    n_iterations: int,
+    zs: np.ndarray = None,
+    playabilities: np.ndarray = None,
+    name="trace",
+):
+    vae = load_vae()
+    gpc = GaussianProcessClassifier(**gpc_kwargs)
+    if zs is None or playabilities is None:
+        zs, playabilities = load_initial_data()
+
+    gpc.fit(zs, playabilities)
+
+    for _ in range(n_iterations):
+        # Get next point to query
+        next_point = query(gpc)
+        next_level = vae.decode(t.Tensor(next_point)).probs.argmax(dim=-1)
+        p = simulate_level(next_level, 5, 5)
+        if zs is None:
+            zs = np.array([next_point])
+        else:
+            zs = np.vstack((zs, next_point))
+        if playabilities is None:
+            playabilities = np.array([p])
+        else:
+            playabilities = np.concatenate((playabilities, np.array([p])))
+
+        print(f"Tested {next_point}")
+        gpc = GaussianProcessClassifier(**gpc_kwargs)
+        gpc.fit(zs, playabilities)
+
+    np.savez(f"./data/evolution_traces/{name}.npz", zs=zs, playabilities=playabilities)
+
+
+if __name__ == "__main__":
+    run({"kernel": None}, 100)
