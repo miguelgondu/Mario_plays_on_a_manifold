@@ -49,7 +49,7 @@ def approximate_metric(function, z, h=0.01, input_size=14 * 14 * 11):
 
 def plot_approximation(model, function=None, ax=None, x_lims=(-5, 5), y_lims=(-5, 5)):
     if function is None:
-        function = model.reweight
+        function = model.decode
 
     n_x, n_y = 50, 50
     x_lims = (-5, 5)

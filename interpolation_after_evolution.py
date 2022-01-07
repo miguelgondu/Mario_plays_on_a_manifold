@@ -4,45 +4,73 @@ the understanding of the latent space using GPCs and AL.
 """
 from itertools import product
 
+import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.gaussian_process import GaussianProcessClassifier
 
+from vae_mario_obstacles import VAEWithObstacles
+
+from baseline_metrics_for_different_z_dims import models
 from evolving_playability import get_ground_truth
 
-a = np.load("./data/evolution_traces/bigger_trace.npz")
-zs = a["zs"]
-p = a["playabilities"]
 
-gpc = GaussianProcessClassifier()
-gpc.fit(zs, p)
+def plot_w_decision_boundary(decision_boundary: float):
+    a = np.load("./data/evolution_traces/bigger_trace.npz")
+    zs = a["zs"]
+    p = a["playabilities"]
 
-z1s = np.linspace(-5, 5, 50)
-z2s = np.linspace(-5, 5, 50)
+    gpc = GaussianProcessClassifier()
+    gpc.fit(zs, p)
 
-bigger_grid = np.array([[z1, z2] for z1, z2 in product(z1s, z2s)])
+    z1s = np.linspace(-5, 5, 50)
+    z2s = np.linspace(-5, 5, 50)
 
-res = gpc.predict_proba(bigger_grid)
-decision_boundary = 0.8
+    bigger_grid = np.array([[z1, z2] for z1, z2 in product(z1s, z2s)])
 
-predictions = [0 if p[1] < decision_boundary else 1.0 for p in res]
+    res = gpc.predict_proba(bigger_grid)
+    decision_boundary = 0.8
 
-positions = {(x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(z2s)}
-pred_dict = {(z[0], z[1]): pred for z, pred in zip(bigger_grid, predictions)}
+    predictions = [0 if p[1] < decision_boundary else 1.0 for p in res]
 
-pred_img = np.zeros((len(z2s), len(z1s)))
-for z, (i, j) in positions.items():
-    pred_img[i, j] = pred_dict[z]
+    positions = {(x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(z2s)}
+    pred_dict = {(z[0], z[1]): pred for z, pred in zip(bigger_grid, predictions)}
 
-_, (ax1, ax2) = plt.subplots(1, 2, figsize=(10 * 2, 10))
+    pred_img = np.zeros((len(z2s), len(z1s)))
+    for z, (i, j) in positions.items():
+        pred_img[i, j] = pred_dict[z]
 
-gt_img = get_ground_truth()
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(10 * 2, 10))
 
-ax1.imshow(gt_img, extent=[-5, 5, -5, 5], cmap="Blues")
-ax1.set_title("Ground truth (2500 levels)")
-ax2.imshow(pred_img, extent=[-5, 5, -5, 5], cmap="Blues")
-ax2.set_title("GPC prediction with only\n 250 samples from latent space")
+    gt_img = get_ground_truth()
 
-plt.tight_layout()
-plt.savefig("./data/plots/evolving_playability/ground_truth_vs_GPC.png")
-plt.show()
+    ax1.imshow(gt_img, extent=[-5, 5, -5, 5], cmap="Blues")
+    ax1.set_title("Ground truth (2500 levels)")
+    ax2.imshow(pred_img, extent=[-5, 5, -5, 5], cmap="Blues")
+    ax2.set_title("GPC prediction with only\n 250 samples from latent space")
+
+    plt.tight_layout()
+    # plt.savefig("./data/plots/evolving_playability/ground_truth_vs_GPC.png")
+    plt.show()
+
+
+def avoiding_nonplayable():
+    """
+    The dual of Nicki's trick.
+    """
+    vae = VAEWithObstacles()
+    vae.load_state_dict(t.load(f"./models/{models[2]}.pt"))
+    a = np.load("./data/evolution_traces/bigger_trace.npz")
+    zs = a["zs"]
+    p = a["playabilities"]
+
+    obstacles = zs[p == 0.0]
+    vae.update_obstacles(t.from_numpy(obstacles).type(t.float))
+
+    _, ax = plt.subplots(1, 1)
+    vae.plot_w_geodesics(ax=ax)
+    plt.show()
+
+
+if __name__ == "__main__":
+    avoiding_nonplayable()
