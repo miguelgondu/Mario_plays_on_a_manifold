@@ -1,5 +1,5 @@
 """
-This script saves the arrays for all baseline experiments,
+This script saves the arrays for all geometric experiments,
 for several dimensions.
 
 See table [ref] in the research log.

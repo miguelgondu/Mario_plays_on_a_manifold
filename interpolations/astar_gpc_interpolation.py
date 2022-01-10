@@ -181,8 +181,11 @@ class AStarGPCInterpolation(BaseInterpolation):
         path_positions = path_positions[1:]
         zs_in_path = np.array([self.inv_positions[p] for p in path_positions])
 
-        # TODO: this should be returning only self.n_points_in_line
-        return t.from_numpy(zs_in_path)
+        idxs = np.round(
+            np.linspace(0, len(zs_in_path) - 1, self.n_points_in_line)
+        ).astype(int)
+
+        return t.from_numpy(zs_in_path[idxs])
 
 
 if __name__ == "__main__":
