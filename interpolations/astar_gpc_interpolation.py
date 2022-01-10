@@ -10,7 +10,7 @@ from typing import List, Tuple
 from queue import PriorityQueue
 from itertools import product
 
-import torch
+import torch as t
 import random
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessClassifier
@@ -18,8 +18,6 @@ import matplotlib.pyplot as plt
 from scipy.spatial import cKDTree
 
 from .base_interpolation import BaseInterpolation
-
-Tensor = torch.Tensor
 
 
 class AStarGPCInterpolation(BaseInterpolation):
@@ -169,7 +167,7 @@ class AStarGPCInterpolation(BaseInterpolation):
 
         raise ValueError(f"z={z} and z_prime={z_prime} are not connected in the graph.")
 
-    def interpolate(self, z: Tensor, z_prime: Tensor) -> Tensor:
+    def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> t.Tensor:
         # Find the closest point to z on the grid, and join
         # by a line.
         # same thing for z_prime.
@@ -184,4 +182,27 @@ class AStarGPCInterpolation(BaseInterpolation):
         zs_in_path = np.array([self.inv_positions[p] for p in path_positions])
 
         # TODO: this should be returning only self.n_points_in_line
-        return torch.from_numpy(zs_in_path)
+        return t.from_numpy(zs_in_path)
+
+
+if __name__ == "__main__":
+    # Loading a given trace
+    a = np.load("./data/evolution_traces/bigger_trace.npz")
+    z = a["zs"]
+    p = a["playabilities"]
+
+    gpc = GaussianProcessClassifier()
+    gpc.fit(z, p)
+
+    astar = AStarGPCInterpolation(10, gpc)
+    interpolation = (
+        astar.interpolate(
+            t.Tensor([-4.0, -4.0]),
+            t.Tensor([3.0, 3.0]),
+        )
+        .detach()
+        .numpy()
+    )
+
+    plt.scatter(interpolation[:, 0], interpolation[:, 1])
+    plt.show()

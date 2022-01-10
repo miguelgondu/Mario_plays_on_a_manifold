@@ -8,6 +8,7 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.gaussian_process import GaussianProcessClassifier
+from interpolations.astar_gpc_interpolation import AStarGPCInterpolation
 
 from vae_mario_obstacles import VAEWithObstacles
 
@@ -72,5 +73,43 @@ def avoiding_nonplayable():
     plt.show()
 
 
+def a_star_interpolations_with_gpc():
+    """
+    Using A Star to avoid obstacles
+    """
+    a = np.load("./data/evolution_traces/bigger_trace.npz")
+    zs = a["zs"]
+    p = a["playabilities"]
+    gpc = GaussianProcessClassifier()
+    gpc.fit(zs, p)
+
+    _, ax = plt.subplots(1, 1)
+
+    astar = AStarGPCInterpolation(10, gpc)
+    ax.imshow(astar.grid, extent=[-5, 5, -5, 5], cmap="Blues")
+    data = t.Tensor(
+        [
+            [-4.0, -4.0],
+            [-4.0, 4.0],
+            [3.0, -4.0],
+            # [4.0, 4.0],
+            [0.0, -4.0],
+            [0.0, 0.0],
+            [2.0, 4.0],
+            [-2.0, 4.0],
+            [3.5, 3.5],
+        ]
+    )
+    N = data.shape[0]
+    for _ in range(5):
+        idx = t.randint(N, (2,))
+        interpolation = astar.interpolate(data[idx[0]], data[idx[1]])
+        ax.scatter(interpolation[:, 0], interpolation[:, 1], c="red")
+
+    ax.axis("off")
+    plt.show()
+
+
 if __name__ == "__main__":
-    avoiding_nonplayable()
+    # avoiding_nonplayable()
+    a_star_interpolations_with_gpc()
