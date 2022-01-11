@@ -89,8 +89,8 @@ class AStarGPCInterpolation(BaseInterpolation):
 
         neighbors = []
 
-        if i - 1 > 0:
-            if j - 1 > 0:
+        if i - 1 >= 0:
+            if j - 1 >= 0:
                 neighbors.append((i - 1, j - 1))
 
             if j + 1 < height:
@@ -99,7 +99,7 @@ class AStarGPCInterpolation(BaseInterpolation):
             neighbors.append((i - 1, j))
 
         if i + 1 < width:
-            if j - 1 > 0:
+            if j - 1 >= 0:
                 neighbors.append((i + 1, j - 1))
 
             if j + 1 < height:
@@ -107,7 +107,7 @@ class AStarGPCInterpolation(BaseInterpolation):
 
             neighbors.append((i + 1, j))
 
-        if j - 1 > 0:
+        if j - 1 >= 0:
             neighbors.append((i, j - 1))
 
         if j + 1 < height:
@@ -174,6 +174,7 @@ class AStarGPCInterpolation(BaseInterpolation):
         # keeping is faulty.
 
         # neighbor getting is working properly.
+        # Maybe not: we are missing one neighbor in x [xpos = 0]
 
         # It is exploring essentially all the graph. Why?!
         raise ValueError(f"z={z} and z_prime={z_prime} are not connected in the graph.")

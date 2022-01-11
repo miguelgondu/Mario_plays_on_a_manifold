@@ -15,7 +15,6 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 from vae_geometry_hierarchical import VAEGeometryHierarchical
-from train_vae import load_data
 
 from interpolations.astar_gpc_interpolation import AStarGPCInterpolation
 from diffusions.geometric_difussion import GeometricDifussion
