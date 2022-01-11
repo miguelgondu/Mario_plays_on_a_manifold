@@ -35,7 +35,9 @@ class AStarGPCInterpolation(BaseInterpolation):
         predictions = [0 if p[1] < decision_boundary else 1.0 for p in res]
 
         positions = {
-            (x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(z2s)
+            (x, y): (i, j)
+            for j, x in enumerate(z1s)
+            for i, y in enumerate(reversed(z2s))
         }
         pred_dict = {(z[0], z[1]): pred for z, pred in zip(zs, predictions)}
 
@@ -49,6 +51,7 @@ class AStarGPCInterpolation(BaseInterpolation):
         self.positions = positions
         self.inv_positions = {v: k for k, v in positions.items()}
         self.grid = grid
+        self.predictions = np.array(predictions)
 
         # Construct a KDTree with the grid.
         self.kd_tree = cKDTree(self.zs)
@@ -165,6 +168,14 @@ class AStarGPCInterpolation(BaseInterpolation):
                 h_neighbor = current_h + self.heuristic(neighbor, final_position)
                 pq.put((h_neighbor, neighbor))
 
+        # TODO: sometimes the code is raising this. It shouldn't happen
+        # All elements are connected, even if it's through expensive paths.
+        # Weird. Maybe the get_neighbors logic is faulty. Or maybe the parent
+        # keeping is faulty.
+
+        # neighbor getting is working properly.
+
+        # It is exploring essentially all the graph. Why?!
         raise ValueError(f"z={z} and z_prime={z_prime} are not connected in the graph.")
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> t.Tensor:
@@ -185,7 +196,7 @@ class AStarGPCInterpolation(BaseInterpolation):
             np.linspace(0, len(zs_in_path) - 1, self.n_points_in_line)
         ).astype(int)
 
-        return t.from_numpy(zs_in_path[idxs])
+        return t.from_numpy(zs_in_path[idxs]).type(t.float)
 
 
 if __name__ == "__main__":

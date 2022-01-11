@@ -34,7 +34,9 @@ def plot_w_decision_boundary(decision_boundary: float):
 
     predictions = [0 if p[1] < decision_boundary else 1.0 for p in res]
 
-    positions = {(x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(z2s)}
+    positions = {
+        (x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(reversed(z2s))
+    }
     pred_dict = {(z[0], z[1]): pred for z, pred in zip(bigger_grid, predictions)}
 
     pred_img = np.zeros((len(z2s), len(z1s)))

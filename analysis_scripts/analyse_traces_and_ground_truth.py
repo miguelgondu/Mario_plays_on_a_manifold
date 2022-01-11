@@ -25,7 +25,9 @@ p_dict = {(z[0], z[1]): r[1] for z, r in zip(bigger_grid, res)}
 var_dict = {(z[0], z[1]): v for z, v in zip(bigger_grid, var)}
 pred_dict = {(z[0], z[1]): pred for z, pred in zip(bigger_grid, predictions)}
 
-positions = {(x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(z2s)}
+positions = {
+    (x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(reversed(z2s))
+}
 
 var_img = np.zeros((len(z2s), len(z1s)))
 for z, (i, j) in positions.items():

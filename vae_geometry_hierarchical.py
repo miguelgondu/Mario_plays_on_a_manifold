@@ -29,19 +29,21 @@ class VAEGeometryHierarchical(VAEMarioHierarchical, Manifold):
         super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
 
     # This method overwrites the decode of the vanilla one.
-    def decode(self, z: Tensor) -> Categorical:
-        similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-        intermediate_normal = self._intermediate_distribution(z)
-        dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
-
-        reweighted_std = (1 - similarity) * dec_std + similarity * (
-            10.0 * torch.ones_like(dec_std)
-        )
-        reweighted_normal = Normal(dec_mu, reweighted_std)
-        samples = reweighted_normal.rsample()
-        p_x_given_z = Categorical(
-            logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
-        )
+    def decode(self, z: Tensor, reweight: bool = True) -> Categorical:
+        if reweight:
+            similarity = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
+            intermediate_normal = self._intermediate_distribution(z)
+            dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
+            reweighted_std = (1 - similarity) * dec_std + similarity * (
+                10.0 * torch.ones_like(dec_std)
+            )
+            reweighted_normal = Normal(dec_mu, reweighted_std)
+            samples = reweighted_normal.rsample()
+            p_x_given_z = Categorical(
+                logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
+            )
+        else:
+            p_x_given_z = super().decode(z)
 
         return p_x_given_z
 
@@ -79,6 +81,8 @@ class VAEGeometryHierarchical(VAEMarioHierarchical, Manifold):
             self.cluster_centers = torch.from_numpy(cluster_centers).type(torch.float32)
         else:
             self.cluster_centers = cluster_centers.type(torch.float32)
+            if encodings is None:
+                self.encodings = cluster_centers.type(torch.float32)
 
         self.translated_sigmoid = TranslatedSigmoid(beta=beta)
 

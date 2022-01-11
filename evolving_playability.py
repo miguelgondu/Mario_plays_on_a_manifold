@@ -91,7 +91,9 @@ def get_ground_truth(plot=False) -> np.ndarray:
     z1s = np.array(sorted(list(set([z[0] for z in zs]))))
     z2s = np.array(sorted(list(set([z[1] for z in zs]))))
 
-    positions = {(x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(z2s)}
+    positions = {
+        (x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(reversed(z2s))
+    }
 
     p_img = np.zeros((len(z2s), len(z1s)))
     for z, (i, j) in positions.items():
@@ -124,7 +126,9 @@ def MVP():
     res, var = gpc.predict_proba(bigger_grid, return_var=True)
     var_dict = {(z[0], z[1]): v for z, v in zip(bigger_grid, var)}
 
-    positions = {(x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(z2s)}
+    positions = {
+        (x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(reversed(z2s))
+    }
 
     var_img = np.zeros((len(z2s), len(z1s)))
     for z, (i, j) in positions.items():
