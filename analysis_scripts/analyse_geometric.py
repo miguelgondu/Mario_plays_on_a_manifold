@@ -1,6 +1,6 @@
 """
 This script loads and analyses all 'baselines',
-which are in the ../data/array_simulation_results/geometric/*.csv
+which are in the ../data/array_simulation_results/geometric_gpc/*.csv
 """
 import random
 from typing import List
@@ -61,30 +61,21 @@ def summarize(res: List[Path]):
     linear interpolations and the two baseline diffusions.
     """
     row = {}
-    linear_interpolations = list(
-        filter(lambda x: "_geodesic_interpolation_" in x.name, res)
+    astar_interpolations = list(
+        filter(lambda x: "_astar_gpc_interpolation_" in x.name, res)
     )
     geometric_diffusions = list(
         filter(lambda x: "_geometric_diffusion_" in x.name, res)
     )
 
-    lis_beta_30 = list(filter(lambda x: "_beta_-30_" in x.name, linear_interpolations))
-    lis_beta_20 = list(filter(lambda x: "_beta_-20_" in x.name, linear_interpolations))
-
-    gds_beta_30 = list(filter(lambda x: "_beta_-30_" in x.name, geometric_diffusions))
-    gds_beta_20 = list(filter(lambda x: "_beta_-20_" in x.name, geometric_diffusions))
-
     # We also have to filter by beta
 
-    # row["G.I. (beta -2.0) mean"] = get_mean_playability(lis_beta_20)
-    # row["G.I. (beta -3.0) mean"] = get_mean_playability(lis_beta_30)
-    row["G.D. (beta -2.0) mean"] = get_mean_playability(gds_beta_20)
-    row["G.D. (beta -3.0) mean"] = get_mean_playability(gds_beta_30)
+    row["A.I mean"] = get_mean_playability(astar_interpolations)
+    row["G.D mean"] = get_mean_playability(geometric_diffusions)
 
-    # row["G.I. (beta -2.0) sim"] = get_mean_similarities(lis_beta_20)
-    # row["G.I. (beta -3.0) sim"] = get_mean_similarities(lis_beta_30)
-    row["G.D. (beta -2.0) sim"] = 1 - get_mean_similarities(gds_beta_20)
-    row["G.D. (beta -3.0) sim"] = 1 - get_mean_similarities(gds_beta_30)
+    row["A.I. sim"] = 1 - get_mean_similarities(astar_interpolations)
+    row["G.D. sim"] = 1 - get_mean_similarities(geometric_diffusions)
+
     print(row)
     return row
 
@@ -124,17 +115,19 @@ def print_levels(res: List[Path], comment: str):
 
 
 if __name__ == "__main__":
-    results_ = list(Path("./data/array_simulation_results/geometric/").glob("*.csv"))
+    results_ = list(
+        Path("./data/array_simulation_results/geometric_gpc/").glob("*.csv")
+    )
     res_2 = list(filter(lambda x: "_zdim_2_" in x.name, results_))
-    res_8 = list(filter(lambda x: "_zdim_8_" in x.name, results_))
-    res_32 = list(filter(lambda x: "_zdim_32_" in x.name, results_))
-    res_64 = list(filter(lambda x: "_zdim_64_" in x.name, results_))
+    # res_8 = list(filter(lambda x: "_zdim_8_" in x.name, results_))
+    # res_32 = list(filter(lambda x: "_zdim_32_" in x.name, results_))
+    # res_64 = list(filter(lambda x: "_zdim_64_" in x.name, results_))
 
     rows = [
         {"z dim": 2, **summarize(res_2)},
-        {"z dim": 8, **summarize(res_8)},
-        {"z dim": 32, **summarize(res_32)},
-        {"z dim": 64, **summarize(res_64)},
+        # {"z dim": 8, **summarize(res_8)},
+        # {"z dim": 32, **summarize(res_32)},
+        # {"z dim": 64, **summarize(res_64)},
     ]
 
     print(pd.DataFrame(rows))
