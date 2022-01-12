@@ -15,7 +15,7 @@ from simulate_array import _simulate_array
 def get_all_array_paths(model_name, skip_simulated=False) -> List[str]:
     # Clean previously simulated stuff
     if skip_simulated:
-        res_path = Path("./data/array_simulation_results/geometric")
+        res_path = Path("./data/array_simulation_results/geometric_gpc")
         already_simulated = [
             s.name.replace(".csv", ".npz") for s in res_path.glob("*.csv")
         ]
@@ -24,7 +24,7 @@ def get_all_array_paths(model_name, skip_simulated=False) -> List[str]:
 
     paths = [
         str(s)
-        for s in Path("./data/arrays/geometric").glob(f"{model_name}_*.npz")
+        for s in Path("./data/arrays/geometric_gpc").glob(f"{model_name}_*.npz")
         if s.name not in already_simulated
     ]
 
@@ -44,4 +44,4 @@ if __name__ == "__main__":
     print(f"Simulating {len(all_paths_to_simulate)} files")
     for path in all_paths_to_simulate:
         print(f"Simulating array {path}")
-        _simulate_array(path, 32, 5, exp_folder="geometric")
+        _simulate_array(path, 32, 5, exp_folder="geometric_gpc")

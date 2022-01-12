@@ -1,10 +1,9 @@
 """
-This script saves the arrays for all geometric experiments,
+This script saves the arrays for all geometric experiments for GPC-built geometry,
 for several dimensions.
 
 See table [ref] in the research log.
 """
-from typing import List
 from itertools import product
 from pathlib import Path
 
@@ -18,7 +17,6 @@ from vae_geometry_hierarchical import VAEGeometryHierarchical
 
 from interpolations.astar_gpc_interpolation import AStarGPCInterpolation
 from diffusions.geometric_difussion import GeometricDifussion
-
 
 from geometry_metrics_for_different_z_dims import get_random_pairs, models
 
@@ -47,10 +45,12 @@ def save_arrays_for_interpolation(trace_path: Path, gpc_kwargs: dict = {}):
         ax.scatter(line[:, 0], line[:, 1], c="red")
         levels_in_line = vae.decode(line).probs.argmax(dim=-1)
         np.savez(
-            f"./data/arrays/geometric/{models[2]}_astar_gpc_interpolation_{line_i:03d}.npz",
+            f"./data/arrays/geometric_gpc/{models[2]}_astar_gpc_interpolation_{line_i:03d}.npz",
             zs=line.detach().numpy(),
             levels=levels_in_line.detach().numpy(),
         )
+
+    ax.imshow(astar.grid, extent=[-5, 5, -5, 5], cmap="Blues")
 
     plt.show()
 
@@ -81,7 +81,7 @@ def save_arrays_for_diffusion(trace_path: Path, gpc_kwargs: dict = {}):
 
     _, ax = plt.subplots(1, 1)
 
-    gd = GeometricDifussion(10, scale=4.0)
+    gd = GeometricDifussion(10, scale=10.0)
     for run_i in range(50):
         geometric_diffusion = gd.run(vae)
 
@@ -90,7 +90,7 @@ def save_arrays_for_diffusion(trace_path: Path, gpc_kwargs: dict = {}):
             dim=-1
         )
         np.savez(
-            f"./data/arrays/geometric/{models[2]}_geometric_diffusion_gpc_{run_i:03d}.npz",
+            f"./data/arrays/geometric_gpc/{models[2]}_geometric_diffusion_gpc_{run_i:03d}.npz",
             zs=geometric_diffusion.detach().numpy(),
             levels=levels_geometric.detach().numpy(),
         )
@@ -106,5 +106,5 @@ def save_arrays_for_diffusion(trace_path: Path, gpc_kwargs: dict = {}):
 
 if __name__ == "__main__":
     trace_path = "./data/evolution_traces/bigger_trace.npz"
-    save_arrays_for_interpolation(trace_path)
+    # save_arrays_for_interpolation(trace_path)
     save_arrays_for_diffusion(trace_path)
