@@ -36,7 +36,7 @@ def load_vae() -> VAEMarioHierarchical:
 
 
 def simulate_level(level: t.Tensor, processes: int, repeats: int) -> int:
-    levels = np.repeat(level.reshape(1, 14, 14), repeats, axis=0)
+    levels = np.repeat(level.cpu().reshape(1, 14, 14), repeats, axis=0)
     with mp.Pool(processes) as p:
         results = p.map(test_level_from_decoded_tensor, levels)
 
@@ -249,10 +249,10 @@ def query_max_uncertainty(gpc: GaussianProcessClassifier) -> Tuple[np.ndarray, f
 
     bigger_grid = np.array([[z1, z2] for z1, z2 in product(z1s, z2s)])
     probs = gpc.predict_proba(bigger_grid)
-    uncertainty = np.abs(probs[:, 0] - 0.5)
-    next_point = bigger_grid[np.argmax(uncertainty)]
+    close_to_uncertainty = np.abs(probs[:, 0] - 0.5)
+    next_point = bigger_grid[np.argmin(close_to_uncertainty)]
 
-    return next_point, np.max(uncertainty)
+    return next_point, np.min(close_to_uncertainty)
 
 
 def run(
