@@ -14,14 +14,13 @@ import torch as t
 import random
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF
 import matplotlib.pyplot as plt
 from scipy.spatial import cKDTree
 
 from .base_interpolation import BaseInterpolation
 
 
-class AStarGPCInterpolation(BaseInterpolation):
+class DjikstraGPCInterpolation(BaseInterpolation):
     def __init__(self, n_points_in_line: int, gpc: GaussianProcessClassifier):
         super().__init__(n_points_in_line=n_points_in_line)
 
@@ -119,26 +118,24 @@ class AStarGPCInterpolation(BaseInterpolation):
 
         return neighbors
 
-    def heuristic(self, node: Tuple[int, int], final_position: Tuple[int, int]):
+    def weight(self, node: Tuple[int, int]) -> float:
         """
         The heuristic for A*, which combines
         playability with Euclidean distance to goal.
         """
-        z = np.array(self.inv_positions[node])
-        z_prime = np.array(self.inv_positions[final_position])
-
-        dist2 = np.sum((z - z_prime) ** 2)
+        # dist2 = np.sum((z - z_prime) ** 2)
         playability = self.grid[node]
 
         # Really high for non-playable levels
-        return dist2 + 1 / (playability + 1e-6)
+        # return dist2 + 1 / (playability + 1e-6)
+        return 1 / (playability + 1e-6)
 
     def a_star_path(self, z: np.ndarray, z_prime: np.ndarray) -> List[np.ndarray]:
         parents = {}
         first_position = self.positions[tuple(z)]
         final_position = self.positions[tuple(z_prime)]
 
-        h_first = self.heuristic(first_position, final_position)
+        h_first = self.weight(first_position)
         pq = PriorityQueue()
         pq.put((h_first, first_position))
         visited_positions = set([first_position])
@@ -167,7 +164,7 @@ class AStarGPCInterpolation(BaseInterpolation):
 
                     return path_positions
 
-                h_neighbor = current_h + self.heuristic(neighbor, final_position)
+                h_neighbor = current_h + self.weight(neighbor)
                 pq.put((h_neighbor, neighbor))
 
         # TODO: sometimes the code is raising this. It shouldn't happen
@@ -220,16 +217,15 @@ def get_random_pairs(
 
 if __name__ == "__main__":
     # Loading a given trace
-    a = np.load("./data/evolution_traces/trace_anisotropic_rbf_500_max_uncertainty.npz")
+    a = np.load("./data/evolution_traces/bigger_trace.npz")
     z = a["zs"]
     p = a["playabilities"]
 
-    kernel = 1.0 * RBF(length_scale=[1.0, 1.0])
-    gp_kwargs = {"kernel": kernel}
-    gpc = GaussianProcessClassifier(**gp_kwargs)
+    gpc = GaussianProcessClassifier()
     gpc.fit(z, p)
 
-    astar = AStarGPCInterpolation(10, gpc)
+    astar = DjikstraGPCInterpolation(10, gpc)
+
     zs_playable = t.from_numpy(z[p == 1.0])
     zs1, zs2 = get_random_pairs(zs_playable, n_pairs=50)
 

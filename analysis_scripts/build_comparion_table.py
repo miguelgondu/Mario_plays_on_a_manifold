@@ -13,8 +13,8 @@ for geometry in geometries:
             index.append((geometry, m))
 
     index.append((geometry, "full"))
+index = pd.MultiIndex.from_tuples(index, names=["Geometry", "AL queries"])
 
-index = pd.MultiIndex.from_tuples(index)
 columns = [
     (r"$\mathbb{E}[\text{playability}]$", "Interpolation"),
     ("$\mathbb{E}[\text{playability}]$", "Random Walks"),
