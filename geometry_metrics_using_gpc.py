@@ -106,5 +106,5 @@ def save_arrays_for_diffusion(trace_path: Path, gpc_kwargs: dict = {}):
 
 if __name__ == "__main__":
     trace_path = "./data/evolution_traces/bigger_trace.npz"
-    # save_arrays_for_interpolation(trace_path)
+    save_arrays_for_interpolation(trace_path)
     save_arrays_for_diffusion(trace_path)

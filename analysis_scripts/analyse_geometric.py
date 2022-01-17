@@ -1,5 +1,5 @@
 """
-This script loads and analyses all 'baselines',
+This script loads and analyses all 'geometric_gpc' results,
 which are in the ../data/array_simulation_results/geometric_gpc/*.csv
 """
 import random

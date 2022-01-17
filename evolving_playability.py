@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import ConstantKernel, RBF
+from sklearn.gaussian_process.kernels import ConstantKernel, RBF, WhiteKernel, Matern
 from analysis_scripts.utils import zs_and_playabilities
 
 from vae_mario_hierarchical import VAEMarioHierarchical
@@ -228,7 +228,7 @@ def load_trace(path: str) -> Tuple[np.ndarray]:
     return a["zs"], a["playabilities"]
 
 
-def query(gpc) -> np.ndarray:
+def query_max_var(gpc: GaussianProcessClassifier) -> Tuple[np.ndarray, float]:
     z1s = np.linspace(-5, 5, 50)
     z2s = np.linspace(-5, 5, 50)
 
@@ -236,7 +236,23 @@ def query(gpc) -> np.ndarray:
     _, var = gpc.predict_proba(bigger_grid, return_var=True)
     next_point = bigger_grid[np.argmax(var)]
 
-    return next_point
+    return next_point, np.max(var)
+
+
+def query_max_uncertainty(gpc: GaussianProcessClassifier) -> Tuple[np.ndarray, float]:
+    """
+    In AL literature, they refer to max uncertainty as the points
+    that are the closest to the a 0.5 probability prediction
+    """
+    z1s = np.linspace(-5, 5, 50)
+    z2s = np.linspace(-5, 5, 50)
+
+    bigger_grid = np.array([[z1, z2] for z1, z2 in product(z1s, z2s)])
+    probs = gpc.predict_proba(bigger_grid)
+    uncertainty = np.abs(probs[:, 0] - 0.5)
+    next_point = bigger_grid[np.argmax(uncertainty)]
+
+    return next_point, np.max(uncertainty)
 
 
 def run(
@@ -245,6 +261,7 @@ def run(
     zs: np.ndarray = None,
     playabilities: np.ndarray = None,
     name="trace",
+    query_type: str = "max_var",
 ):
     vae = load_vae()
     gpc = GaussianProcessClassifier(**gpc_kwargs)
@@ -253,27 +270,61 @@ def run(
 
     gpc.fit(zs, playabilities)
 
-    for _ in range(n_iterations):
+    if query_type == "max_var":
+        query = query_max_var
+    elif query_type == "max_uncertainty":
+        query = query_max_uncertainty
+    else:
+        raise ValueError()
+
+    for i in range(n_iterations):
         # Get next point to query
-        (next_point,) = query(gpc)
+        next_point, als = query(gpc)
         next_level = vae.decode(t.Tensor(next_point)).probs.argmax(dim=-1)
         p = simulate_level(next_level, 5, 5)
-        if zs is None:
-            zs = np.array([next_point])
-        else:
-            zs = np.vstack((zs, next_point))
-        if playabilities is None:
-            playabilities = np.array([p])
-        else:
-            playabilities = np.concatenate((playabilities, np.array([p])))
+        print(f"Tested {next_point}. p={p}. ALS={als} ({i+1}/{n_iterations})")
+        zs = np.vstack((zs, next_point))
+        playabilities = np.concatenate((playabilities, np.array([p])))
 
-        print(f"Tested {next_point}")
+        np.savez(
+            f"./data/evolution_traces/{name}.npz", zs=zs, playabilities=playabilities
+        )
         gpc = GaussianProcessClassifier(**gpc_kwargs)
         gpc.fit(zs, playabilities)
 
-    np.savez(f"./data/evolution_traces/{name}.npz", zs=zs, playabilities=playabilities)
-
 
 if __name__ == "__main__":
+    # I also want to try this with a non-isotropic RBF.
     zs, playabilities = load_trace("./data/evolution_traces/trace.npz")
-    run({"kernel": None}, 300, zs=zs, playabilities=playabilities, name="bigger_trace")
+
+    # Trying with max var.
+    # First attempt: Matern kernel plus noise
+    kernel = 1.0 * Matern(nu=3 / 2) + 1.0 * WhiteKernel()
+    gp_kwargs = {"kernel": kernel}
+    run(gp_kwargs, 500, name="trace_matern_500_max_var", query_type="max_var")
+
+    # Second attempt: RBF anisotropic kernel
+    kernel = 1.0 * RBF(length_scale=[1.0, 1.0])
+    gp_kwargs = {"kernel": kernel}
+    run(gp_kwargs, 500, name="trace_anisotropic_rbf_500_max_var", query_type="max_var")
+
+    # Trying with max uncertainty
+    # First attempt: Matern kernel plus noise
+    kernel = 1.0 * Matern(nu=3 / 2) + 1.0 * WhiteKernel()
+    gp_kwargs = {"kernel": kernel}
+    run(
+        gp_kwargs,
+        500,
+        name="trace_matern_500_max_uncertainty",
+        query_type="max_uncertainty",
+    )
+
+    # Second attempt: RBF anisotropic kernel
+    kernel = 1.0 * RBF(length_scale=[1.0, 1.0])
+    gp_kwargs = {"kernel": kernel}
+    run(
+        gp_kwargs,
+        500,
+        name="trace_anisotropic_rbf_500_max_uncertainty",
+        query_type="max_uncertainty",
+    )
