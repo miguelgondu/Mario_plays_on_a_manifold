@@ -6,88 +6,60 @@ Baumgarten's A* agent.
 It creates an array that is can then simulated by
 simulate_array.py
 """
-
-import json
 from pathlib import Path
-from multiprocessing import Pool
-
-import click
-import torch
+import torch as t
 import numpy as np
 
-from simulator import test_level_from_z
 from vae_mario_hierarchical import VAEMarioHierarchical
 
 
-# def process(i, z):
-#     """
-#     This function simulates the level
-#     that the VAE generates from z.
-#     """
-#     print(f"Testing {z} (index {i})")
+def ground_truth_experiment():
+    # Hyper-arguments
+    argmax = True
+    n_samples = 5
+    model_names = [f"vae_mario_hierarchical_zdim_2_id_{id_}_final" for id_ in range(5)]
 
-#     # Create the folder for the data
-#     cwd = Path(".")
-#     path_to_exp_folder = cwd / "data" / "ground_truth" / "another_vae_final"
-#     path_to_exp_folder.mkdir(parents=True, exist_ok=True)
+    # Creating the path for the arrays.
+    array_path = Path("./data/arrays/five_vaes/ground_truth")
+    array_path.mkdir(exist_ok=True)
 
-#     # Test the level 5 times
-#     for iteration in range(5):
-#         res = test_level_from_z(z, vae)
-#         thing_to_save = {
-#             "model_name": "another_vae_final",
-#             "z": tuple([float(zi) for zi in z.detach().numpy()]),
-#             "iteration": iteration,
-#             **res,
-#         }
+    # Getting the arrays
+    for model_name in model_names:
+        vae = VAEMarioHierarchical(device="cpu")
+        vae.load_state_dict(t.load(f"./models/{model_name}.pt", map_location="cpu"))
+        vae.eval()
 
-#         path_to_exp = path_to_exp_folder / f"z_{i:05d}_{iteration}.json"
-#         with open(path_to_exp, "w") as fp:
-#             json.dump(thing_to_save, fp)
+        x_lims = [-5, 5]
+        y_lims = [-5, 5]
 
-#     print(f"Processed z {z}.")
+        n_grid = 50
+        z1 = np.linspace(*x_lims, n_grid)
+        z2 = np.linspace(*y_lims, n_grid)
 
+        zs = t.Tensor([[a, b] for a in reversed(z1) for b in z2])
+        cat = vae.decode(zs)
 
-@click.command()
-@click.option("--model-name", type=str, default="another_vae_final")
-@click.option("--n-samples", type=int, default=5)
-@click.option("--argmax/--no-argmax", default=False)
-def main(model_name, n_samples, argmax):
-    vae = VAEMarioHierarchical(device="cpu")
-    vae.load_state_dict(torch.load(f"./models/{model_name}.pt"))
-    vae.eval()
+        if not argmax:
+            levels = cat.sample((n_samples,)).detach().numpy()
+            levels = levels.reshape(n_grid * n_grid * n_samples, *levels.shape[2:])
+        else:
+            levels = cat.probs.argmax(dim=-1).detach().numpy()
 
-    x_lims = [-5, 5]
-    y_lims = [-5, 5]
+        zs = zs.detach().numpy()
+        if not argmax:
+            zs = np.repeat(zs, n_samples, axis=0)
 
-    n_grid = 50
-    z1 = np.linspace(*x_lims, n_grid)
-    z2 = np.linspace(*y_lims, n_grid)
+        print(f"zs: {zs.shape}")
+        print(f"levels: {levels.shape}")
+        assert zs.shape[0] == levels.shape[0]
 
-    zs = torch.Tensor([[a, b] for a in reversed(z1) for b in z2])
-    cat = vae.decode(zs)
-
-    if not argmax:
-        levels = cat.sample((n_samples,)).detach().numpy()
-        levels = levels.reshape(n_grid * n_grid * n_samples, *levels.shape[2:])
-    else:
-        levels = cat.probs.argmax(dim=-1).detach().numpy()
-
-    zs = zs.detach().numpy()
-    if not argmax:
-        zs = np.repeat(zs, n_samples, axis=0)
-
-    print(f"zs: {zs.shape}")
-    print(f"levels: {levels.shape}")
-    assert zs.shape[0] == levels.shape[0]
-
-    print(f"Array saved for {model_name}.")
-    np.savez(
-        f"./data/arrays/ground_truth_argmax_{argmax}_{model_name}.npz",
-        zs=zs,
-        levels=levels,
-    )
+        print(f"Array saved for {model_name}.")
+        np.savez(
+            array_path / f"{model_name}_ground_truth.npz",
+            zs=zs,
+            levels=levels,
+        )
 
 
 if __name__ == "__main__":
-    main()
+    ground_truth_experiment()
