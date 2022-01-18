@@ -125,23 +125,24 @@ def run(model_name):
     # Bootstrapping with initial data
     gpc.fit(zs, playabilities)
 
-    for _ in range(n_iterations):
+    for i in range(n_iterations):
         # Get next point to query
-        next_point, _ = query(gpc)
+        next_point, als = query(gpc)
 
         next_level = vae.decode(t.Tensor(next_point)).probs.argmax(dim=-1)
         p = simulate_level(next_level, 5, 5)
 
-        # print(f"Tested {next_point}. p={p}. ALS={als} ({i+1}/{n_iterations})")
+        print(f"Tested {next_point}. p={p}. ALS={als} ({i+1}/{n_iterations})")
 
         zs = np.vstack((zs, next_point))
         playabilities = np.concatenate((playabilities, np.array([p])))
 
-        np.savez(
-            results_path / f"{model_name}_AL_trace_{n_iterations}.npz",
-            zs=zs,
-            playabilities=playabilities,
-        )
+        if ((i + 1) % 10) or (i + 1 == n_iterations):
+            np.savez(
+                results_path / f"{model_name}_AL_trace_{n_iterations}.npz",
+                zs=zs,
+                playabilities=playabilities,
+            )
 
         kernel = 1.0 * Matern(nu=3 / 2) + 1.0 * WhiteKernel()
         gpc = GaussianProcessClassifier(kernel=kernel)
