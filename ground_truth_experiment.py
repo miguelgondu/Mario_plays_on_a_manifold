@@ -22,7 +22,7 @@ def get_ground_truth_arrays():
 
     # Creating the path for the arrays.
     array_path = Path("./data/arrays/five_vaes/ground_truth")
-    array_path.mkdir(exist_ok=True)
+    array_path.mkdir(exist_ok=True, parents=True)
 
     # Getting the arrays
     for model_name in model_names:

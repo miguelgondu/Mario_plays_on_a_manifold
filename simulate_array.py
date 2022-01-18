@@ -42,14 +42,14 @@ def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=Non
     zs = array["zs"]
 
     assert levels.shape[0] == zs.shape[0]
+    print(
+        f"Will process {levels.shape[0]} levels ({levels.shape[0] * repetitions_per_level} simulations)."
+    )
 
     # Repeat
     levels = np.repeat(levels, repetitions_per_level, axis=0)
     zs = np.repeat(zs, repetitions_per_level, axis=0)
 
-    print(
-        f"Will process {levels.shape[0]} levels ({levels.shape[0] * repetitions_per_level} simulations)."
-    )
     with mp.Pool(processes) as p:
         results = p.starmap(
             test_level, zip(range(len(zs)), zs, levels, repeat(array_name))

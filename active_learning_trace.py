@@ -108,12 +108,21 @@ def run(model_name):
     results_path = Path("./data/evolution_traces/five_vaes")
     results_path.mkdir(exist_ok=True)
 
+    # Getting initial data
+    initial_data_path = Path(
+        "./data/array_simulation_results/five_vaes/initial_data_AL"
+    )
+    if (initial_data_path / f"{model_name}_100_points_in_a_grid.csv").exists():
+        zs, playabilities = load_initial_data(model_name)
+    else:
+        get_initial_data(model_name)
+        zs, playabilities = load_initial_data(model_name)
+
     # Loading models
     vae = load_vae(model_name)
     gpc = GaussianProcessClassifier(kernel=kernel)
 
     # Bootstrapping with initial data
-    zs, playabilities = load_initial_data()
     gpc.fit(zs, playabilities)
 
     for _ in range(n_iterations):
@@ -133,6 +142,8 @@ def run(model_name):
             zs=zs,
             playabilities=playabilities,
         )
+
+        kernel = 1.0 * Matern(nu=3 / 2) + 1.0 * WhiteKernel()
         gpc = GaussianProcessClassifier(kernel=kernel)
         gpc.fit(zs, playabilities)
 
