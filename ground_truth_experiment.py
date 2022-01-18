@@ -11,9 +11,10 @@ import torch as t
 import numpy as np
 
 from vae_mario_hierarchical import VAEMarioHierarchical
+from simulate_array import _simulate_array
 
 
-def ground_truth_experiment():
+def get_ground_truth_arrays():
     # Hyper-arguments
     argmax = True
     n_samples = 5
@@ -61,5 +62,13 @@ def ground_truth_experiment():
         )
 
 
+def ground_truth_experiment():
+    array_paths = Path("./data/arrays/five_vaes/ground_truth").glob("*.npz")
+    for path in array_paths:
+        print(f"Simualting {path}.")
+        _simulate_array(path, 32, 5, exp_folder="five_vaes/ground_truth")
+
+
 if __name__ == "__main__":
+    get_ground_truth_arrays()
     ground_truth_experiment()

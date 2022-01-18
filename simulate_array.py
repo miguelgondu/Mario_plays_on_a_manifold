@@ -11,8 +11,10 @@ import pandas as pd
 from simulator import test_level_from_int_array
 
 
-def test_level(i: int, z: np.ndarray, level: np.ndarray, array_name: str, exp_folder: str = None):
-    print(f"Processing level at index {i} (z={z})")
+def test_level(
+    i: int, z: np.ndarray, level: np.ndarray, array_name: str, exp_folder: str = None
+):
+    # print(f"Processing level at index {i} (z={z})")
     res = test_level_from_int_array(level)
     res = {"z": z.tolist(), "level": level.tolist(), **res}
 
@@ -21,7 +23,9 @@ def test_level(i: int, z: np.ndarray, level: np.ndarray, array_name: str, exp_fo
         res_path.mkdir(exist_ok=True)
         saving_path = res_path / f"{array_name}_{i:08d}.json"
     else:
-        saving_path = Path("./data/array_simulation_jsons") / f"{array_name}_{i:08d}.json"
+        saving_path = (
+            Path("./data/array_simulation_jsons") / f"{array_name}_{i:08d}.json"
+        )
 
     with open(saving_path, "w") as fp:
         json.dump(res, fp)
@@ -58,7 +62,7 @@ def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=Non
 
     results_path = Path("./data/array_simulation_results")
     if exp_folder is not None:
-        (results_path / exp_folder).mkdir(exist_ok=True)
+        (results_path / exp_folder).mkdir(exist_ok=True, parents=True)
         saving_path = results_path / exp_folder / f"{array_name}.csv"
     else:
         saving_path = results_path / f"{array_name}.csv"
