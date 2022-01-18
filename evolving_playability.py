@@ -293,9 +293,9 @@ def run(
         gpc.fit(zs, playabilities)
 
 
-if __name__ == "__main__":
+def test_all_hyperparameters():
     # I also want to try this with a non-isotropic RBF.
-    zs, playabilities = load_trace("./data/evolution_traces/trace.npz")
+    # zs, playabilities = load_trace("./data/evolution_traces/trace.npz")
 
     # Trying with max var.
     # First attempt: Matern kernel plus noise
@@ -328,3 +328,23 @@ if __name__ == "__main__":
         name="trace_anisotropic_rbf_500_max_uncertainty",
         query_type="max_uncertainty",
     )
+
+
+def matern_kernel_running(more_iterations=500):
+    kernel = 1.0 * Matern(nu=3 / 2) + 1.0 * WhiteKernel()
+    gp_kwargs = {"kernel": kernel}
+    a = np.load("./data/evolution_traces/trace_matern_500_max_uncertainty.npz")
+    zs = a["zs"]
+    p = a["playabilities"]
+    run(
+        gp_kwargs,
+        more_iterations,
+        zs=zs,
+        playabilities=p,
+        name=f"trace_matern_{len(zs) - 100 + more_iterations}_max_uncertainty",
+        query_type="max_uncertainty",
+    )
+
+
+if __name__ == "__main__":
+    matern_kernel_running()
