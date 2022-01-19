@@ -4,6 +4,7 @@ to see if this solves the problem of having high cost outside
 the support.        
 """
 from datetime import datetime
+from itertools import product
 from typing import List
 
 import numpy as np
@@ -157,9 +158,9 @@ class VAEMarioHierarchical(nn.Module):
         z1 = np.linspace(*x_lims, n_cols)
         z2 = np.linspace(*y_lims, n_rows)
 
-        zs = torch.Tensor([[a, b] for a in reversed(z1) for b in z2])
+        zs = np.array([[a, b] for a, b in product(z1, z2)])
 
-        images_dist = self.decode(zs)
+        images_dist = self.decode(torch.from_numpy(zs).type(torch.float))
         if sample:
             images = images_dist.sample()
         else:
@@ -168,13 +169,21 @@ class VAEMarioHierarchical(nn.Module):
         images = np.array(
             [get_img_from_level(im) for im in images.cpu().detach().numpy()]
         )
+        img_dict = {(z[0], z[1]): img for z, img in zip(zs, images)}
 
-        final_img = np.vstack(
-            [
-                np.hstack([im for im in row])
-                for row in images.reshape((n_cols, n_rows, 16 * 14, 16 * 14, 3))
-            ]
-        )
+        positions = {
+            (x, y): (i, j) for j, x in enumerate(z1) for i, y in enumerate(reversed(z2))
+        }
+
+        pixels = 16 * 14
+        final_img = np.zeros((n_cols * pixels, n_rows * pixels, 3))
+        for z, (i, j) in positions.items():
+            final_img[
+                i * pixels : (i + 1) * pixels, j * pixels : (j + 1) * pixels
+            ] = img_dict[z]
+
+        final_img = final_img.astype(int)
+
         if ax is not None:
             ax.imshow(final_img, extent=[*x_lims, *y_lims])
 

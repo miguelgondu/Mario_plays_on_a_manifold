@@ -2,9 +2,12 @@ from itertools import product
 from pathlib import Path
 from typing import Tuple
 
+import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.gaussian_process import GaussianProcessClassifier
+
+from vae_mario_hierarchical import VAEMarioHierarchical
 
 from evolving_playability import get_ground_truth
 from analysis_scripts.utils import zs_and_playabilities
@@ -30,7 +33,7 @@ def get_ground_truth(path: Path, save_at: Path = None) -> np.ndarray:
     z2s = np.array(sorted(list(set([z[1] for z in zs]))))
 
     positions = {
-        (x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(reversed(z2s))
+        (x, y): (i, j) for i, y in enumerate(reversed(z2s)) for j, x in enumerate(z1s)
     }
 
     p_img = np.zeros((len(z2s), len(z1s)))
@@ -61,6 +64,35 @@ def plot_all_ground_truths():
         print(f"Processing {path}.")
         save_at = plots_path / path.name.replace(".csv", ".png")
         get_ground_truth(path, save_at=save_at)
+
+
+def load_vae(path):
+    """
+    Loads the VAE into the proper device
+    """
+    vae = VAEMarioHierarchical()
+    device = vae.device
+    vae.load_state_dict(t.load(path, map_location=device))
+
+    return vae
+
+
+def plot_all_grids():
+    """
+    plots all grids for the five vaes
+    """
+    model_paths = Path("./models").glob("vae_*_id_*_final.pt")
+    plots_path = Path("./data/plots/five_vaes/grids")
+    plots_path.mkdir(exist_ok=True, parents=True)
+
+    for path in model_paths:
+        save_at = plots_path / path.name.replace(".pt", ".png")
+        vae = load_vae(path)
+        fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+        vae.plot_grid(ax=ax)
+        ax.axis("off")
+        fig.tight_layout()
+        fig.savefig(save_at)
 
 
 def save_video_for_all_traces():
@@ -127,3 +159,4 @@ def save_video_for_all_traces():
 
 if __name__ == "__main__":
     plot_all_ground_truths()
+    plot_all_grids()
