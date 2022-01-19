@@ -47,7 +47,7 @@ def get_initial_data(model_name):
         levels=levels.detach().numpy(),
     )
 
-    _simulate_array(array_path, 5, 5, exp_folder="five_vaes/initial_data_AL")
+    _simulate_array(array_path, 6, 5, exp_folder="five_vaes/initial_data_AL")
 
 
 def load_initial_data(model_name) -> Tuple[np.ndarray]:
@@ -118,6 +118,16 @@ def run(model_name):
         get_initial_data(model_name)
         zs, playabilities = load_initial_data(model_name)
 
+    # Checking if we have already ran something before
+    if (results_path / f"{model_name}_AL_trace_{n_iterations}.npz").exists():
+        a = np.load(results_path / f"{model_name}_AL_trace_{n_iterations}.npz")
+        zs = a["zs"]
+        playabilities = a["playabilities"]
+
+        to_run = n_iterations - (len(zs) - 100)
+    else:
+        to_run = n_iterations
+
     # Loading models
     vae = load_vae(model_name)
     gpc = GaussianProcessClassifier(kernel=kernel)
@@ -125,14 +135,16 @@ def run(model_name):
     # Bootstrapping with initial data
     gpc.fit(zs, playabilities)
 
-    for i in range(n_iterations):
+    for i in range(to_run):
         # Get next point to query
         next_point, als = query(gpc)
 
         next_level = vae.decode(t.Tensor(next_point)).probs.argmax(dim=-1)
         p = simulate_level(next_level, 5, 5)
 
-        print(f"Tested {next_point}. p={p}. ALS={als} ({i+1}/{n_iterations})")
+        print(
+            f"Tested {next_point}. p={p:.1f}. ALS={als:1.4f} ({len(zs)-100}/{n_iterations})"
+        )
 
         zs = np.vstack((zs, next_point))
         playabilities = np.concatenate((playabilities, np.array([p])))
