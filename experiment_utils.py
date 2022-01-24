@@ -61,3 +61,31 @@ def load_trace_as_map(path_to_trace: Path, n_iterations: int):
 def load_csv_as_map(path: Path):
     zs, p = load_csv_as_arrays(path)
     return load_arrays_as_map(zs, p)
+
+
+def positions_from_map(p_map: Dict[tuple, float]) -> Dict[tuple, tuple]:
+    zs = np.array([z for z in p_map.keys()])
+    z1s = np.array(sorted(list(set([z[0] for z in zs]))))
+    z2s = np.array(sorted(list(set([z[1] for z in zs]))))
+
+    positions = {
+        (x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(reversed(z2s))
+    }
+
+    return positions
+
+
+def grid_from_map(p_map: Dict[tuple, float]) -> np.ndarray:
+    zs = np.array([z for z in p_map.keys()])
+    z1s = np.array(sorted(list(set([z[0] for z in zs]))))
+    z2s = np.array(sorted(list(set([z[1] for z in zs]))))
+
+    positions = {
+        (x, y): (i, j) for j, x in enumerate(z1s) for i, y in enumerate(reversed(z2s))
+    }
+
+    grid = np.zeros((len(z2s), len(z1s)))
+    for z, (i, j) in positions.items():
+        grid[i, j] = p_map[z]
+
+    return grid

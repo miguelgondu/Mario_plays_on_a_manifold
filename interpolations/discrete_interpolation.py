@@ -10,6 +10,7 @@ import random
 import torch as t
 import numpy as np
 from scipy.spatial import cKDTree
+from experiment_utils import grid_from_map, positions_from_map
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 
@@ -22,26 +23,16 @@ class DiscreteInterpolation(BaseInterpolation):
     ):
         super().__init__(vae_path, p_map, n_points_in_line)
 
-        zs = np.array(p_map.keys())
+        zs = np.array([z for z in p_map.keys()])
         z1s = np.array(sorted(list(set([z[0] for z in zs]))))
         z2s = np.array(sorted(list(set([z[1] for z in zs]))))
-
-        positions = {
-            (x, y): (i, j)
-            for j, x in enumerate(z1s)
-            for i, y in enumerate(reversed(z2s))
-        }
-
-        grid = np.zeros((len(z2s), len(z1s)))
-        for z, (i, j) in positions.items():
-            grid[i, j] = p_map[z]
 
         self.z1 = z1s
         self.z2 = z2s
         self.zs = zs
-        self.positions = positions
-        self.inv_positions = {v: k for k, v in positions.items()}
-        self.grid = grid
+        self.positions = positions_from_map(p_map)
+        self.inv_positions = {v: k for k, v in self.positions.items()}
+        self.grid = grid_from_map(p_map)
         self.predictions = np.array(p_map.values())
         self.kd_tree = cKDTree(self.zs)
 
@@ -113,10 +104,16 @@ class DiscreteInterpolation(BaseInterpolation):
         """
         # dist2 = np.sum((z - z_prime) ** 2)
         playability = self.grid[node]
+        if playability == 1.0:
+            return 1.0
+        elif playability == 0.0:
+            return np.inf
+        else:
+            raise ValueError(f"Unexpected value for playability: {playability}")
 
         # Really high for non-playable levels
         # return dist2 + 1 / (playability + 1e-6)
-        return 1 / (playability + 1e-6)
+        return 1 / (playability + 1e-9)
 
     def a_star_path(self, z: np.ndarray, z_prime: np.ndarray) -> List[np.ndarray]:
         parents = {}

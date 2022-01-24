@@ -8,8 +8,11 @@ from typing import Dict, Tuple
 
 import numpy as np
 import torch as t
+from diffusions.discrete_diffusion import DiscreteDiffusion
+from experiment_utils import grid_from_map, positions_from_map
 
 from interpolations.base_interpolation import BaseInterpolation
+from interpolations.discrete_interpolation import DiscreteInterpolation
 from interpolations.linear_interpolation import LinearInterpolation
 
 from diffusions.base_diffusion import BaseDiffusion
@@ -24,8 +27,11 @@ class Geometry:
         pass
         self.playability_map = playability_map
         self.exp_name = exp_name
-        self.grid = self._load_into_grid(playability_map)
+        self.grid, self.positions = self._load_into_grid(playability_map)
         self.vae_path = vae_path
+
+        self.zs = np.array([z for z in playability_map.keys()])
+        self.p = np.array([p for p in playability_map.values()])
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
         raise NotImplementedError
@@ -51,9 +57,13 @@ class Geometry:
         return
 
     # Should be a static method.
-    def _load_into_grid(self, playability_map: Dict[tuple, int]) -> np.ndarray:
-        # TODO: implement
-        return
+    def _load_into_grid(
+        self, playability_map: Dict[tuple, int]
+    ) -> Tuple[np.ndarray, dict]:
+        p_img = grid_from_map(playability_map)
+        positions = positions_from_map(playability_map)
+
+        return p_img, positions
 
 
 class BaselineGeometry(Geometry):
@@ -91,12 +101,14 @@ class DiscreteGeometry(Geometry):
         self, playability_map: Dict[tuple, int], exp_name: str, vae_path: Path
     ) -> None:
         super().__init__(playability_map, exp_name, vae_path)
+        self.interpolation = DiscreteInterpolation(vae_path, playability_map)
+        self.diffusion = DiscreteDiffusion(vae_path, playability_map)
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
-        return super().interpolate(z, z_prime)
+        return self.interpolation.interpolate(z, z_prime)
 
     def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor]:
-        return super().diffuse(z_0)
+        return self.diffusion.run(z_0)
 
 
 class ContinuousGeometry(Geometry):
