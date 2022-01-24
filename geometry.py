@@ -14,6 +14,7 @@ from interpolations.linear_interpolation import LinearInterpolation
 
 from diffusions.base_diffusion import BaseDiffusion
 from diffusions.baseline_diffusion import BaselineDiffusion
+from diffusions.normal_diffusion import NormalDiffusion
 
 
 class Geometry:
@@ -75,12 +76,14 @@ class NormalGeometry(Geometry):
         self, playability_map: Dict[tuple, int], exp_name: str, vae_path: Path
     ) -> None:
         super().__init__(playability_map, exp_name, vae_path)
+        self.interpolation = LinearInterpolation(vae_path, playability_map)
+        self.diffusion = NormalDiffusion(vae_path, playability_map)
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
-        return super().interpolate(z, z_prime)
+        return self.interpolation.interpolate(z, z_prime)
 
     def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor]:
-        return super().diffuse(z_0)
+        return self.diffusion.run(z_0)
 
 
 class DiscreteGeometry(Geometry):

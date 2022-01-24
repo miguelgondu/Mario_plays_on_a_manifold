@@ -15,7 +15,7 @@ from train_vae import load_data
 
 from interpolations.linear_interpolation import LinearInterpolation
 
-from diffusions.normal_diffusion import NormalDifussion
+from diffusions.normal_diffusion import NormalDiffusion
 from diffusions.baseline_diffusion import BaselineDiffusion
 
 models = {
@@ -63,7 +63,7 @@ def save_arrays_for_model(model_name: str, z_dim: int) -> None:
         )
 
     # Saving diffusions
-    nd = NormalDifussion(10, scale=0.5)
+    nd = NormalDiffusion(10, scale=0.5)
     bd = BaselineDiffusion(10, step_size=0.5)
 
     for run_i in range(50):

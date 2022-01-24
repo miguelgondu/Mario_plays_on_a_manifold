@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, Tuple
 import torch as t
+import numpy as np
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 
@@ -12,6 +13,11 @@ class BaseDiffusion:
         self.vae_path = vae_path
         self.p_map = p_map
         self.n_steps = n_steps
+
+        # Some more arguments that are useful
+        self.zs = np.array([k for k in p_map.keys()])
+        self.p = np.array([p for p in p_map.values()])
+        self.playable_points = self.zs[self.p == 1.0]
 
     def run(self, z_0: t.Tensor = None) -> Tuple[t.Tensor]:
         raise NotImplementedError
