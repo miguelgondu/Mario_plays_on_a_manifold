@@ -2,8 +2,6 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-# from vae_geometry_base import VAEGeometryBase
-
 
 def fd_jacobian(function, x, h=1e-4, input_size=14 * 14 * 11):
     """
@@ -87,22 +85,3 @@ def plot_approximation(model, function=None, ax=None, x_lims=(-5, 5), y_lims=(-5
         ax1.set_title("Latent space w. Entropy")
         ax2.set_title("Numerical approximation of the metric")
         plt.show()
-
-
-if __name__ == "__main__":
-    # Load the model
-    from vae_geometry_dirichlet import VAEGeometryDirichlet
-
-    vae = VAEGeometryDirichlet()
-    vae.load_state_dict(
-        torch.load("./models/mariovae_w_relu_epoch_160.pt", map_location="cpu")
-    )
-    vae.update_cluster_centers(
-        **{
-            "beta": -1.5,
-            "n_clusters": 500,
-            "only_playable": False,
-        }
-    )
-
-    plot_approximation(vae)

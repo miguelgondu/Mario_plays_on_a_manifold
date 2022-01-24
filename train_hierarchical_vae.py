@@ -17,8 +17,6 @@ from tqdm import tqdm
 from vae_mario_hierarchical import VAEMarioHierarchical
 from torch.utils.tensorboard import SummaryWriter
 
-from vae_mario_hierarchical_dirichlet import VAEMarioHierarchicalDirichlet
-from vae_structured import VAEStructured
 
 # Data types.
 Tensor = torch.Tensor
@@ -142,14 +140,7 @@ def run(
 
     # Loading the model
     print("Model:")
-    if model == "normal":
-        vae = VAEMarioHierarchical(z_dim=z_dim)
-    elif model == "dirichlet":
-        vae = VAEMarioHierarchicalDirichlet(z_dim=z_dim)
-    elif model == "structured":
-        vae = VAEStructured(z_dim=z_dim)
-    else:
-        raise ValueError("expected normal, dirichlet or structured.")
+    vae = VAEMarioHierarchical(z_dim=z_dim)
 
     print(vae)
     optimizer = optim.Adam(vae.parameters(), lr=lr)

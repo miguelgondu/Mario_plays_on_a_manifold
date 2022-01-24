@@ -7,10 +7,9 @@ from vae_mario_hierarchical import VAEMarioHierarchical
 from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
 from geoml.manifold import Manifold
-from vae_mario import VAEMario, load_data
+from vae_mario_hierarchical import load_data
 
 from geoml.discretized_manifold import DiscretizedManifold
-from metric_approximation import MetricApproximation
 from metric_approximation_with_jacobians import approximate_metric, plot_approximation
 
 
