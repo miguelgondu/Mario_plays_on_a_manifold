@@ -160,5 +160,5 @@ def save_video_for_all_traces():
 if __name__ == "__main__":
     # plot_all_ground_truths()
     # plot_all_grids()
-    # verify_length_of_all_traces()
-    save_video_for_all_traces()
+    verify_length_of_all_traces()
+    # save_video_for_all_traces()
