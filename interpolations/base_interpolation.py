@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Dict, Tuple
 import torch as t
 
+from vae_mario_hierarchical import VAEMarioHierarchical
+
 
 class BaseInterpolation:
     def __init__(
@@ -22,3 +24,10 @@ class BaseInterpolation:
         alongside with the decoded levels.
         """
         raise NotImplementedError
+
+    def _load_vae(self) -> VAEMarioHierarchical:
+        vae = VAEMarioHierarchical()
+        device = vae.device
+        vae.load_state_dict(t.load(self.vae_path, map_location=device))
+
+        return vae

@@ -1,4 +1,7 @@
+from pathlib import Path
+from typing import Dict, Tuple
 import torch as t
+
 import numpy as np
 from torch.distributions import MultivariateNormal
 
@@ -12,28 +15,31 @@ def get_random_point(encodings: t.Tensor) -> t.Tensor:
 
 
 class BaselineDiffusion(BaseDiffusion):
-    def __init__(self, n_steps: int, step_size: float = 1.0) -> None:
-        super().__init__(n_steps=n_steps)
-        self.step_size = step_size
+    def __init__(
+        self, vae_path: Path, p_map: Dict[tuple, float], n_steps: int = 100
+    ) -> None:
+        super().__init__(vae_path, p_map, n_steps)
+        self.zs = np.array(p_map.keys())
+        self.p = np.array(p_map.values())
 
-    def run(self, initial_points: t.Tensor) -> t.Tensor:
-        """
-        Returns the random walk as a Tensor of shape [n_points, z_dim=2].
+        self.playable_points = self.zs[self.p == 1.0]
 
-        It randomly samples an encoding and takes a step in that direction.
-        """
-
-        # Random starting point
-        idx = np.random.randint(len(initial_points))
-        z_n = initial_points[idx, :]
-
-        zs = [z_n]
+    def run(self, z_0: t.Tensor = None) -> Tuple[t.Tensor]:
+        zs = [z_0]
 
         # Taking it from there.
         for _ in range(self.n_steps):
-            target = get_random_point(initial_points)
+            target = self._get_random_playable_point()
             direction = target - z_n
             z_n = z_n + direction * (self.step_size / direction.norm())
             zs.append(z_n)
 
-        return t.vstack(zs)
+        zs_in_rw = t.vstack(zs)
+        vae = self._load_vae()
+        levels = vae.decode(zs_in_rw).probs.argmax(dim=-1)
+
+        return t.vstack(zs), levels
+
+    def _get_random_playable_point(self) -> t.Tensor:
+        idx = np.random.randint(len(self.playable_points))
+        return t.from_numpy(self.playable_points[idx, :]).type(t.float)

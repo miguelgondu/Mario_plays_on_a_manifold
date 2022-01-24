@@ -45,13 +45,6 @@ class DiscreteInterpolation(BaseInterpolation):
         self.predictions = np.array(p_map.values())
         self.kd_tree = cKDTree(self.zs)
 
-    def _load_vae(self) -> VAEMarioHierarchical:
-        vae = VAEMarioHierarchical()
-        device = vae.device
-        vae.load_state_dict(t.load(self.vae_path, map_location=device))
-
-        return vae
-
     def _query_tree(self, z: np.ndarray) -> np.ndarray:
         """
         Returns the nearest point to {z} in self.grid

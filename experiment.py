@@ -17,7 +17,7 @@ from geometry import (
 
 def save_all_arrays(
     exp_name: str,
-    geometry: Type[Geometry],
+    GeometryType: Type[Geometry],
     with_AL=True,
 ):
     """
@@ -35,14 +35,14 @@ def save_all_arrays(
 
         # For ground truth
         p_map = load_csv_as_map(path_to_gt)
-        gt_geometry = geometry(p_map, exp_name, vae_path)
+        gt_geometry = GeometryType(p_map, exp_name, vae_path)
         gt_geometry.save_arrays(vae_path)
 
         # For multiple iterations in the AL trace
         if with_AL:
             for m in [100, 200, 300, 400, 500]:
                 p_map_m = load_trace_as_map(path_to_AL_trace, m)
-                AL_geometry_m = geometry(p_map_m, exp_name, vae_path)
+                AL_geometry_m = GeometryType(p_map_m, exp_name, vae_path)
                 AL_geometry_m.save_arrays(vae_path)
 
 
