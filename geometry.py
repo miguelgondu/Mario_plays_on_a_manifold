@@ -37,7 +37,7 @@ class Geometry:
         )
         self.diffusion_path = Path(f"./data/arrays/ten_vaes/diffusions/{exp_name}")
         self.diffusion_path.mkdir(exist_ok=True, parents=True)
-        self.model_name = vae_path.name.replace(".pt", "")
+        self.model_name = vae_path.stem
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
         raise NotImplementedError

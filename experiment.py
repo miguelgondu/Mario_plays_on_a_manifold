@@ -25,7 +25,7 @@ def save_all_arrays(
     """
     all_vae_paths = Path("./models/ten_vaes").glob("*.pt")
     for vae_path in all_vae_paths:
-        model_name = vae_path.name.replace("*.pt", "")
+        model_name = vae_path.stem
         path_to_gt = (
             Path("./data/array_simulation_results/ten_vaes") / f"{model_name}.csv"
         )

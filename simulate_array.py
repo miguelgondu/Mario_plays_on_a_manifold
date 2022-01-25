@@ -35,7 +35,7 @@ def test_level(
 
 def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=None):
     array_path = Path(array_path)
-    array_name = array_path.name.replace(".npz", "")
+    array_name = array_path.stem
 
     array = np.load(array_path)
     levels = array["levels"]

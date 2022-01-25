@@ -12,7 +12,6 @@ import torch
 import numpy as np
 from vae_geometry_hierarchical import VAEGeometryHierarchical
 
-from vae_mario import VAEMario
 from vae_mario_hierarchical import VAEMarioHierarchical
 from mario_utils.levels import tensor_to_sim_level, clean_level
 
