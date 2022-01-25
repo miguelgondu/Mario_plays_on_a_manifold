@@ -58,7 +58,6 @@ def inspect_diffusions(geometry: Geometry):
     fig.tight_layout()
     fig.savefig(plots_path / f"{model_name}.png")
     plt.close(fig)
-    # plt.show()
 
 
 if __name__ == "__main__":
