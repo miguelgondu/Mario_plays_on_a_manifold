@@ -11,7 +11,7 @@ from .base_diffusion import BaseDiffusion
 # TODO: implement this diffusion as a random walk on a graph.
 class DiscreteDiffusion(BaseDiffusion):
     def __init__(
-        self, vae_path: Path, p_map: Dict[tuple, float], n_steps: int = 100
+        self, vae_path: Path, p_map: Dict[tuple, float], n_steps: int = 50
     ) -> None:
         super().__init__(vae_path, p_map, n_steps)
         # Has nice methods for dealing with the graph.

@@ -54,7 +54,7 @@ def load_arrays_as_map(zs: np.ndarray, p: np.ndarray) -> Dict[tuple, float]:
     return {(z[0], z[1]): p for z, p in zip(zs, p)}
 
 
-def load_trace_as_map(path_to_trace: Path, n_iterations: int):
+def load_trace_as_map(path_to_trace: Path, n_iterations: int) -> Dict[tuple, float]:
     zs, p = load_trace_as_arrays(path_to_trace, n_iterations)
     return load_arrays_as_map(zs, p)
 
