@@ -15,8 +15,6 @@ def test_level(
     i: int, z: np.ndarray, level: np.ndarray, array_name: str, exp_folder: str = None
 ):
     # print(f"Processing level at index {i} (z={z})")
-    res = test_level_from_int_array(level)
-    res = {"z": z.tolist(), "level": level.tolist(), **res}
 
     if exp_folder is not None:
         res_path = Path("./data/array_simulation_jsons") / exp_folder
@@ -26,6 +24,17 @@ def test_level(
         saving_path = (
             Path("./data/array_simulation_jsons") / f"{array_name}_{i:08d}.json"
         )
+
+    # Check if we have already simulated it, and if so, load it instead.
+    if saving_path.exists():
+        with open(saving_path) as fp:
+            res = json.load(fp)
+            assert res["z"] == z.tolist()
+            assert (np.array(json.loads(res["level"])) == level).all()
+            return res
+
+    res = test_level_from_int_array(level)
+    res = {"z": z.tolist(), "level": level.tolist(), **res}
 
     with open(saving_path, "w") as fp:
         json.dump(res, fp)
@@ -46,6 +55,18 @@ def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=Non
         f"Will process {levels.shape[0]} levels ({levels.shape[0] * repetitions_per_level} simulations)."
     )
 
+    # Check if we've already simulated it
+    results_path = Path("./data/array_simulation_results")
+    if exp_folder is not None:
+        (results_path / exp_folder).mkdir(exist_ok=True, parents=True)
+        saving_path = results_path / exp_folder / f"{array_name}.csv"
+    else:
+        saving_path = results_path / f"{array_name}.csv"
+
+    if saving_path.exists():
+        print(f"Skipping this array, since we found something in {saving_path}")
+        return
+
     # Repeat
     levels = np.repeat(levels, repetitions_per_level, axis=0)
     zs = np.repeat(zs, repetitions_per_level, axis=0)
@@ -59,13 +80,6 @@ def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=Non
     for z, level, result in zip(zs, levels, results):
         row = {"z": z.tolist(), "level": level.tolist(), **result}
         rows.append(row)
-
-    results_path = Path("./data/array_simulation_results")
-    if exp_folder is not None:
-        (results_path / exp_folder).mkdir(exist_ok=True, parents=True)
-        saving_path = results_path / exp_folder / f"{array_name}.csv"
-    else:
-        saving_path = results_path / f"{array_name}.csv"
 
     df = pd.DataFrame(rows)
     df.to_csv(saving_path)

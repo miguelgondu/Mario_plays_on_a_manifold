@@ -68,9 +68,9 @@ def ground_truth_experiment():
     array_paths = Path("./data/arrays/ten_vaes/ground_truth").glob("*.npz")
     for path in array_paths:
         print(f"Simualting {path}.")
-        _simulate_array(path, 32, 5, exp_folder="ten_vaes/ground_truth")
+        _simulate_array(path, 16, 5, exp_folder="ten_vaes/ground_truth")
 
 
 if __name__ == "__main__":
-    get_ground_truth_arrays()
+    # get_ground_truth_arrays()
     ground_truth_experiment()
