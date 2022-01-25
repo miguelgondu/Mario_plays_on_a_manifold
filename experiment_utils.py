@@ -2,10 +2,11 @@
 Some utils for computing all the arrays in experiment.py
 """
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 from itertools import product
 import json
 
+import torch as t
 import pandas as pd
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessClassifier
@@ -89,3 +90,19 @@ def grid_from_map(p_map: Dict[tuple, float]) -> np.ndarray:
         grid[i, j] = p_map[z]
 
     return grid
+
+
+def get_random_pairs(
+    points: t.Tensor, n_pairs: int = 20, seed: int = None
+) -> List[t.Tensor]:
+    if seed is not None:
+        np.random.seed(seed)
+    idx1 = np.random.choice(len(points), size=n_pairs, replace=False)
+    idx2 = np.random.choice(len(points), size=n_pairs, replace=False)
+    while np.any(idx1 == idx2):
+        idx2 = np.random.choice(len(points), size=n_pairs, replace=False)
+
+    pairs_1 = points[idx1]
+    pairs_2 = points[idx2]
+
+    return pairs_1, pairs_2

@@ -34,7 +34,7 @@ class DiscreteDiffusion(BaseDiffusion):
     def step(self, z_n: np.ndarray) -> np.ndarray:
         """
         One step in the random walk. It does
-        5 mini-steps and consolidates the result.
+        10 mini-steps and consolidates the result.
         """
         current_pos = self.di.positions[tuple(z_n)]
         for _ in range(10):
@@ -46,9 +46,12 @@ class DiscreteDiffusion(BaseDiffusion):
             connected_mask = all_neighbour_weights < np.inf
             connected_neighbours = all_neighbours[connected_mask]
             connected_neighbour_w = all_neighbour_weights[connected_mask]
-            _dist = Categorical(logits=t.from_numpy(connected_neighbour_w))
 
             # Compute next position and store it
+            # Now that we're doing the discrete thing, this is
+            # a little bit overkill. random.choice(connected_neightbours)
+            # would do the trick just fine.
+            _dist = Categorical(logits=t.from_numpy(connected_neighbour_w))
             next_idx = _dist.sample().item()
             current_pos = tuple(connected_neighbours[next_idx])
 

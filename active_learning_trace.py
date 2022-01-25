@@ -97,12 +97,12 @@ def simulate_level(level: t.Tensor, processes: int, repeats: int) -> int:
 @click.argument("model-name", type=str)
 def run(model_name):
     """
-    Runs 1000 AL queries for this model.
+    Runs 500 AL queries for this model.
     """
 
     # Hyperparameters
     kernel = 1.0 * Matern(nu=3 / 2) + 1.0 * WhiteKernel()
-    n_iterations = 1000
+    n_iterations = 500
 
     # Results keeping
     results_path = Path("./data/evolution_traces/five_vaes")
@@ -120,9 +120,12 @@ def run(model_name):
 
     # Checking if we have already ran something before
     if (results_path / f"{model_name}_AL_trace_{n_iterations}.npz").exists():
-        a = np.load(results_path / f"{model_name}_AL_trace_{n_iterations}.npz")
+        a = np.load(results_path / f"{model_name}.npz")
         zs = a["zs"]
         playabilities = a["playabilities"]
+
+        if len(zs) > n_iterations + 100:
+            return
 
         to_run = n_iterations - (len(zs) - 100)
     else:
