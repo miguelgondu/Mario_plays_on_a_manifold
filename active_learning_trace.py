@@ -1,5 +1,5 @@
 """
-This script gets a 1000 AL queries trace
+This script gets a 500 AL queries trace
 for a given model name.
 """
 from typing import Tuple
@@ -23,7 +23,9 @@ from simulator import test_level_from_decoded_tensor
 def load_vae(model_name) -> VAEMarioHierarchical:
     vae = VAEMarioHierarchical()
     device = vae.device
-    vae.load_state_dict(t.load(f"./models/{model_name}.pt", map_location=device))
+    vae.load_state_dict(
+        t.load(f"./models/ten_vaes/{model_name}.pt", map_location=device)
+    )
 
     return vae
 
@@ -34,7 +36,7 @@ def get_initial_data(model_name):
     initial_data_path = Path("./data/arrays/five_vaes/initial_data_AL")
     initial_data_path.mkdir(exist_ok=True)
 
-    array_path = initial_data_path / f"{model_name}_100_points_in_a_grid.npz"
+    array_path = initial_data_path / f"{model_name}.npz"
 
     zs = t.Tensor(
         [[z1, z2] for z1, z2 in product(t.linspace(-5, 5, 10), t.linspace(-5, 5, 10))]
@@ -47,13 +49,13 @@ def get_initial_data(model_name):
         levels=levels.detach().numpy(),
     )
 
-    _simulate_array(array_path, 6, 5, exp_folder="five_vaes/initial_data_AL")
+    _simulate_array(array_path, 6, 5, exp_folder="ten_vaes/initial_data_AL")
 
 
 def load_initial_data(model_name) -> Tuple[np.ndarray]:
-    results_path = Path("./data/array_simulation_results/five_vaes/initial_data_AL")
+    results_path = Path("./data/array_simulation_results/ten_vaes/initial_data_AL")
     df = pd.read_csv(
-        results_path / f"{model_name}_100_points_in_a_grid.csv",
+        results_path / f"{model_name}.csv",
         index_col=0,
     )
     by_z = df.groupby("z")["marioStatus"].mean()
@@ -105,31 +107,32 @@ def run(model_name):
     n_iterations = 500
 
     # Results keeping
-    results_path = Path("./data/evolution_traces/five_vaes")
-    results_path.mkdir(exist_ok=True)
+    results_path = Path("./data/evolution_traces/ten_vaes")
+    results_path.mkdir(exist_ok=True, parents=True)
+    trace_path = results_path / f"{model_name}.npz"
 
     # Getting initial data
-    initial_data_path = Path(
-        "./data/array_simulation_results/five_vaes/initial_data_AL"
-    )
-    if (initial_data_path / f"{model_name}_100_points_in_a_grid.csv").exists():
-        zs, playabilities = load_initial_data(model_name)
-    else:
-        get_initial_data(model_name)
-        zs, playabilities = load_initial_data(model_name)
+    initial_data_path = Path("./data/array_simulation_results/ten_vaes/initial_data_AL")
 
     # Checking if we have already ran something before
-    if (results_path / f"{model_name}_AL_trace_{n_iterations}.npz").exists():
+    if trace_path.exists():
         a = np.load(results_path / f"{model_name}.npz")
         zs = a["zs"]
         playabilities = a["playabilities"]
 
         if len(zs) > n_iterations + 100:
+            # We don't need to run anything
+            print(f"We already have a trace at {trace_path}. Queries: {len(zs) - 100}")
             return
 
         to_run = n_iterations - (len(zs) - 100)
     else:
         to_run = n_iterations
+        if (initial_data_path / f"{model_name}.csv").exists():
+            zs, playabilities = load_initial_data(model_name)
+        else:
+            get_initial_data(model_name)
+            zs, playabilities = load_initial_data(model_name)
 
     # Loading models
     vae = load_vae(model_name)
@@ -154,7 +157,7 @@ def run(model_name):
 
         if ((i + 1) % 10) or (i + 1 == n_iterations):
             np.savez(
-                results_path / f"{model_name}_AL_trace_{n_iterations}.npz",
+                results_path / f"{model_name}.npz",
                 zs=zs,
                 playabilities=playabilities,
             )

@@ -18,7 +18,7 @@ def test_level(
 
     if exp_folder is not None:
         res_path = Path("./data/array_simulation_jsons") / exp_folder
-        res_path.mkdir(exist_ok=True)
+        res_path.mkdir(exist_ok=True, parents=True)
         saving_path = res_path / f"{array_name}_{i:08d}.json"
     else:
         saving_path = (
@@ -73,7 +73,8 @@ def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=Non
 
     with mp.Pool(processes) as p:
         results = p.starmap(
-            test_level, zip(range(len(zs)), zs, levels, repeat(array_name))
+            test_level,
+            zip(range(len(zs)), zs, levels, repeat(array_name), repeat(exp_folder)),
         )
 
     rows = []
