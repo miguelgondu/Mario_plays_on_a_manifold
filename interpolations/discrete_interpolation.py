@@ -147,7 +147,7 @@ class DiscreteInterpolation(BaseInterpolation):
                     parent = position
                     son = neighbor
                     path = {son: parent}
-                    path_positions = [parent]
+                    path_positions = [son, parent]
                     while parent is not None:
                         son, parent = parent, parents[parent]
                         path[son] = parent
@@ -160,7 +160,7 @@ class DiscreteInterpolation(BaseInterpolation):
 
         raise ValueError(f"z={z} and z_prime={z_prime} are not connected in the graph.")
 
-    def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
+    def _full_interpolation(self, z: t.Tensor, z_prime: t.Tensor) -> t.Tensor:
         # Find the closest point to z on the grid, and join
         # by a line.
         # same thing for z_prime.
@@ -174,11 +174,19 @@ class DiscreteInterpolation(BaseInterpolation):
         path_positions = path_positions[1:]
         zs_in_path = np.array([self.inv_positions[p] for p in path_positions])
 
+        return t.from_numpy(zs_in_path).type(t.float)
+
+    def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
+        # Get the full interpolation
+        zs_in_path = self._full_interpolation(z, z_prime)
+
         idxs = np.round(
             np.linspace(0, len(zs_in_path) - 1, self.n_points_in_line)
         ).astype(int)
+        assert (zs_in_path[0] == z).all()
+        assert (zs_in_path[-1] == z_prime).all()
 
-        zs_in_path = t.from_numpy(zs_in_path[idxs]).type(t.float)
+        zs_in_path = zs_in_path[idxs]
         vae = self._load_vae()
         levels = vae.decode(zs_in_path).probs.argmax(dim=-1)
 

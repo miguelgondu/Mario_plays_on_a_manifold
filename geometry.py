@@ -59,6 +59,7 @@ class Geometry:
         n_interpolations = 20
         z1s, z2s = get_random_pairs(self.playable_points, n_interpolations)
         for i, (z1, z2) in enumerate(zip(z1s, z2s)):
+            assert (z1 != z2).any()
             path = self.interpolation_path / f"{self.model_name}_interp_{i:02d}.npz"
             if path.exists() and not force:
                 print(f"There's already an array at {path}. Skipping.")

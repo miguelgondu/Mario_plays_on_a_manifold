@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from geoml.curve import CubicSpline
-from geoml.manifold import Manifold
+from geoml.discretized_manifold import DiscretizedManifold
 import torch as t
 
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_mario_obstacles import VAEWithObstacles
 
 from .base_interpolation import BaseInterpolation
 
@@ -18,6 +18,12 @@ class GeodesicInterpolation(BaseInterpolation):
 
         # Define the discretized manifold according to
         # the VAEWithObstacles (?).
+        vae = self._load_vae()
+        grid = [t.linspace(-5, 5, 50), t.linspace(-5, 5, 50)]
+        Mx, My = t.meshgrid(grid[0], grid[1])
+        grid2 = t.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
+
+        self.manifold = DiscretizedManifold(self, grid2, use_diagonals=True)
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
         # Use the connecting geom
@@ -36,6 +42,11 @@ class GeodesicInterpolation(BaseInterpolation):
         c, _ = self.manifold.connecting_geodesic(z, z_prime)
         return c
 
-    def _load_vae(self) -> VAEMarioHierarchical:
+    def _load_vae(self) -> VAEWithObstacles:
         # TODO: this one should be loading up the geometric one.
-        return super()._load_vae()
+        vae = VAEWithObstacles()
+        vae.load_state_dict(t.load(self.vae_path, map_location=vae.device))
+
+        unplayable_levels = self.zs[self.p != 1.0]
+        vae.update_obstacles(t.from_numpy(unplayable_levels).type(t.float))
+        return vae

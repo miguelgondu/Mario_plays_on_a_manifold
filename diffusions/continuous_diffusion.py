@@ -40,7 +40,7 @@ class ContinuousDiffusion(BaseDiffusion):
 
         unplayable_levels = self.zs[self.p != 1.0]
         vae.update_obstacles(t.from_numpy(unplayable_levels).type(t.float))
-        return super()._load_vae()
+        return vae
 
 
 # class GeometricDifussion:

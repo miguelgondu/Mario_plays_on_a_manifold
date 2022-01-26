@@ -3,6 +3,7 @@ Let's inspect whatever was saved for the different geometries.
 """
 from pathlib import Path
 
+import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -23,7 +24,15 @@ def inspect_interpolations(geometry: Geometry):
     for array_path in all_arrays:
         a = np.load(array_path)
         zs = a["zs"]
-        ax.plot(zs[:, 0], zs[:, 1])
+        if "discrete" in geometry.exp_name:
+            ax.scatter(zs[:, 0], zs[:, 1], c="r")
+            z, z_prime = zs[0], zs[-1]
+            z = t.from_numpy(z).type(t.float)
+            z_prime = t.from_numpy(z_prime).type(t.float)
+            full_path = geometry.interpolation._full_interpolation(z, z_prime)
+            ax.plot(full_path[:, 0], full_path[:, 1], "r")
+        else:
+            ax.plot(zs[:, 0], zs[:, 1], "r")
 
     ax.imshow(geometry.grid, extent=[-5, 5, -5, 5], cmap="Blues")
     plots_path = Path(f"./data/plots/ten_vaes/interpolations/{exp_name}")
