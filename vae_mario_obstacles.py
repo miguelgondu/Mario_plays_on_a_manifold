@@ -4,13 +4,9 @@ import matplotlib.pyplot as plt
 from torch.distributions import Categorical, Normal
 from vae_mario_hierarchical import VAEMarioHierarchical
 
-from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
 from geoml.manifold import Manifold
-from vae_mario import VAEMario, load_data
 
-from geoml.discretized_manifold import DiscretizedManifold
-from metric_approximation import MetricApproximation
 from metric_approximation_with_jacobians import approximate_metric, plot_approximation
 
 
@@ -30,19 +26,23 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
         super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
 
     # This method overwrites the decode of the vanilla one.
-    def decode(self, z: t.Tensor) -> Categorical:
-        dist_to_obstacles = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-        intermediate_normal = self._intermediate_distribution(z)
-        dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
+    def decode(self, z: t.Tensor, reweight: bool = True) -> Categorical:
+        if reweight:
+            dist_to_obst = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
+            intermediate_normal = self._intermediate_distribution(z)
 
-        reweighted_std = (dist_to_obstacles) * dec_std + (1 - dist_to_obstacles) * (
-            10.0 * t.ones_like(dec_std)
-        )
-        reweighted_normal = Normal(dec_mu, reweighted_std)
-        samples = reweighted_normal.rsample()
-        p_x_given_z = Categorical(
-            logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
-        )
+            dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
+            reweighted_std = (dist_to_obst) * dec_std + (1 - dist_to_obst) * (
+                10.0 * t.ones_like(dec_std)
+            )
+            reweighted_normal = Normal(dec_mu, reweighted_std)
+            samples = reweighted_normal.rsample()
+
+            p_x_given_z = Categorical(
+                logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
+            )
+        else:
+            p_x_given_z = super().decode(z)
 
         return p_x_given_z
 

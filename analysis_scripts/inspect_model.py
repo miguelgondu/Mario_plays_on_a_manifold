@@ -8,7 +8,7 @@ from vae_geometry_dirichlet import VAEGeometryDirichlet
 from vae_geometry_hierarchical import VAEGeometryHierarchical
 from vae_geometry_uniform import VAEGeometryUniform
 
-from diffusions.geometric_difussion import GeometricDifussion
+from diffusions.continuous_difussion import ContinuousDiffusion
 from metric_approximation_with_jacobians import plot_approximation
 
 
