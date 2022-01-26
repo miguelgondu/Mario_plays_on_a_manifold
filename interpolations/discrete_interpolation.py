@@ -1,6 +1,6 @@
 """
-Replaces Djisktra's interpolation on GPC
-by making it generic, swallowing only a p_map.
+Replaces Djisktra's interpolation on GPC with A star,
+making it generic at the same time. Now it only needs a p_map.
 """
 from pathlib import Path
 from typing import Dict, Tuple, List
@@ -99,10 +99,8 @@ class DiscreteInterpolation(BaseInterpolation):
 
     def weight(self, node: Tuple[int, int]) -> float:
         """
-        The heuristic for A*, which combines
-        playability with Euclidean distance to goal.
+        Weight of a node.
         """
-        # dist2 = np.sum((z - z_prime) ** 2)
         playability = self.grid[node]
         if playability == 1.0:
             return 1.0
@@ -111,16 +109,24 @@ class DiscreteInterpolation(BaseInterpolation):
         else:
             raise ValueError(f"Unexpected value for playability: {playability}")
 
-        # Really high for non-playable levels
-        # return dist2 + 1 / (playability + 1e-6)
-        return 1 / (playability + 1e-9)
+    def heuristic(self, node: Tuple[int, int], final_pos: Tuple[int, int]) -> float:
+        """
+        The heuristic for A*, which combines
+        playability with Euclidean distance to goal.
+        """
+        z = np.array(self.inv_positions[node])
+        z_prime = np.array(self.inv_positions[final_pos])
+        dist2 = np.sum((z - z_prime) ** 2)
+        w = self.weight(node)
+
+        return w + dist2
 
     def a_star_path(self, z: np.ndarray, z_prime: np.ndarray) -> List[np.ndarray]:
         parents = {}
         first_position = self.positions[tuple(z)]
         final_position = self.positions[tuple(z_prime)]
 
-        h_first = self.weight(first_position)
+        h_first = self.heuristic(first_position, final_position)
         pq = PriorityQueue()
         pq.put((h_first, first_position))
         visited_positions = set([first_position])
@@ -149,7 +155,7 @@ class DiscreteInterpolation(BaseInterpolation):
 
                     return path_positions
 
-                h_neighbor = current_h + self.weight(neighbor)
+                h_neighbor = current_h + self.heuristic(neighbor, final_position)
                 pq.put((h_neighbor, neighbor))
 
         raise ValueError(f"z={z} and z_prime={z_prime} are not connected in the graph.")

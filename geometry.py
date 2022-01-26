@@ -35,6 +35,7 @@ class Geometry:
         self.interpolation_path = Path(
             f"./data/arrays/ten_vaes/interpolations/{exp_name}"
         )
+        self.interpolation_path.mkdir(exist_ok=True, parents=True)
         self.diffusion_path = Path(f"./data/arrays/ten_vaes/diffusions/{exp_name}")
         self.diffusion_path.mkdir(exist_ok=True, parents=True)
         self.model_name = vae_path.stem
@@ -55,7 +56,7 @@ class Geometry:
         self._save_arrays_for_diffusion()
 
     def _save_arrays_for_interpolation(self):
-        n_interpolations = 100
+        n_interpolations = 20
         z1s, z2s = get_random_pairs(self.playable_points, n_interpolations)
         for i, (z1, z2) in enumerate(zip(z1s, z2s)):
             path = self.interpolation_path / f"{self.model_name}_interp_{i:02d}.npz"
@@ -63,10 +64,10 @@ class Geometry:
             zs, levels = self.interpolate(z1, z2)
             np.savez(path, zs=zs.detach().numpy(), levels=levels.detach().numpy())
 
-    def _save_arrays_for_diffusion(self, path: Path):
+    def _save_arrays_for_diffusion(self):
         n_diffusions = 10
         random_idxs = np.random.permutation(len(self.playable_points))[:n_diffusions]
-        initial_points = self.playable_points[:random_idxs]
+        initial_points = self.playable_points[random_idxs]
         for d, z_0 in enumerate(initial_points):
             path = self.diffusion_path / f"{self.model_name}_diff_{d:02d}.npz"
             print(f"Saving {path}")

@@ -27,23 +27,28 @@ def save_all_arrays(
     for vae_path in all_vae_paths:
         model_name = vae_path.stem
         path_to_gt = (
-            Path("./data/array_simulation_results/ten_vaes") / f"{model_name}.csv"
+            Path("./data/array_simulation_results/ten_vaes/ground_truth")
+            / f"{model_name}.csv"
         )
         path_to_AL_trace = (
-            Path("./data/evolution_traces/ten_vaes") / f"{model_name}.npz"
+            Path("./data/evolution_traces/ten_vaes/AL_traces") / f"{model_name}.npz"
         )
 
         # For ground truth
-        p_map = load_csv_as_map(path_to_gt)
-        gt_geometry = GeometryType(p_map, exp_name, vae_path)
-        gt_geometry.save_arrays(vae_path)
+        if path_to_gt.exists():
+            p_map = load_csv_as_map(path_to_gt)
+            gt_geometry = GeometryType(p_map, f"{exp_name}_gt", vae_path)
+            gt_geometry.save_arrays()
 
         # For multiple iterations in the AL trace
         if with_AL:
-            for m in [100, 200, 300, 400, 500]:
-                p_map_m = load_trace_as_map(path_to_AL_trace, m)
-                AL_geometry_m = GeometryType(p_map_m, exp_name, vae_path)
-                AL_geometry_m.save_arrays(vae_path)
+            if path_to_AL_trace.exists():
+                for m in [100, 200, 300, 400, 500]:
+                    p_map_m = load_trace_as_map(path_to_AL_trace, m)
+                    AL_geometry_m = GeometryType(
+                        p_map_m, f"{exp_name}_AL_{m}", vae_path
+                    )
+                    AL_geometry_m.save_arrays()
 
 
 if __name__ == "__main__":
@@ -55,4 +60,4 @@ if __name__ == "__main__":
     save_all_arrays("discrete", DiscreteGeometry)
 
     # Continuous
-    save_all_arrays("continuous", ContinuousGeometry)
+    # save_all_arrays("continuous", ContinuousGeometry)

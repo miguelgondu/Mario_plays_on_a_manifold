@@ -13,7 +13,7 @@ def get_random_point(encodings: t.Tensor) -> t.Tensor:
 
 class BaselineDiffusion(BaseDiffusion):
     def __init__(
-        self, vae_path: Path, p_map: Dict[tuple, float], n_steps: int = 100
+        self, vae_path: Path, p_map: Dict[tuple, float], n_steps: int = 50
     ) -> None:
         super().__init__(vae_path, p_map, n_steps)
         self.step_size = 1.0
