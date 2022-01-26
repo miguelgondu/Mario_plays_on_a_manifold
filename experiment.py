@@ -16,9 +16,7 @@ from geometry import (
 
 
 def save_all_arrays(
-    exp_name: str,
-    GeometryType: Type[Geometry],
-    with_AL=True,
+    exp_name: str, GeometryType: Type[Geometry], with_AL=True, force=False
 ):
     """
     Saves all arrays for a certain geometry
@@ -31,14 +29,14 @@ def save_all_arrays(
             / f"{model_name}.csv"
         )
         path_to_AL_trace = (
-            Path("./data/evolution_traces/ten_vaes/AL_traces") / f"{model_name}.npz"
+            Path("./data/evolution_traces/ten_vaes") / f"{model_name}.npz"
         )
 
         # For ground truth
         if path_to_gt.exists():
             p_map = load_csv_as_map(path_to_gt)
             gt_geometry = GeometryType(p_map, f"{exp_name}_gt", vae_path)
-            gt_geometry.save_arrays()
+            gt_geometry.save_arrays(force=force)
 
         # For multiple iterations in the AL trace
         if with_AL:
@@ -48,7 +46,7 @@ def save_all_arrays(
                     AL_geometry_m = GeometryType(
                         p_map_m, f"{exp_name}_AL_{m}", vae_path
                     )
-                    AL_geometry_m.save_arrays()
+                    AL_geometry_m.save_arrays(force=force)
 
 
 if __name__ == "__main__":
@@ -57,7 +55,7 @@ if __name__ == "__main__":
     save_all_arrays("normal", NormalGeometry, with_AL=False)
 
     # Discrete
-    save_all_arrays("discrete", DiscreteGeometry)
+    save_all_arrays("discrete", DiscreteGeometry, force=True)
 
     # Continuous
     # save_all_arrays("continuous", ContinuousGeometry)

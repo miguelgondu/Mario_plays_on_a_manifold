@@ -46,30 +46,38 @@ class Geometry:
     def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor]:
         raise NotImplementedError
 
-    def save_arrays(self):
+    def save_arrays(self, force=False):
         """
         Loads up the VAE at said path and runs
         - 100 random interpolations of 10 points each.
         - 10 random walks (or diffusions) of 100 steps each.
         """
-        self._save_arrays_for_interpolation()
-        self._save_arrays_for_diffusion()
+        self._save_arrays_for_interpolation(force)
+        self._save_arrays_for_diffusion(force)
 
-    def _save_arrays_for_interpolation(self):
+    def _save_arrays_for_interpolation(self, force=False):
         n_interpolations = 20
         z1s, z2s = get_random_pairs(self.playable_points, n_interpolations)
         for i, (z1, z2) in enumerate(zip(z1s, z2s)):
             path = self.interpolation_path / f"{self.model_name}_interp_{i:02d}.npz"
+            if path.exists() and not force:
+                print(f"There's already an array at {path}. Skipping.")
+                continue
+
             print(f"Saving {path}")
             zs, levels = self.interpolate(z1, z2)
             np.savez(path, zs=zs.detach().numpy(), levels=levels.detach().numpy())
 
-    def _save_arrays_for_diffusion(self):
+    def _save_arrays_for_diffusion(self, force=False):
         n_diffusions = 10
         random_idxs = np.random.permutation(len(self.playable_points))[:n_diffusions]
         initial_points = self.playable_points[random_idxs]
         for d, z_0 in enumerate(initial_points):
             path = self.diffusion_path / f"{self.model_name}_diff_{d:02d}.npz"
+            if path.exists() and not force:
+                print(f"There's already an array at {path}. Skipping.")
+                continue
+
             print(f"Saving {path}")
             zs, levels = self.diffuse(z_0)
             np.savez(path, zs=zs.detach().numpy(), levels=levels.detach().numpy())

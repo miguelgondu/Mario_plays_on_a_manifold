@@ -47,7 +47,10 @@ def load_trace_as_arrays(path_to_trace: Path, n_iterations: int) -> Tuple[np.nda
     bigger_grid = np.array([[z1, z2] for z1, z2 in product(z1s, z2s)])
     res = gpc.predict_proba(bigger_grid)
 
-    return bigger_grid, res[:, 1]
+    decision_boundary = 0.75
+    p = np.array([1.0 if r > decision_boundary else 0.0 for r in res[:, 1]])
+
+    return bigger_grid, p
 
 
 def load_arrays_as_map(zs: np.ndarray, p: np.ndarray) -> Dict[tuple, float]:

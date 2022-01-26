@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from geometry import BaselineGeometry, DiscreteGeometry, Geometry, NormalGeometry
-from experiment_utils import load_csv_as_map
+from experiment_utils import load_csv_as_map, load_trace_as_map
 
 
 def inspect_interpolations(geometry: Geometry):
@@ -79,3 +79,13 @@ if __name__ == "__main__":
             discrete_geometry = DiscreteGeometry(gt_p_map, "discrete_gt", vae_path)
             inspect_interpolations(discrete_geometry)
             inspect_diffusions(discrete_geometry)
+
+        for m in [100, 200, 300, 400, 500]:
+            al_path = Path(f"./data/evolution_traces/ten_vaes/{vae_path.stem}.npz")
+            if al_path.exists():
+                al_p_map = load_trace_as_map(al_path, m)
+                discrete_geometry = DiscreteGeometry(
+                    al_p_map, f"discrete_AL_{m}", vae_path
+                )
+                inspect_interpolations(discrete_geometry)
+                inspect_diffusions(discrete_geometry)
