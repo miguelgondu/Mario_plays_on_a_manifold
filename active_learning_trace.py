@@ -33,8 +33,8 @@ def load_vae(model_name) -> VAEMarioHierarchical:
 def get_initial_data(model_name):
     vae = load_vae(model_name)
 
-    initial_data_path = Path("./data/arrays/five_vaes/initial_data_AL")
-    initial_data_path.mkdir(exist_ok=True)
+    initial_data_path = Path("./data/arrays/ten_vaes/initial_data_AL")
+    initial_data_path.mkdir(exist_ok=True, parents=True)
 
     array_path = initial_data_path / f"{model_name}.npz"
 
@@ -46,10 +46,10 @@ def get_initial_data(model_name):
     np.savez(
         array_path,
         zs=zs.detach().numpy(),
-        levels=levels.detach().numpy(),
+        levels=levels.cpu().detach().numpy(),
     )
 
-    _simulate_array(array_path, 6, 5, exp_folder="ten_vaes/initial_data_AL")
+    _simulate_array(array_path, 40, 5, exp_folder="ten_vaes/initial_data_AL")
 
 
 def load_initial_data(model_name) -> Tuple[np.ndarray]:
