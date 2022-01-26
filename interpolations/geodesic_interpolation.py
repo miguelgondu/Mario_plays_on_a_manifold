@@ -4,6 +4,7 @@ from typing import Dict, Tuple
 from geoml.curve import CubicSpline
 from geoml.discretized_manifold import DiscretizedManifold
 import torch as t
+import numpy as np
 
 from vae_mario_obstacles import VAEWithObstacles
 
@@ -15,24 +16,27 @@ class GeodesicInterpolation(BaseInterpolation):
         self, vae_path: Path, p_map: Dict[tuple, float], n_points_in_line: int = 10
     ):
         super().__init__(vae_path, p_map, n_points_in_line)
+        self.zs = np.array([z for z in p_map.keys()])
+        self.p = np.array([p for p in p_map.values()])
 
         # Define the discretized manifold according to
         # the VAEWithObstacles (?).
-        vae = self._load_vae()
+        self.vae = self._load_vae()
         grid = [t.linspace(-5, 5, 50), t.linspace(-5, 5, 50)]
         Mx, My = t.meshgrid(grid[0], grid[1])
         grid2 = t.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
 
-        self.manifold = DiscretizedManifold(self, grid2, use_diagonals=True)
+        print(f"Building the discretized manifold for {vae_path}")
+        self.manifold = DiscretizedManifold(self.vae, grid2, use_diagonals=True)
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
         # Use the connecting geom
-        c, _ = self.manifold.connecting_geodesic(z, z_prime)
+        c = self.manifold.connecting_geodesic(z, z_prime)
         time = t.linspace(0, 1, self.n_points_in_line)
         interpolation = c(time)
 
         # TODO: decode the levels
-        levels = None
+        levels = self.vae.decode(interpolation, reweight=False).probs.argmax(dim=-1)
 
         return interpolation, levels
 
@@ -43,7 +47,6 @@ class GeodesicInterpolation(BaseInterpolation):
         return c
 
     def _load_vae(self) -> VAEWithObstacles:
-        # TODO: this one should be loading up the geometric one.
         vae = VAEWithObstacles()
         vae.load_state_dict(t.load(self.vae_path, map_location=vae.device))
 

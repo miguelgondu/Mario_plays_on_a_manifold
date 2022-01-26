@@ -78,7 +78,7 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
     def metric(self, z: t.Tensor) -> t.Tensor:
         return approximate_metric(self.decode, z)
 
-    def curve_energy(self, curve):
+    def curve_length(self, curve):
         dt = (curve[:-1] - curve[1:]).pow(2).sum(dim=-1, keepdim=True)  # (N-1)x1
         full_cat = self.decode(curve)
         probs = full_cat.probs

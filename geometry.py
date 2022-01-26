@@ -8,10 +8,12 @@ from typing import Dict, Tuple
 
 import numpy as np
 import torch as t
+from diffusions.continuous_diffusion import ContinuousDiffusion
 from diffusions.discrete_diffusion import DiscreteDiffusion
 from experiment_utils import grid_from_map, positions_from_map, get_random_pairs
 
 from interpolations.discrete_interpolation import DiscreteInterpolation
+from interpolations.geodesic_interpolation import GeodesicInterpolation
 from interpolations.linear_interpolation import LinearInterpolation
 
 from diffusions.baseline_diffusion import BaselineDiffusion
@@ -143,9 +145,11 @@ class ContinuousGeometry(Geometry):
         self, playability_map: Dict[tuple, int], exp_name: str, vae_path: Path
     ) -> None:
         super().__init__(playability_map, exp_name, vae_path)
+        self.interpolation = GeodesicInterpolation(vae_path, playability_map)
+        self.diffusion = ContinuousDiffusion(vae_path, playability_map)
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
-        return super().interpolate(z, z_prime)
+        return self.interpolation.interpolate(z, z_prime)
 
     def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor]:
-        return super().diffuse(z_0)
+        return self.diffusion.run(z_0)

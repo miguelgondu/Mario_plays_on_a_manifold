@@ -25,14 +25,17 @@ class ContinuousDiffusion(BaseDiffusion):
         zs = [z_n]
 
         # Taking it from there.
-        for _ in range(self.n_points):
+        for _ in range(self.n_steps):
             Mz = self.vae.metric(z_n)
 
             d = MultivariateNormal(z_n, covariance_matrix=self.scale * Mz.inverse())
             z_n = d.rsample()
             zs.append(z_n)
 
-        return t.vstack(zs)
+        zs_in_rw = t.vstack(zs)
+        levels = self.vae.decode(zs_in_rw, reweight=False).probs.argmax(dim=-1)
+
+        return zs_in_rw, levels
 
     def _load_vae(self) -> VAEWithObstacles:
         vae = VAEWithObstacles()
