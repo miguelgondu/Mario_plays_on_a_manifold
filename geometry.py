@@ -56,8 +56,17 @@ class Geometry:
         - 100 random interpolations of 10 points each.
         - 10 random walks (or diffusions) of 100 steps each.
         """
-        self._save_arrays_for_interpolation(force)
-        self._save_arrays_for_diffusion(force)
+        try:
+            self._save_arrays_for_interpolation(force)
+        except Exception as e:
+            print(f"Couldn't save interpolations for {self.exp_name} ({self.vae_path})")
+            print(f"Exception: {e}")
+
+        try:
+            self._save_arrays_for_diffusion(force)
+        except Exception as e:
+            print(f"Couldn't save diffusions for {self.exp_name} ({self.vae_path})")
+            print(f"Exception: {e}")
 
     def _save_arrays_for_interpolation(self, force=False):
         n_interpolations = 20

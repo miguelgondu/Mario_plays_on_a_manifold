@@ -103,12 +103,18 @@ def process():
     table = build_table_layout()
 
     print(table)
+    print("baseline_gt")
     fill_out_experiment(table, "baseline_gt", processes=None)
-    print(table)
+    # print(table)
+    print("discrete_gt")
     fill_out_experiment(table, "discrete_gt", processes=None)
-    print(table)
+    # print(table)
+    print("continuous_gt")
     fill_out_experiment(table, "continuous_gt", processes=None)
-    print(table)
+    # print(table)
+    for m in [100, 200, 300, 400, 500]:
+        print(f"discrete_AL_{m}")
+        fill_out_experiment(table, f"discrete_AL_{m}", processes=None)
 
     print(table.to_latex(escape=False, float_format="%1.2f"))
 

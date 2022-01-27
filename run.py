@@ -24,6 +24,8 @@ def run_exp(exp_name: str, processes: int = 50):
             _simulate_array(
                 path, processes, 5, exp_folder=f"ten_vaes/diffusions/{exp_name}"
             )
+        else:
+            print(f"There's already data at {saving_path}/{path.stem}.csv")
 
     for path in arrays_interp.glob("*.npz"):
         saving_path = Path(
@@ -33,6 +35,8 @@ def run_exp(exp_name: str, processes: int = 50):
             _simulate_array(
                 path, processes, 5, exp_folder=f"ten_vaes/interpolations/{exp_name}"
             )
+        else:
+            print(f"There's already data at {saving_path}/{path.stem}.csv")
 
 
 def run():

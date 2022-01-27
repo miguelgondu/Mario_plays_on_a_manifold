@@ -27,7 +27,7 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
 
     # This method overwrites the decode of the vanilla one.
     def decode(self, z: t.Tensor, reweight: bool = True) -> Categorical:
-        if reweight:
+        if reweight and len(self.obstacles) > 0:
             dist_to_obst = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
             intermediate_normal = self._intermediate_distribution(z)
 
