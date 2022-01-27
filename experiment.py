@@ -5,7 +5,11 @@ Gets all arrays once ground truth and AL traces are computed.
 from pathlib import Path
 from typing import Type
 
-from experiment_utils import load_csv_as_map, load_trace_as_map
+from experiment_utils import (
+    build_discretized_manifold,
+    load_csv_as_map,
+    load_trace_as_map,
+)
 from geometry import (
     Geometry,
     BaselineGeometry,
@@ -35,7 +39,14 @@ def save_all_arrays(
         # For ground truth
         if path_to_gt.exists():
             p_map = load_csv_as_map(path_to_gt)
-            gt_geometry = GeometryType(p_map, f"{exp_name}_gt", vae_path)
+            if GeometryType == ContinuousGeometry:
+                manifold = build_discretized_manifold(p_map, vae_path)
+                gt_geometry = GeometryType(
+                    p_map, f"{exp_name}_gt", vae_path, manifold=manifold
+                )
+            else:
+                gt_geometry = GeometryType(p_map, f"{exp_name}_gt", vae_path)
+
             gt_geometry.save_arrays(force=force)
 
         # For multiple iterations in the AL trace
@@ -43,9 +54,15 @@ def save_all_arrays(
             if path_to_AL_trace.exists():
                 for m in [100, 200, 300, 400, 500]:
                     p_map_m = load_trace_as_map(path_to_AL_trace, m)
-                    AL_geometry_m = GeometryType(
-                        p_map_m, f"{exp_name}_AL_{m}", vae_path
-                    )
+                    if GeometryType == ContinuousGeometry:
+                        manifold = build_discretized_manifold(p_map_m, vae_path)
+                        AL_geometry_m = GeometryType(
+                            p_map_m, f"{exp_name}_AL_{m}", vae_path, manifold=manifold
+                        )
+                    else:
+                        AL_geometry_m = GeometryType(
+                            p_map_m, f"{exp_name}_AL_{m}", vae_path
+                        )
                     AL_geometry_m.save_arrays(force=force)
 
 

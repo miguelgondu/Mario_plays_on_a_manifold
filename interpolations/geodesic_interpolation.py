@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from geoml.curve import CubicSpline
-from geoml.discretized_manifold import DiscretizedManifold
+from geoml.discretized_manifold import DiscretizedManifold, StatisticalManifold
 import torch as t
 import numpy as np
 
@@ -13,7 +13,11 @@ from .base_interpolation import BaseInterpolation
 
 class GeodesicInterpolation(BaseInterpolation):
     def __init__(
-        self, vae_path: Path, p_map: Dict[tuple, float], n_points_in_line: int = 10
+        self,
+        vae_path: Path,
+        p_map: Dict[tuple, float],
+        n_points_in_line: int = 10,
+        manifold: DiscretizedManifold = None,
     ):
         super().__init__(vae_path, p_map, n_points_in_line)
         self.zs = np.array([z for z in p_map.keys()])
@@ -22,12 +26,19 @@ class GeodesicInterpolation(BaseInterpolation):
         # Define the discretized manifold according to
         # the VAEWithObstacles (?).
         self.vae = self._load_vae()
-        grid = [t.linspace(-5, 5, 50), t.linspace(-5, 5, 50)]
-        Mx, My = t.meshgrid(grid[0], grid[1])
-        grid2 = t.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
 
-        print(f"Building the discretized manifold for {vae_path}")
-        self.manifold = DiscretizedManifold(self.vae, grid2, use_diagonals=True)
+        # TODO: have this swallow the discretized manifold,
+        # computed right after getting the p_map.
+        if manifold is not None:
+            self.manifold = manifold
+        else:
+            print("Didn't get a discretized manifold.")
+            self.manifold = None
+            # grid = [t.linspace(-5, 5, 50), t.linspace(-5, 5, 50)]
+            # Mx, My = t.meshgrid(grid[0], grid[1])
+            # grid2 = t.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
+            # print(f"Building the discretized manifold for {vae_path}")
+            # self.manifold = DiscretizedManifold(self.vae, grid2, use_diagonals=True)
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
         # Use the connecting geom

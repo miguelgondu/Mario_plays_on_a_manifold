@@ -17,7 +17,7 @@ class ContinuousDiffusion(BaseDiffusion):
         super().__init__(vae_path, p_map, n_steps)
         # Storing it to do the obstacle updating only once.
         self.vae = self._load_vae()
-        self.scale = 5.0
+        self.scale = 10.0
 
     def run(self, z_0: t.Tensor = None) -> Tuple[t.Tensor]:
         # Random starting point (or the one provided)

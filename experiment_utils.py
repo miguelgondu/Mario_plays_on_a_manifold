@@ -12,6 +12,10 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import WhiteKernel, Matern
 
+from geoml.discretized_manifold import DiscretizedManifold
+
+from vae_mario_obstacles import VAEWithObstacles
+
 
 def load_csv_as_arrays(path: Path) -> Tuple[np.ndarray]:
     """
@@ -109,3 +113,25 @@ def get_random_pairs(
     pairs_2 = points[idx2]
 
     return pairs_1, pairs_2
+
+
+def build_discretized_manifold(
+    p_map: Dict[tuple, float], vae_path: Path
+) -> DiscretizedManifold:
+    """
+    Loads the VAE, adds obstacles to it
+    according to the p_map and returns a discretized manifold.
+    """
+    vae = VAEWithObstacles()
+    vae.load_state_dict(t.load(vae_path, map_location=vae.device))
+
+    zs = np.array([z for z in p_map.keys()])
+    p = np.array([p_ for p_ in p_map.values()])
+
+    obstacles = t.from_numpy(zs[p != 1.0]).type(t.float)
+    vae.update_obstacles(obstacles)
+    grid = [t.linspace(-5, 5, 50), t.linspace(-5, 5, 50)]
+    Mx, My = t.meshgrid(grid[0], grid[1])
+    grid2 = t.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
+
+    return DiscretizedManifold(vae, grid2, use_diagonals=True)

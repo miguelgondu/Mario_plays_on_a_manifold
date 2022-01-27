@@ -7,7 +7,13 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geometry import BaselineGeometry, DiscreteGeometry, Geometry, NormalGeometry
+from geometry import (
+    BaselineGeometry,
+    DiscreteGeometry,
+    Geometry,
+    NormalGeometry,
+    ContinuousGeometry,
+)
 from experiment_utils import load_csv_as_map, load_trace_as_map
 
 
@@ -89,6 +95,12 @@ if __name__ == "__main__":
             inspect_interpolations(discrete_geometry)
             inspect_diffusions(discrete_geometry)
 
+            continuous_geometry = ContinuousGeometry(
+                gt_p_map, "continuous_gt", vae_path
+            )
+            inspect_interpolations(continuous_geometry)
+            inspect_diffusions(continuous_geometry)
+
         for m in [100, 200, 300, 400, 500]:
             al_path = Path(f"./data/evolution_traces/ten_vaes/{vae_path.stem}.npz")
             if al_path.exists():
@@ -98,3 +110,13 @@ if __name__ == "__main__":
                 )
                 inspect_interpolations(discrete_geometry)
                 inspect_diffusions(discrete_geometry)
+
+        for m in [100, 200, 300, 400, 500]:
+            al_path = Path(f"./data/evolution_traces/ten_vaes/{vae_path.stem}.npz")
+            if al_path.exists():
+                al_p_map = load_trace_as_map(al_path, m)
+                continuous_geometry = ContinuousGeometry(
+                    al_p_map, f"continuous_AL_{m}", vae_path
+                )
+                inspect_interpolations(continuous_geometry)
+                inspect_diffusions(continuous_geometry)
