@@ -51,6 +51,7 @@ def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=Non
     zs = array["zs"]
 
     assert levels.shape[0] == zs.shape[0]
+    print(f"Simulating {array_path}")
     print(
         f"Will process {levels.shape[0]} levels ({levels.shape[0] * repetitions_per_level} simulations)."
     )
