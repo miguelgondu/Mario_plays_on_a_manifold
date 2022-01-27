@@ -37,9 +37,12 @@ def run_exp(exp_name: str, processes: int = 50):
 
 def run():
     # Running the ground truths
-    run_exp("baseline_gt", processes=5)
-    run_exp("continuous_gt", processes=5)
-    run_exp("discrete_gt", processes=5)
+    # run_exp("baseline_gt", processes=5)
+    # run_exp("continuous_gt", processes=5)
+    # run_exp("discrete_gt", processes=5)
+
+    for m in [100, 200, 300, 400, 500]:
+        run_exp(f"discrete_AL_{m}", processes=5)
 
 
 if __name__ == "__main__":
