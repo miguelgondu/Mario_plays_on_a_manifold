@@ -32,6 +32,7 @@ MarioGANNoCap.jar
 MarioGANOld.jar
 sprites.json
 *.ipynb
+scping.sh
 testing/
 # !data/processed/playable_levels_idxs.json
 

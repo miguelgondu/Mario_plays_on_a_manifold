@@ -116,6 +116,10 @@ def process():
         print(f"discrete_AL_{m}")
         fill_out_experiment(table, f"discrete_AL_{m}", processes=None)
 
+    for m in [100, 200, 300, 400, 500]:
+        print(f"continuous_AL_{m}")
+        fill_out_experiment(table, f"continuous_AL_{m}", processes=None)
+
     print(table.to_latex(escape=False, float_format="%1.2f"))
 
 
