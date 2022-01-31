@@ -58,7 +58,9 @@ def get_levels_of_csv(path: Path) -> List[np.ndarray]:
     return levels
 
 
-def get_mean_playability(experiment: List[Path], processes: int = None) -> float:
+def get_mean_playability(
+    experiment: List[Path], processes: int = None, return_std: bool = False
+) -> float:
     if processes is not None:
         with mp.Pool(processes) as pool:
             means = pool.map(get_mean_playability_of_csv, experiment)
@@ -68,7 +70,10 @@ def get_mean_playability(experiment: List[Path], processes: int = None) -> float
             means.append(get_mean_playability_of_csv(p))
 
     # assert len(means) in [20, 50]
-    return np.mean(means)
+    if return_std:
+        return np.mean(means), np.std(means)
+    else:
+        return np.mean(means)
 
 
 def get_all_levels(experiment: List[Path], processes: int = None) -> List[np.ndarray]:

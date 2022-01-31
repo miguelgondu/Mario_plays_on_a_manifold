@@ -49,17 +49,42 @@ def process_experiment(exp_name: str, processes: int = None):
     print(f"# of interpolations: {len(interps)}")
     print(f"# of diffusions: {len(diffs)}")
 
-    mp_interps = get_mean_playability(interps, processes=processes)
-    md_interps = get_mean_diversities(interps, processes=processes)
+    mp_interps, sp_interps = get_mean_playability(
+        interps, processes=processes, return_std=True
+    )
+    mp_diffs, sp_diffs = get_mean_playability(
+        diffs, processes=processes, return_std=True
+    )
 
-    mp_diffs = get_mean_playability(diffs, processes=processes)
-    md_diffs = get_mean_diversities(diffs, processes=processes)
+    # TODO: filter by ID and get the stats there.
+    # get interps and diffs one by one (maybe with .split("_"), maybe not necessary)
+    # and then diversities = apply(get_all_diversities, each_one)
+    # compute the means and vars from there.
+    means_interp = []
+    means_diff = []
+    for i in range(10):
+        interps_in_id = filter(lambda x: f"_id_{i}_" in x.name, interps)
+        diffs_in_id = filter(lambda x: f"_id_{i}_" in x.name, diffs)
+
+        diversities_in_interps = [
+            get_mean_diversities([path]) for path in interps_in_id
+        ]
+        diversities_in_diffs = [get_mean_diversities([path]) for path in diffs_in_id]
+
+        means_interp.append(np.mean(diversities_in_interps))
+        means_diff.append(np.mean(diversities_in_diffs))
+
+    md_interps, sd_interps = np.mean(means_interp), np.std(means_interp)
+    md_diffs, sd_diffs = np.mean(means_diff), np.std(means_diff)
+
+    # md_interps = get_mean_diversities(interps, processes=processes)
+    # md_diffs = get_mean_diversities(diffs, processes=processes)
 
     return {
-        "i-playability": mp_interps,
-        "d-playability": mp_diffs,
-        "i-diversity": md_interps,
-        "d-diversity": md_diffs,
+        "i-playability": f"{mp_interps:.2f}" + r"$\pm$" + f"{sp_interps:.2f}",
+        "d-playability": f"{mp_diffs:.2f}" + r"$\pm$" + f"{sp_diffs:.2f}",
+        "i-diversity": f"{md_interps:.2f}" + r"$\pm$" + f"{sd_interps:.2f}",
+        "d-diversity": f"{md_diffs:.2f}" + r"$\pm$" + f"{sd_diffs:.2f}",
     }
 
 
@@ -120,7 +145,7 @@ def process():
         print(f"continuous_AL_{m}")
         fill_out_experiment(table, f"continuous_AL_{m}", processes=None)
 
-    print(table.to_latex(escape=False, float_format="%1.2f"))
+    print(table.to_latex(escape=False, float_format="%.2f"))
 
 
 if __name__ == "__main__":
