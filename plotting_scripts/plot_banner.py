@@ -86,37 +86,89 @@ def get_interpolations_and_levels(z, z_prime):
     return d_interp, d_levels, b_interp, b_levels, c_interp, c_levels, bg.grid
 
 
-def plot_levels(levels, name):
-    images = [get_img_from_level(lvl.detach().numpy()) for lvl in levels]
+def paint_red_x(level, p):
+    # TODO implement
+    if p == 0:
+        h, w, _ = level.shape
+        red = [255, 0, 0]
+        for i, j in zip(range(h // 5, (4 * h) // 5), range(w // 5, (4 * w) // 5)):
+            level[i, j, :] = red
+            level[i + np.arange(15), j, :] = red
+            level[i, j + np.arange(15), :] = red
+        return level
+    else:
+        return level
+
+
+def plot_levels(levels, p, name):
+    images = [paint_red_x(get_img_from_level(lvl), p_) for lvl, p_ in zip(levels, p)]
     final_img = np.concatenate(images, axis=1)
-    fig, ax = plt.subplots(1, 1, figsize=(7, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(10, 1))
     ax.imshow(final_img)
     ax.axis("off")
-    fig.savefig(f"./data/plots/ten_vaes/paper_ready/levels_{name}.png", dpi=100)
+    fig.tight_layout()
+    fig.savefig(
+        f"./data/plots/ten_vaes/paper_ready/levels_{name}.png",
+        dpi=100,
+        bbox_inches="tight",
+    )
     plt.show()
     plt.close()
 
 
-def plot_interpolations(d_interp, c_interp, b_interp, grid):
-    d_interp = d_interp.detach().numpy()
-    c_interp = c_interp.detach().numpy()
-    b_interp = b_interp.detach().numpy()
+def plot_interpolations(d_interp, p_d, c_interp, p_c, b_interp, p_b, grid):
+    # d_interp = d_interp.detach().numpy()
+    # c_interp = c_interp.detach().numpy()
+    # b_interp = b_interp.detach().numpy()
 
     _, ax = plt.subplots(1, 1, figsize=(7, 7))
 
     ax.plot(d_interp[:, 0], d_interp[:, 1], "b--", linewidth=5)
     ax.plot(c_interp[:, 0], c_interp[:, 1], "r", linewidth=5)
     ax.plot(b_interp[:, 0], b_interp[:, 1], "k:", linewidth=5)
-    ax.scatter(d_interp[:, 0], d_interp[:, 1], c="k", s=50, zorder=4, edgecolors="w")
-    ax.scatter(c_interp[:, 0], c_interp[:, 1], c="k", s=50, zorder=4, edgecolors="w")
-    ax.scatter(b_interp[:, 0], b_interp[:, 1], c="k", s=50, zorder=4, edgecolors="w")
+    ax.scatter(
+        d_interp[:, 0],
+        d_interp[:, 1],
+        c=p_d,
+        s=50,
+        zorder=4,
+        edgecolors="orange",
+        vmin=0.0,
+        vmax=1.0,
+        cmap="Blues",
+    )
+    ax.scatter(
+        c_interp[:, 0],
+        c_interp[:, 1],
+        c=p_c,
+        s=50,
+        zorder=4,
+        edgecolors="orange",
+        vmin=0.0,
+        vmax=1.0,
+        cmap="Blues",
+    )
+    ax.scatter(
+        b_interp[:, 0],
+        b_interp[:, 1],
+        c=p_b,
+        s=50,
+        zorder=4,
+        edgecolors="orange",
+        vmin=0.0,
+        vmax=1.0,
+        cmap="Blues",
+    )
 
     ax.imshow(grid, extent=[-5, 5, -5, 5], cmap="Blues")
     ax.set_xlim([-0.2, 4.3])
     ax.set_ylim([-4.2, -1.8])
 
     plt.tight_layout()
-    plt.savefig("./data/plots/ten_vaes/paper_ready/example_interpolations.png", dpi=100)
+    plt.savefig(
+        "./data/plots/ten_vaes/paper_ready/example_interpolations_after_sim.png",
+        dpi=100,
+    )
     plt.show()
     plt.close()
 
@@ -140,28 +192,57 @@ def loading_results():
     zs_d_prime = np.load(array_path / f"banner_plot_discrete.npz")["zs"]
     levels_d = np.load(array_path / f"banner_plot_discrete.npz")["levels"]
 
-    z_to_level_c = {
-        tuple(z.tolist()): levels_c[np.where(zs_c == z)] for z in zs_c_prime
-    }
-    z_to_level_b = {
-        tuple(z.tolist()): levels_b[np.where(zs_b == z)] for z in zs_b_prime
-    }
-    z_to_level_d = {
-        tuple(z.tolist()): levels_d[np.where(zs_d == z)] for z in zs_d_prime
-    }
+    # Instead, I should just reorder the ps according to zs_c_prime
+    p_b = [p_b[zs_b.tolist().index(z.tolist())] for z in zs_b_prime]
+    p_c = [p_c[zs_c.tolist().index(z.tolist())] for z in zs_c_prime]
+    p_d = [p_d[zs_d.tolist().index(z.tolist())] for z in zs_d_prime]
 
-    # assert (zs_b_prime == zs_b).all()
-    # assert (zs_c_prime == zs_c).all()
-    # assert (zs_d_prime == zs_d).all()
-
-    return (zs_b, z_to_level_b, p_b, zs_c, z_to_level_c, p_c, zs_d, z_to_level_d, p_d)
+    return (
+        zs_b_prime,
+        levels_b,
+        p_b,
+        zs_c_prime,
+        levels_c,
+        p_c,
+        zs_d_prime,
+        levels_d,
+        p_d,
+    )
 
 
 def plot():
     """
     Plots figure [ref].
     """
-    pass
+    # Getting the interpolations and levels
+    (
+        zs_b_prime,
+        levels_b,
+        p_b,
+        zs_c_prime,
+        levels_c,
+        p_c,
+        zs_d_prime,
+        levels_d,
+        p_d,
+    ) = loading_results()
+
+    # Getting the grid itself
+    vae_path = Path("./models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+    model_name = vae_path.stem
+    path_to_gt = (
+        Path("./data/array_simulation_results/ten_vaes/ground_truth")
+        / f"{model_name}.csv"
+    )
+    p_map = load_csv_as_map(path_to_gt)
+    dg = DiscreteGeometry(p_map, "discrete_gt", vae_path)
+    grid = dg.grid
+
+    # Plotting
+    plot_interpolations(zs_d_prime, p_d, zs_c_prime, p_c, zs_b_prime, p_b, grid)
+    plot_levels(levels_b, p_b, "baseline_after_sim")
+    plot_levels(levels_c, p_c, "continuous_after_sim")
+    plot_levels(levels_d, p_d, "discrete_after_sim")
 
 
 if __name__ == "__main__":
@@ -184,6 +265,7 @@ if __name__ == "__main__":
     #     5,
     #     "ten_vaes/final_plots",
     # )
-    res = loading_results()
+    # res = loading_results()
     # TODO:
     # Pass this through the plotting functions.
+    plot()
