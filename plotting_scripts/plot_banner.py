@@ -11,7 +11,11 @@ import matplotlib.pyplot as plt
 
 from simulate_array import _simulate_array
 from geometry import DiscreteGeometry, ContinuousGeometry, BaselineGeometry
-from experiment_utils import load_csv_as_map, build_discretized_manifold
+from experiment_utils import (
+    load_csv_as_arrays,
+    load_csv_as_map,
+    build_discretized_manifold,
+)
 from mario_utils.plotting import get_img_from_level
 
 
@@ -121,9 +125,36 @@ def plot_interpolations(d_interp, c_interp, b_interp, grid):
 
 def loading_results():
     """
-    Gets the csvs and returns points and levels
+    Gets the csvs and returns points, results and levels
     """
-    pass
+    res_path = Path("./data/array_simulation_results/ten_vaes/final_plots")
+    array_path = Path("./data/arrays/ten_vaes/final_plots")
+    zs_b, p_b = load_csv_as_arrays(res_path / f"banner_plot_baseline.csv")
+    zs_c, p_c = load_csv_as_arrays(res_path / f"banner_plot_continuous.csv")
+    zs_d, p_d = load_csv_as_arrays(res_path / f"banner_plot_discrete.csv")
+
+    zs_b_prime = np.load(array_path / f"banner_plot_baseline.npz")["zs"]
+    levels_b = np.load(array_path / f"banner_plot_baseline.npz")["levels"]
+    zs_c_prime = np.load(array_path / f"banner_plot_continuous.npz")["zs"]
+    levels_c = np.load(array_path / f"banner_plot_continuous.npz")["levels"]
+    zs_d_prime = np.load(array_path / f"banner_plot_discrete.npz")["zs"]
+    levels_d = np.load(array_path / f"banner_plot_discrete.npz")["levels"]
+
+    z_to_level_c = {
+        tuple(z.tolist()): levels_c[np.where(zs_c == z)] for z in zs_c_prime
+    }
+    z_to_level_b = {
+        tuple(z.tolist()): levels_b[np.where(zs_b == z)] for z in zs_b_prime
+    }
+    z_to_level_d = {
+        tuple(z.tolist()): levels_d[np.where(zs_d == z)] for z in zs_d_prime
+    }
+
+    # assert (zs_b_prime == zs_b).all()
+    # assert (zs_c_prime == zs_c).all()
+    # assert (zs_d_prime == zs_d).all()
+
+    return (zs_b, z_to_level_b, p_b, zs_c, z_to_level_c, p_c, zs_d, z_to_level_d, p_d)
 
 
 def plot():
@@ -153,5 +184,6 @@ if __name__ == "__main__":
     #     5,
     #     "ten_vaes/final_plots",
     # )
-    pass
-    # TODO: implement data loading.
+    res = loading_results()
+    # TODO:
+    # Pass this through the plotting functions.
