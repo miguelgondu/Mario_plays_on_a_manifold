@@ -109,7 +109,7 @@ def plot_levels(levels, p, name):
     fig.tight_layout()
     fig.savefig(
         f"./data/plots/ten_vaes/paper_ready/levels_{name}.png",
-        dpi=100,
+        dpi=150,
         bbox_inches="tight",
     )
     plt.show()
@@ -164,15 +164,15 @@ def plot_interpolations(d_interp, p_d, c_interp, p_c, b_interp, p_b, grid):
     ax.set_xlim([-0.2, 4.3])
     ax.set_ylim([-4.2, -1.8])
 
+    ax.axis("off")
     plt.tight_layout()
     plt.savefig(
         "./data/plots/ten_vaes/paper_ready/example_interpolations_after_sim.png",
         dpi=100,
+        bbox_inches="tight",
     )
     plt.show()
     plt.close()
-
-    # Getting the levels as figures
 
 
 def loading_results():
@@ -245,27 +245,28 @@ def plot():
     plot_levels(levels_d, p_d, "discrete_after_sim")
 
 
+def simulate_arrays():
+    _simulate_array(
+        "./data/arrays/ten_vaes/final_plots/banner_plot_baseline.npz",
+        10,
+        5,
+        "ten_vaes/final_plots",
+    )
+    _simulate_array(
+        "./data/arrays/ten_vaes/final_plots/banner_plot_continuous.npz",
+        10,
+        5,
+        "ten_vaes/final_plots",
+    )
+    _simulate_array(
+        "./data/arrays/ten_vaes/final_plots/banner_plot_discrete.npz",
+        10,
+        5,
+        "ten_vaes/final_plots",
+    )
+
+
 if __name__ == "__main__":
     # saving_the_interpolations_as_arrays()
-    # _simulate_array(
-    #     "./data/arrays/ten_vaes/final_plots/banner_plot_baseline.npz",
-    #     10,
-    #     5,
-    #     "ten_vaes/final_plots",
-    # )
-    # _simulate_array(
-    #     "./data/arrays/ten_vaes/final_plots/banner_plot_continuous.npz",
-    #     10,
-    #     5,
-    #     "ten_vaes/final_plots",
-    # )
-    # _simulate_array(
-    #     "./data/arrays/ten_vaes/final_plots/banner_plot_discrete.npz",
-    #     10,
-    #     5,
-    #     "ten_vaes/final_plots",
-    # )
-    # res = loading_results()
-    # TODO:
-    # Pass this through the plotting functions.
+    # simulate_arrays()
     plot()

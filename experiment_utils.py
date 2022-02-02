@@ -135,3 +135,18 @@ def build_discretized_manifold(
     grid2 = t.cat((Mx.unsqueeze(0), My.unsqueeze(0)), dim=0)
 
     return DiscretizedManifold(vae, grid2, use_diagonals=True)
+
+
+def load_experiment(path_to_array: Path, path_to_csv: Path) -> Tuple[np.ndarray]:
+    """
+    Loads zs, levels and in the appropiate order.
+    """
+    zs, p = load_csv_as_arrays(path_to_csv)
+
+    original_array = np.load(path_to_array)
+    zs_original = original_array["zs"]
+    levels_original = original_array["levels"]
+
+    # re-ordering the playabilities
+    p_original = [p[zs.tolist().index(z.tolist())] for z in zs_original]
+    return zs_original, p_original, levels_original
