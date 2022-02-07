@@ -11,6 +11,7 @@ columns = [
     "timeSpentOnLevel",
     "jumpActionsPerformed",
     "lengthOfLevelPassedPhys",
+    "totalActionsPerformed",
 ]
 for id_ in range(10):
     csv_path = Path(

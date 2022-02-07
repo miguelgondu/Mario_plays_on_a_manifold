@@ -40,8 +40,12 @@ def zs_and_levels(filepath: str) -> Tuple[np.ndarray]:
 
 
 def get_mean_playability_of_csv(path: Path) -> float:
+    return get_mean_column_of_csv(path, "marioStatus")
+
+
+def get_mean_column_of_csv(path: Path, column: str) -> float:
     df = pd.read_csv(path)
-    return df["marioStatus"].mean()
+    return df[column].mean()
 
 
 def get_levels_of_csv(path: Path) -> List[np.ndarray]:
@@ -56,6 +60,17 @@ def get_levels_of_csv(path: Path) -> List[np.ndarray]:
     ]
 
     return levels
+
+
+def get_mean(experiment: List[Path], column: str, return_std: bool = False) -> float:
+    means = []
+    for p in experiment:
+        means.append(get_mean_column_of_csv(p, column))
+
+    if return_std:
+        return np.mean(means), np.std(means)
+    else:
+        return np.mean(means)
 
 
 def get_mean_playability(
