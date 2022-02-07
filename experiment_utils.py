@@ -17,18 +17,18 @@ from geoml.discretized_manifold import DiscretizedManifold
 from vae_mario_obstacles import VAEWithObstacles
 
 
-def load_csv_as_arrays(path: Path) -> Tuple[np.ndarray]:
+def load_csv_as_arrays(path: Path, column="marioStatus") -> Tuple[np.ndarray]:
     """
     Takes path to csv (result of simulating an array) and
-    returns the playability map.
+    returns the zs alongside the mean of {column}. By default,
+    it returns mean playability.
     """
     df = pd.read_csv(path, index_col=0)
-    by_z = df.groupby("z")["marioStatus"].mean()
+    by_z = df.groupby("z")[column].mean()
     zs = np.array([json.loads(z) for z in by_z.index.values])
-    playabilities = by_z.values
-    playabilities[playabilities > 0.0] = 1.0
+    vals = by_z.values
 
-    return zs, playabilities
+    return zs, vals
 
 
 def load_trace_as_arrays(path_to_trace: Path, n_iterations: int) -> Tuple[np.ndarray]:
@@ -66,8 +66,8 @@ def load_trace_as_map(path_to_trace: Path, n_iterations: int) -> Dict[tuple, flo
     return load_arrays_as_map(zs, p)
 
 
-def load_csv_as_map(path: Path):
-    zs, p = load_csv_as_arrays(path)
+def load_csv_as_map(path: Path, column="marioStatus"):
+    zs, p = load_csv_as_arrays(path, column=column)
     return load_arrays_as_map(zs, p)
 
 
@@ -150,3 +150,21 @@ def load_experiment(path_to_array: Path, path_to_csv: Path) -> Tuple[np.ndarray]
     # re-ordering the playabilities
     p_original = [p[zs.tolist().index(z.tolist())] for z in zs_original]
     return zs_original, p_original, levels_original
+
+def intersection(
+    char_1: Dict[tuple, float], char_2: Dict[tuple, float]
+) -> Dict[tuple, float]:
+    """
+    Returns the intersection between two characteristic maps,
+    assuming their keys are the same.
+    """
+    assert set(list(char_1.keys())) == set(list(char_2.keys()))
+
+    res = {}
+    for z, v1, v2 in zip(char_1.keys(), char_1.values(), char_2.values()):
+        if v1 == v2 == 1.0:
+            res[z] = 1.0
+        else:
+            res[z] = 0.0
+
+    return res

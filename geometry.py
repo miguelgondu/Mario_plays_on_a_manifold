@@ -23,17 +23,15 @@ from geoml.discretized_manifold import DiscretizedManifold
 
 
 class Geometry:
-    def __init__(
-        self, playability_map: Dict[tuple, int], exp_name: str, vae_path: Path
-    ) -> None:
+    def __init__(self, p_map: Dict[tuple, int], exp_name: str, vae_path: Path) -> None:
         pass
-        self.playability_map = playability_map
+        self.playability_map = p_map
         self.exp_name = exp_name
-        self.grid, self.positions = self._load_into_grid(playability_map)
+        self.grid, self.positions = self._load_into_grid(p_map)
         self.vae_path = vae_path
 
-        self.zs = np.array([z for z in playability_map.keys()])
-        self.p = np.array([p for p in playability_map.values()])
+        self.zs = np.array([z for z in p_map.keys()])
+        self.p = np.array([p for p in p_map.values()])
         self.playable_points = t.from_numpy(self.zs[self.p == 1]).type(t.float)
 
         self.interpolation_path = Path(
@@ -67,6 +65,7 @@ class Geometry:
         except Exception as e:
             print(f"Couldn't save diffusions for {self.exp_name} ({self.vae_path})")
             print(f"Exception: {e}")
+            raise e
 
     def _save_arrays_for_interpolation(self, force=False):
         n_interpolations = 20

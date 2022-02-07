@@ -14,7 +14,7 @@ from geometry import (
     NormalGeometry,
     ContinuousGeometry,
 )
-from experiment_utils import load_csv_as_map, load_trace_as_map
+from experiment_utils import load_csv_as_map, load_trace_as_map, intersection
 
 
 def inspect_interpolations(geometry: Geometry):
@@ -75,7 +75,7 @@ def inspect_diffusions(geometry: Geometry):
     plt.close(fig)
 
 
-if __name__ == "__main__":
+def inspect_playability_experiment():
     model_paths = Path("./models/ten_vaes").glob("*.pt")
     for vae_path in model_paths:
         gt_path = Path(
@@ -120,3 +120,35 @@ if __name__ == "__main__":
                 )
                 inspect_interpolations(continuous_geometry)
                 inspect_diffusions(continuous_geometry)
+
+
+def inspect_no_jump_experiment():
+    model_paths = Path("./models/ten_vaes").glob("*.pt")
+    for vae_path in model_paths:
+        gt_path = Path(
+            f"./data/array_simulation_results/ten_vaes/ground_truth/{vae_path.stem}.csv"
+        )
+        if gt_path.exists():
+            # Discrete GT strict + no jump
+            playable_map = load_csv_as_map(gt_path)
+            strict_playability = {
+                z: 1.0 if p == 1.0 else 0.0 for z, p in playable_map.items()
+            }
+            jump_map = load_csv_as_map(gt_path, column="jumpActionsPerformed")
+            no_jump_map = {
+                z: 1.0 if jumps == 0.0 else 0.0 for z, jumps in jump_map.items()
+            }
+            p_map = intersection(strict_playability, no_jump_map)
+
+            dg = DiscreteGeometry(p_map, "discrete_jump_gt", vae_path)
+            inspect_interpolations(dg)
+            inspect_diffusions(dg)
+
+            bg = BaselineGeometry(p_map, "baseline_jump_gt", vae_path)
+            inspect_interpolations(bg)
+            inspect_diffusions(bg)
+
+
+if __name__ == "__main__":
+    # inspect_playability_experiment()
+    inspect_no_jump_experiment()
