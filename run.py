@@ -56,10 +56,13 @@ def run():
     #     run_exp(f"continuous_AL_{m}", processes=90)
 
     # Discrete jump
-    run_exp("discrete_jump_gt", processes=90)
+    # run_exp("discrete_jump_gt", processes=90)
 
     # baseline jump
-    run_exp("baseline_jump_gt", processes=90)
+    # run_exp("baseline_jump_gt", processes=90)
+
+    # Continuous jump
+    run_exp("continuous_jump_gt", processes=90)
 
 
 if __name__ == "__main__":

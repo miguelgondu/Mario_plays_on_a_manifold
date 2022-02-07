@@ -85,11 +85,11 @@ def save_all_arrays(
 
 if __name__ == "__main__":
     # # For the baseline
-    save_all_arrays("baseline_jump", BaselineGeometry, with_AL=False)
+    # save_all_arrays("baseline_jump", BaselineGeometry, with_AL=False)
     # save_all_arrays("normal", NormalGeometry, with_AL=False)
 
     # # Discrete
-    save_all_arrays("discrete_jump", DiscreteGeometry, with_AL=False)
+    # save_all_arrays("discrete_jump", DiscreteGeometry, with_AL=False)
 
     # Continuous
-    # save_all_arrays("continuous", ContinuousGeometry)
+    save_all_arrays("continuous_jump", ContinuousGeometry, with_AL=False)
