@@ -9,7 +9,7 @@ from experiment_utils import (
     build_discretized_manifold,
     load_csv_as_map,
     load_trace_as_map,
-    intersection
+    intersection,
 )
 from geometry import (
     Geometry,
@@ -26,9 +26,6 @@ def from_jumps_to_p(val_map: Dict[tuple, float]) -> Dict[tuple, float]:
     where Mario doesn't jump.
     """
     return {z: 1.0 if jumps == 0 else 0.0 for z, jumps in val_map.items()}
-
-
-
 
 
 def save_all_arrays(
