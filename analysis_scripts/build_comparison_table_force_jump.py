@@ -9,6 +9,7 @@ import pandas as pd
 from analysis_scripts.utils import (
     get_mean_playability,
     get_mean_diversities,
+    get_mean,
     load_experiment_csv_paths,
 )
 
@@ -28,8 +29,8 @@ def build_table_layout() -> pd.DataFrame:
     columns = [
         (r"$\mathbb{E}[\text{playability}]$", "Interpolation"),
         (r"$\mathbb{E}[\text{playability}]$", "Random Walks"),
-        (r"$\mathbb{E}[\text{diversity}]$", "Interpolation"),
-        (r"$\mathbb{E}[\text{diversity}]$", "Random Walks"),
+        (r"$\mathbb{E}[\text{jumps}]$", "Interpolation"),
+        (r"$\mathbb{E}[\text{jumps}]$", "Random Walks"),
     ]
     columns = pd.MultiIndex.from_tuples(columns)
     data = np.zeros((len(index), 4))
@@ -56,35 +57,14 @@ def process_experiment(exp_name: str, processes: int = None):
         diffs, processes=processes, return_std=True
     )
 
-    # TODO: filter by ID and get the stats there.
-    # get interps and diffs one by one (maybe with .split("_"), maybe not necessary)
-    # and then diversities = apply(get_all_diversities, each_one)
-    # compute the means and vars from there.
-    means_interp = []
-    means_diff = []
-    for i in range(10):
-        interps_in_id = filter(lambda x: f"_id_{i}_" in x.name, interps)
-        diffs_in_id = filter(lambda x: f"_id_{i}_" in x.name, diffs)
-
-        diversities_in_interps = [
-            get_mean_diversities([path]) for path in interps_in_id
-        ]
-        diversities_in_diffs = [get_mean_diversities([path]) for path in diffs_in_id]
-
-        means_interp.append(np.mean(diversities_in_interps))
-        means_diff.append(np.mean(diversities_in_diffs))
-
-    md_interps, sd_interps = np.mean(means_interp), np.std(means_interp)
-    md_diffs, sd_diffs = np.mean(means_diff), np.std(means_diff)
-
-    # md_interps = get_mean_diversities(interps, processes=processes)
-    # md_diffs = get_mean_diversities(diffs, processes=processes)
+    mj_interps, sj_interps = get_mean(interps, "jumpActionsPerformed", return_std=True)
+    mj_diffs, sj_diffs = get_mean(diffs, "jumpActionsPerformed", return_std=True)
 
     return {
         "i-playability": f"{mp_interps:.2f}" + r"$\pm$" + f"{sp_interps:.2f}",
         "d-playability": f"{mp_diffs:.2f}" + r"$\pm$" + f"{sp_diffs:.2f}",
-        "i-diversity": f"{md_interps:.2f}" + r"$\pm$" + f"{sd_interps:.2f}",
-        "d-diversity": f"{md_diffs:.2f}" + r"$\pm$" + f"{sd_diffs:.2f}",
+        "i-jumps": f"{mj_interps:.2f}" + r"$\pm$" + f"{sj_interps:.2f}",
+        "d-jumps": f"{mj_diffs:.2f}" + r"$\pm$" + f"{sj_diffs:.2f}",
     }
 
 
@@ -111,15 +91,15 @@ def parse_exp_name(exp_name: str) -> Tuple[str, str]:
 
 def fill_out_experiment(table: pd.DataFrame, exp_name: str, processes: int = None):
     E_playability = r"$\mathbb{E}[\text{playability}]$"
-    E_diversity = r"$\mathbb{E}[\text{diversity}]$"
+    E_jumps = r"$\mathbb{E}[\text{jumps}]$"
 
     # Filling out baselines
     update = process_experiment(exp_name, processes=processes)
     multiindex = parse_exp_name(exp_name)
     table.loc[multiindex, (E_playability, "Interpolation")] = update["i-playability"]
-    table.loc[multiindex, (E_diversity, "Interpolation")] = update["i-diversity"]
+    table.loc[multiindex, (E_jumps, "Interpolation")] = update["i-jumps"]
     table.loc[multiindex, (E_playability, "Random Walks")] = update["d-playability"]
-    table.loc[multiindex, (E_diversity, "Random Walks")] = update["d-diversity"]
+    table.loc[multiindex, (E_jumps, "Random Walks")] = update["d-jumps"]
 
     # return table
 
@@ -128,24 +108,24 @@ def process():
     table = build_table_layout()
 
     print(table)
-    print("baseline_gt")
-    fill_out_experiment(table, "baseline_gt", processes=None)
+    print("baseline_jump_gt")
+    fill_out_experiment(table, "baseline_force_jump_gt", processes=None)
     # print(table)
-    print("discrete_gt")
-    fill_out_experiment(table, "discrete_gt", processes=None)
+    print("discrete_jump_gt")
+    fill_out_experiment(table, "discrete_force_jump_gt", processes=None)
     # print(table)
-    print("continuous_gt")
-    fill_out_experiment(table, "continuous_gt", processes=None)
+    # print("continuous_jump_gt")
+    # fill_out_experiment(table, "continuous_jump_gt", processes=None)
     # print(table)
-    for m in [100, 200, 300, 400, 500]:
-        print(f"discrete_AL_{m}")
-        fill_out_experiment(table, f"discrete_AL_{m}", processes=None)
+    # for m in [100, 200, 300, 400, 500]:
+    #     print(f"discrete_AL_{m}")
+    #     fill_out_experiment(table, f"discrete_AL_{m}", processes=None)
 
-    for m in [100, 200, 300, 400, 500]:
-        print(f"continuous_AL_{m}")
-        fill_out_experiment(table, f"continuous_AL_{m}", processes=None)
+    # for m in [100, 200, 300, 400, 500]:
+    #     print(f"continuous_AL_{m}")
+    #     fill_out_experiment(table, f"continuous_AL_{m}", processes=None)
 
-    print(table.to_latex(escape=False, float_format="%.2f"))
+    print(table.to_latex(escape=False))
 
 
 if __name__ == "__main__":

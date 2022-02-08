@@ -10,7 +10,7 @@ from analysis_scripts.utils import (
     get_mean_playability,
     get_mean_diversities,
     get_mean,
-    load_experiment,
+    load_experiment_csv_paths,
 )
 
 
@@ -46,7 +46,7 @@ def build_table_layout() -> pd.DataFrame:
 
 
 def process_experiment(exp_name: str, processes: int = None):
-    interps, diffs = load_experiment(exp_name)
+    interps, diffs = load_experiment_csv_paths(exp_name)
     print(f"# of interpolations: {len(interps)}")
     print(f"# of diffusions: {len(diffs)}")
 

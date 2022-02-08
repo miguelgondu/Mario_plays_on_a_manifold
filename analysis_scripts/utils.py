@@ -146,7 +146,7 @@ def get_mean_diversities(experiment: List[Path], processes: int = None) -> float
     return np.mean(1 - similarities)
 
 
-def load_experiment(exp_name: str) -> Tuple[List[Path], List[Path]]:
+def load_experiment_csv_paths(exp_name: str) -> Tuple[List[Path], List[Path]]:
     """
     Loads up interpolations and diffusions, and returns them
     as lists of paths
