@@ -51,8 +51,12 @@ class DiscreteDiffusion(BaseDiffusion):
             # Now that we're doing the discrete thing, this is
             # a little bit overkill. random.choice(connected_neightbours)
             # would do the trick just fine.
-            _dist = Categorical(logits=t.from_numpy(connected_neighbour_w))
-            next_idx = _dist.sample().item()
-            current_pos = tuple(connected_neighbours[next_idx])
+            if len(connected_neighbour_w) > 0:
+                _dist = Categorical(logits=t.from_numpy(connected_neighbour_w))
+                next_idx = _dist.sample().item()
+                current_pos = tuple(connected_neighbours[next_idx])
+            else:
+                # not updating the current pos
+                pass
 
         return np.array(self.di.inv_positions[current_pos])

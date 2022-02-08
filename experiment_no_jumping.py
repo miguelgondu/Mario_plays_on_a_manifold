@@ -1,5 +1,5 @@
 """
-The forcing-mario-to-jump experiment
+Gets all arrays once ground truth and AL traces are computed.
 """
 
 from pathlib import Path
@@ -52,10 +52,10 @@ def save_all_arrays(
                 z: 1.0 if p == 1.0 else 0.0 for z, p in playable_map.items()
             }
             jump_map = load_csv_as_map(path_to_gt, column="jumpActionsPerformed")
-            strict_jump_map = {
-                z: 1.0 if jumps > 0.0 else 0.0 for z, jumps in jump_map.items()
+            no_jump_map = {
+                z: 1.0 if jumps == 0.0 else 0.0 for z, jumps in jump_map.items()
             }
-            p_map = intersection(strict_playability, strict_jump_map)
+            p_map = intersection(strict_playability, no_jump_map)
             if GeometryType == ContinuousGeometry:
                 manifold = build_discretized_manifold(p_map, vae_path)
                 gt_geometry = GeometryType(
@@ -85,11 +85,11 @@ def save_all_arrays(
 
 if __name__ == "__main__":
     # # For the baseline
-    save_all_arrays("baseline_force_jump", BaselineGeometry, with_AL=False, force=True)
+    # save_all_arrays("baseline_no_jump", BaselineGeometry, with_AL=False)
     # save_all_arrays("normal", NormalGeometry, with_AL=False)
 
     # # Discrete
-    save_all_arrays("discrete_force_jump", DiscreteGeometry, with_AL=False, force=True)
+    # save_all_arrays("discrete_no_jump", DiscreteGeometry, with_AL=False)
 
     # Continuous
-    # save_all_arrays("continuous_jump", ContinuousGeometry, with_AL=False)
+    save_all_arrays("continuous_no_jump", ContinuousGeometry, with_AL=False)
