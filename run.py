@@ -46,7 +46,7 @@ def run():
     run_exp("baseline_strict_gt", processes=90)
     run_exp("normal_strict_gt", processes=90)
     run_exp("discrete_strict_gt", processes=90)
-    # run_exp("continuous_gt", processes=90)
+    run_exp("continuous_strict_gt", processes=90)
 
     # Discrete AL
     # for m in [100, 200, 300, 400, 500]:
