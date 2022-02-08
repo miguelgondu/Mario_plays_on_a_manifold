@@ -6,6 +6,7 @@ import multiprocessing as mp
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from numba import jit
 
 
@@ -62,10 +63,23 @@ def get_levels_of_csv(path: Path) -> List[np.ndarray]:
     return levels
 
 
-def get_mean(experiment: List[Path], column: str, return_std: bool = False) -> float:
+def get_mean(
+    experiment: List[Path],
+    column: str,
+    return_std: bool = False,
+    plot_hist: bool = True,
+) -> float:
     means = []
     for p in experiment:
         means.append(get_mean_column_of_csv(p, column))
+
+    if plot_hist:
+        name = f"{p.parent.stem}_{p.parent.parent.stem}"
+        fig, ax = plt.subplots(1, 1)
+        ax.hist(means)
+        ax.set_title(name)
+        fig.savefig(f"./data/plots/ten_vaes/mean_hists/{name}.png")
+        plt.close(fig)
 
     if return_std:
         return np.mean(means), np.std(means)

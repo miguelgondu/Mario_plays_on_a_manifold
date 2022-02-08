@@ -114,8 +114,8 @@ def process():
     print("discrete_jump_gt")
     fill_out_experiment(table, "discrete_jump_gt", processes=None)
     # print(table)
-    # print("continuous_gt")
-    # fill_out_experiment(table, "continuous_gt", processes=None)
+    print("continuous_jump_gt")
+    fill_out_experiment(table, "continuous_jump_gt", processes=None)
     # print(table)
     # for m in [100, 200, 300, 400, 500]:
     #     print(f"discrete_AL_{m}")
