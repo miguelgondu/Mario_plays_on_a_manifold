@@ -43,9 +43,10 @@ def run_exp(exp_name: str, processes: int = 50):
 
 def run():
     # Running the ground truths
-    # run_exp("baseline_gt", processes=5)
+    run_exp("baseline_strict_gt", processes=90)
+    run_exp("normal_strict_gt", processes=90)
+    run_exp("discrete_strict_gt", processes=90)
     # run_exp("continuous_gt", processes=90)
-    # run_exp("discrete_gt", processes=5)
 
     # Discrete AL
     # for m in [100, 200, 300, 400, 500]:
@@ -56,10 +57,10 @@ def run():
     #     run_exp(f"continuous_AL_{m}", processes=90)
 
     # Discrete jump
-    run_exp("discrete_force_jump_gt", processes=90)
+    # run_exp("discrete_force_jump_gt", processes=90)
 
     # baseline jump
-    run_exp("baseline_force_jump_gt", processes=90)
+    # run_exp("baseline_force_jump_gt", processes=90)
 
     # Continuous jump
     # run_exp("continuous_jump_gt", processes=90)

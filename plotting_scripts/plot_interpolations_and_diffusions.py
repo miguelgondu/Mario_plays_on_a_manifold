@@ -176,7 +176,37 @@ def inspect_jump_experiment():
             inspect_diffusions(bg)
 
 
+def inspect_strict_experiment():
+    model_paths = Path("./models/ten_vaes").glob("*.pt")
+    for vae_path in model_paths:
+        gt_path = Path(
+            f"./data/array_simulation_results/ten_vaes/ground_truth/{vae_path.stem}.csv"
+        )
+        if gt_path.exists():
+            # Discrete GT strict + no jump
+            playable_map = load_csv_as_map(gt_path)
+            p_map = {z: 1.0 if p == 1.0 else 0.0 for z, p in playable_map.items()}
+            # jump_map = load_csv_as_map(gt_path, column="jumpActionsPerformed")
+            # strict_jump_map = {
+            #     z: 1.0 if jumps > 0.0 else 0.0 for z, jumps in jump_map.items()
+            # }
+            # p_map = intersection(strict_playability, strict_jump_map)
+
+            dg = DiscreteGeometry(p_map, "discrete_strict_gt", vae_path)
+            inspect_interpolations(dg)
+            inspect_diffusions(dg)
+
+            bg = BaselineGeometry(p_map, "baseline_strict_gt", vae_path)
+            inspect_interpolations(bg)
+            inspect_diffusions(bg)
+
+            ng = NormalGeometry(p_map, "normal_strict_gt", vae_path)
+            inspect_interpolations(ng)
+            inspect_diffusions(ng)
+
+
 if __name__ == "__main__":
     # inspect_playability_experiment()
     # inspect_no_jump_experiment()
-    inspect_jump_experiment()
+    # inspect_jump_experiment()
+    inspect_strict_experiment()

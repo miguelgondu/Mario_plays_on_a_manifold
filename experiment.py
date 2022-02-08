@@ -38,14 +38,15 @@ def save_all_arrays(
 
         # For ground truth
         if path_to_gt.exists():
-            p_map = load_csv_as_map(path_to_gt)
+            mean_p_map = load_csv_as_map(path_to_gt)
+            strict_p_map = {z: 1.0 if p == 1.0 else 0.0 for z, p in mean_p_map.items()}
             if GeometryType == ContinuousGeometry:
-                manifold = build_discretized_manifold(p_map, vae_path)
+                manifold = build_discretized_manifold(strict_p_map, vae_path)
                 gt_geometry = GeometryType(
-                    p_map, f"{exp_name}_gt", vae_path, manifold=manifold
+                    strict_p_map, f"{exp_name}_gt", vae_path, manifold=manifold
                 )
             else:
-                gt_geometry = GeometryType(p_map, f"{exp_name}_gt", vae_path)
+                gt_geometry = GeometryType(strict_p_map, f"{exp_name}_gt", vae_path)
 
             gt_geometry.save_arrays(force=force)
 
@@ -54,25 +55,31 @@ def save_all_arrays(
             if path_to_AL_trace.exists():
                 for m in [100, 200, 300, 400, 500]:
                     p_map_m = load_trace_as_map(path_to_AL_trace, m)
+                    strict_p_map_m = {
+                        z: 1.0 if p == 1.0 else 0.0 for z, p in p_map_m.items()
+                    }
                     if GeometryType == ContinuousGeometry:
                         manifold = build_discretized_manifold(p_map_m, vae_path)
                         AL_geometry_m = GeometryType(
-                            p_map_m, f"{exp_name}_AL_{m}", vae_path, manifold=manifold
+                            strict_p_map_m,
+                            f"{exp_name}_AL_{m}",
+                            vae_path,
+                            manifold=manifold,
                         )
                     else:
                         AL_geometry_m = GeometryType(
-                            p_map_m, f"{exp_name}_AL_{m}", vae_path
+                            strict_p_map_m, f"{exp_name}_AL_{m}", vae_path
                         )
                     AL_geometry_m.save_arrays(force=force)
 
 
 if __name__ == "__main__":
     # # For the baseline
-    # save_all_arrays("baseline", BaselineGeometry, with_AL=False)
-    # save_all_arrays("normal", NormalGeometry, with_AL=False)
+    save_all_arrays("baseline_strict", BaselineGeometry, with_AL=False)
+    save_all_arrays("normal_strict", NormalGeometry, with_AL=False)
 
     # # Discrete
-    # save_all_arrays("discrete", DiscreteGeometry)
+    save_all_arrays("discrete_strict", DiscreteGeometry, with_AL=False)
 
     # Continuous
-    save_all_arrays("continuous", ContinuousGeometry)
+    save_all_arrays("continuous_strict", ContinuousGeometry, with_AL=False)
