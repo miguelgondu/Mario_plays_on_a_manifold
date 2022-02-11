@@ -1,6 +1,9 @@
+import matplotlib.pyplot as plt
 import torch as t
 import torch.nn as nn
 import torch.nn.parallel
+
+from mario_utils.plotting import get_img_from_level
 
 # Taken from the MarioGAN repo
 class DCGAN_G(nn.Module):
@@ -76,6 +79,17 @@ if __name__ == "__main__":
     n_extra_layers = 0
     generator = DCGAN_G(map_size, nz, z_dims, ngf, ngpu, n_extra_layers)
 
-    generator.load_state_dict(t.load("./models/MarioGAN/netG_epoch_5800_0_2.pth"))
-    z = 3.0 * t.randn((64, 2))
-    levels = generator(z.reshape(z.shape[0], z.shape[1], 1, 1))
+    generator.load_state_dict(t.load(f"./models/MarioGAN/netG_epoch_5800_0_{nz}.pth"))
+    z = 3.0 * t.randn((64, nz))
+    levels = generator(z.reshape(z.shape[0], z.shape[1], 1, 1)).argmax(dim=1)
+    _, axes = plt.subplots(8, 8, figsize=(8 * 7, 8 * 7))
+    for lvl, ax in zip(levels, axes.flatten()):
+        ax.imshow(get_img_from_level(lvl.detach().numpy()))
+        ax.axis("off")
+
+    plt.tight_layout()
+    plt.savefig(
+        "./data/plots/MarioGAN/random_samples.png", dpi=100, bbox_inches="tight"
+    )
+    plt.show()
+    plt.close()
