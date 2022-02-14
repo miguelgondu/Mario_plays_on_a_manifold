@@ -89,8 +89,8 @@ def prediction_error(predictions: t.Tensor, real: t.Tensor) -> t.Tensor:
 def train_gan():
     n_epochs = 200
     # n_iters_d = 10
-    n_iters_g = 5
-    batch_size = 64 * 4
+    n_iters_g = 15
+    batch_size = 64 * 2
     train_tensors, test_tensors = load_data(only_playable=True)
     train_tensors = train_tensors.permute(0, 2, 3, 1)
     test_tensors = test_tensors.permute(0, 2, 3, 1)

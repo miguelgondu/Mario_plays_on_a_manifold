@@ -7,6 +7,7 @@ which is not necessary in our case.
 import json
 from pathlib import Path
 from typing import List
+from itertools import product
 
 import numpy as np
 
@@ -82,9 +83,48 @@ def process(width=14, comment=""):
     )
 
 
+def process_zelda():
+    """
+    Loads and processes the Zelda data.
+    """
+    data_path = Path("./data")
+    raw_level_paths = (data_path / "raw" / "og_zelda_levels").rglob("*.txt")
+    processed_level_path = data_path / "processed" / "zelda"
+    processed_level_path.mkdir(exist_ok=True)
+
+    all_levels = []
+    for p in raw_level_paths:
+        with open(p) as fp:
+            rows_level = fp.readlines()
+            entire_level = create_level_array_from_rows(rows_level)
+            all_levels.append(entire_level)
+
+    levels = np.array(all_levels)
+    np.savez(processed_level_path / "all_levels_text.npz", levels=levels)
+
+    tokens = np.unique(levels)
+    encoding = {t: i for i, t in enumerate(tokens)}
+
+    n_levels = len(levels)
+    h, w = levels.shape[1], levels.shape[2]
+    n_sprites = len(encoding)
+    onehot_levels = np.zeros((n_levels, h, w, n_sprites))
+    for n, lvl in enumerate(levels):
+        for i, j in product(range(h), range(w)):
+            _id = encoding[lvl[i, j]]
+            onehot_levels[n, i, j, _id] = 1.0
+
+    # Saving levels as .npz and encoding as .json
+    with open(processed_level_path / "encoding.json", "w") as fp:
+        json.dump(encoding, fp)
+
+    np.savez(processed_level_path / "onehot.npz", levels=onehot_levels)
+
+
 if __name__ == "__main__":
     # process()
     # process(width=16, comment="rasmus_")
-    all_levels_encoded = np.load("./data/processed/all_levels_encoded.npz")["levels"]
-    print("Amount of levels: ")
-    print(all_levels_encoded.shape)
+    # all_levels_encoded = np.load("./data/processed/all_levels_encoded.npz")["levels"]
+    # print("Amount of levels: ")
+    # print(all_levels_encoded.shape)
+    process_zelda()
