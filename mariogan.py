@@ -1,4 +1,7 @@
+from itertools import product
+
 import matplotlib.pyplot as plt
+import numpy as np
 import torch as t
 import torch.nn as nn
 import torch.nn.parallel
@@ -69,6 +72,38 @@ class DCGAN_G(nn.Module):
         # exit()
         return output
 
+    def plot_grid(self) -> np.ndarray:
+        x_lims = y_lims = (-15, 15)
+        n_cols = n_rows = 15
+        z1 = np.linspace(*x_lims, n_cols)
+        z2 = np.linspace(*y_lims, n_rows)
+
+        zs = np.array([[a, b] for a, b in product(z1, z2)])
+        zs_ = zs.reshape(n_cols * n_rows, 2, 1, 1)
+
+        images_onehot = self.forward(torch.from_numpy(zs_).type(torch.float))
+        images = images_onehot.argmax(dim=1)
+
+        images = np.array(
+            [get_img_from_level(im) for im in images.cpu().detach().numpy()]
+        )
+        img_dict = {(z[0], z[1]): img for z, img in zip(zs, images)}
+
+        positions = {
+            (x, y): (i, j) for j, x in enumerate(z1) for i, y in enumerate(reversed(z2))
+        }
+
+        pixels = 16 * 32
+        final_img = np.zeros((n_cols * pixels, n_rows * pixels, 3))
+        for z, (i, j) in positions.items():
+            final_img[
+                i * pixels : (i + 1) * pixels, j * pixels : (j + 1) * pixels
+            ] = img_dict[z]
+
+        final_img = final_img.astype(int)
+
+        return final_img
+
 
 if __name__ == "__main__":
     map_size = 32
@@ -91,5 +126,14 @@ if __name__ == "__main__":
     plt.savefig(
         "./data/plots/MarioGAN/random_samples.png", dpi=100, bbox_inches="tight"
     )
+    # plt.show()
+    plt.close()
+
+    _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    img = generator.plot_grid()
+    ax.imshow(img, extent=[-15, 15, -15, 15])
+    ax.axis("off")
+    plt.tight_layout()
+    plt.savefig("./data/plots/MarioGAN/grid.png", dpi=100, bbox_inches="tight")
     plt.show()
     plt.close()
