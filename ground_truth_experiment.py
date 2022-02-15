@@ -11,6 +11,7 @@ import torch as t
 import numpy as np
 
 from vae_mario_hierarchical import VAEMarioHierarchical
+from mariogan import DCGAN_G
 from simulate_array import _simulate_array
 
 
@@ -64,13 +65,55 @@ def get_ground_truth_arrays():
         )
 
 
-def ground_truth_experiment():
-    array_paths = Path("./data/arrays/ten_vaes/ground_truth").glob("*.npz")
+def ground_truth_experiment(experiment="ten_vaes"):
+    array_paths = Path(f"./data/arrays/{experiment}/ground_truth").glob("*.npz")
     for path in array_paths:
         print(f"Simualting {path}.")
-        _simulate_array(path, 50, 5, exp_folder="ten_vaes/ground_truth")
+        _simulate_array(path, 50, 5, exp_folder=f"{experiment}/ground_truth")
+
+
+def ground_truth_arrays_for_MarioGAN():
+    # Hyper-arguments
+    argmax = True
+    n_samples = 5
+
+    # Creating the path for the arrays.
+    model_paths = Path("./models/MarioGAN").glob("*.pth")
+    array_path = Path("./data/arrays/MarioGAN/ground_truth")
+    array_path.mkdir(exist_ok=True, parents=True)
+
+    # Getting the arrays
+    for path in model_paths:
+        model_name = path.stem
+        generator = DCGAN_G()
+        generator.load_state_dict(t.load(path))
+        generator.eval()
+
+        x_lims = [-10, 10]
+        y_lims = [-10, 10]
+
+        n_grid = 50
+        z1 = np.linspace(*x_lims, n_grid)
+        z2 = np.linspace(*y_lims, n_grid)
+
+        zs = t.Tensor([[a, b] for a in reversed(z1) for b in z2])
+        levels = generator.get_level(zs).cpu().detach().numpy()
+        zs = zs.detach().numpy()
+
+        print(f"zs: {zs.shape}")
+        print(f"levels: {levels.shape}")
+        assert zs.shape[0] == levels.shape[0]
+
+        print(f"Saving array for {model_name}.")
+        np.savez(
+            array_path / f"{model_name}.npz",
+            zs=zs,
+            levels=levels,
+        )
 
 
 if __name__ == "__main__":
     # get_ground_truth_arrays()
-    ground_truth_experiment()
+    # ground_truth_experiment()
+    # ground_truth_arrays_for_MarioGAN()
+    ground_truth_experiment(experiment="MarioGAN")

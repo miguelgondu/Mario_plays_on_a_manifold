@@ -10,7 +10,7 @@ from mario_utils.plotting import get_img_from_level
 
 # Taken from the MarioGAN repo
 class DCGAN_G(nn.Module):
-    def __init__(self, isize, nz, nc, ngf, ngpu, n_extra_layers=0):
+    def __init__(self, isize=32, nz=2, nc=10, ngf=64, ngpu=1, n_extra_layers=0):
         super(DCGAN_G, self).__init__()
         self.ngpu = ngpu
         assert isize % 16 == 0, "isize has to be a multiple of 16"
