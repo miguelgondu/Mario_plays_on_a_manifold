@@ -10,6 +10,7 @@ from pathlib import Path
 
 import torch
 import numpy as np
+from mariogan import DCGAN_G
 from vae_geometry_hierarchical import VAEGeometryHierarchical
 
 from vae_mario_hierarchical import VAEMarioHierarchical
@@ -149,23 +150,42 @@ def testing_playability():
     run_level(str(clean_level(level.detach().numpy())), human_player=True)
 
 
+def test_playing_MarioGAN():
+    map_size = 32
+    nz = 2
+    z_dims = 10
+    ngf = 64
+    ngpu = 1
+    n_extra_layers = 0
+    generator = DCGAN_G(map_size, nz, z_dims, ngf, ngpu, n_extra_layers)
+
+    random_z = torch.randn((1, 2))
+    generator.load_state_dict(
+        torch.load(f"./models/MarioGAN/netG_epoch_5800_0_{nz}.pth")
+    )
+    level = generator.get_level(random_z)[0]
+
+    res = test_level_from_int_tensor(level, human_player=True)
+    print(res)
+
+
 if __name__ == "__main__":
     human_player = True
     z_dim = 2
     # checkpoint = 100
     # model_name = f"mariovae_video_for_tv2_lorry_2_epoch_80"
-    model_name = f"hierarchical_final_playable_final"
+    # model_name = f"hierarchical_final_playable_final"
 
-    print(f"Loading model {model_name}")
-    vae = VAEGeometryHierarchical()
-    vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
-    vae.update_cluster_centers()
-    vae.eval()
+    # print(f"Loading model {model_name}")
+    # vae = VAEGeometryHierarchical()
+    # vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
+    # vae.update_cluster_centers()
+    # vae.eval()
 
     # random_z = 2.5 * torch.randn((1, z_dim))
-    # random_z = torch.Tensor([[-0.7635, -0.4633]])
     # print(f"Playing {random_z[0]}")
     # res = test_level_from_z(random_z[0], vae, human_player=human_player)
     # print(res)
     # video_for_tv2(vae)
-    testing_playability()
+    # testing_playability()
+    test_playing_MarioGAN()

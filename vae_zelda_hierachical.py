@@ -9,7 +9,7 @@ from torch.distributions import Distribution, Normal, Categorical, kl_divergence
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 
-from zelda_utils.plotting import encoding
+from zelda_utils.plotting import encoding, get_img_from_level
 
 
 def load_data() -> t.Tensor:
@@ -116,15 +116,17 @@ class VAEZeldaHierarchical(nn.Module):
     def random_sample(self):
         z = t.randn((64, 2))
         levels = self.decode(z).probs.argmax(dim=-1)
-        final_levels = np.zeros_like(levels).astype(str)
-        for text, id_ in encoding.items():
-            final_levels[levels == id_] = text
+        # final_levels = np.zeros_like(levels).astype(str)
+        # for text, id_ in encoding.items():
+        #     final_levels[levels == id_] = text
 
-        _, axes = plt.subplots(8, 8, figsize=(8 * 7, 8 * 7))
+        fig, axes = plt.subplots(8, 8, figsize=(8 * 7, 8 * 7))
         for level, ax in zip(levels.detach().numpy(), axes.flatten()):
-            ax.matshow(level)
+            img = get_img_from_level(level)
+            ax.imshow(255 * np.ones_like(img))
+            ax.imshow(img)
             ax.axis("off")
-
+        fig.set_facecolor("white")
         plt.tight_layout()
         plt.savefig(
             "./data/plots/zelda/random_samples.png", dpi=100, bbox_inches="tight"
@@ -148,7 +150,9 @@ class VAEZeldaHierarchical(nn.Module):
         images_dist = self.decode(t.from_numpy(zs).type(t.float))
         images = images_dist.probs.argmax(dim=-1)
 
-        images = np.array([im for im in images.cpu().detach().numpy()])
+        images = np.array(
+            [get_img_from_level(im) for im in images.cpu().detach().numpy()]
+        )
         img_dict = {(z[0], z[1]): img for z, img in zip(zs, images)}
 
         positions = {
@@ -158,11 +162,12 @@ class VAEZeldaHierarchical(nn.Module):
         lvl_height = images[0].shape[0]
         lvl_width = images[0].shape[1]
 
-        final_img = np.zeros((n_cols * lvl_height, n_rows * lvl_width))
+        final_img = np.zeros((n_cols * lvl_height * 25, n_rows * lvl_width * 25, 3))
         for z, (i, j) in positions.items():
             final_img[
                 i * lvl_height : (i + 1) * lvl_height,
                 j * lvl_width : (j + 1) * lvl_width,
+                :,
             ] = img_dict[z]
 
         final_img = final_img.astype(int)
@@ -216,7 +221,7 @@ def run():
     batch_size = 64
     lr = 1e-3
     comment = "zelda_hierarchical"
-    max_epochs = 100
+    max_epochs = 500
     overfit = True
     save_every = 20
 
@@ -266,19 +271,19 @@ def run():
 
 if __name__ == "__main__":
     # train
-    run()
+    # run()
 
     # inspect
     vae = VAEZeldaHierarchical()
     vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final.pt"))
     vae.random_sample()
 
-    x_lims = (-10, 10)
-    y_lims = (-10, 10)
-    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=25, n_cols=25)
-    _, ax = plt.subplots(1, 1)
-    ax.matshow(grid, extent=[*x_lims, *y_lims])
+    # x_lims = (-10, 10)
+    # y_lims = (-10, 10)
+    # grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=5, n_cols=5)
+    # _, ax = plt.subplots(1, 1)
+    # ax.imshow(grid, extent=[*x_lims, *y_lims])
 
-    plt.tight_layout()
-    plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
-    plt.close()
+    # plt.tight_layout()
+    # plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
+    # plt.close()
