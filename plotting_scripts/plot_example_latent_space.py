@@ -190,14 +190,26 @@ def plot_example_diffusions(grid):
 
 
 if __name__ == "__main__":
-    model_name = "vae_mario_hierarchical_id_0"
-    gt_csv = Path(
-        f"./data/array_simulation_results/ten_vaes/ground_truth/{model_name}.csv"
-    )
-    model_path = Path("./models/ten_vaes") / f"{model_name}.pt"
-    p_map = load_csv_as_map(gt_csv)
-    geometry = DiscreteGeometry(p_map, "discrete_plotting", model_path)
+    # model_name = "vae_mario_hierarchical_id_0"
+    # gt_csv = Path(
+    #     f"./data/array_simulation_results/ten_vaes/ground_truth/{model_name}.csv"
+    # )
+    # model_path = Path("./models/ten_vaes") / f"{model_name}.pt"
+    # p_map = load_csv_as_map(gt_csv)
+    # geometry = DiscreteGeometry(p_map, "discrete_plotting", model_path)
 
     # plot_ground_truth(geometry.grid)
     # plot_grid_of_levels(model_path)
-    plot_example_interpolations(geometry.grid)
+    # plot_example_interpolations(geometry.grid)
+    for model_path in Path("./models/MarioGAN").glob("*.pth"):
+        model_name = model_path.stem
+        gt_csv = Path(
+            f"./data/array_simulation_results/MarioGAN/ground_truth/{model_name}.csv"
+        )
+        p_map = load_csv_as_map(gt_csv)
+        geometry = DiscreteGeometry(p_map, "discrete_plotting_mariogan", model_path)
+        # plot_ground_truth(geometry.grid)
+        _, ax = plt.subplots(1, 1, figsize=(7, 7))
+        ax.imshow(geometry.grid, extent=[-10, 10, -10, 10])
+        ax.set_title(model_name)
+        plt.show()

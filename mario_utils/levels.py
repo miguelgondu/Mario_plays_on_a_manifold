@@ -95,10 +95,24 @@ def tensor_to_sim_level(tensor_levels: Tensor, level_size: int = 14) -> List[Lis
     return lvls_with_padding.tolist()
 
 
+def add_padding_to_level(level: np.ndarray, n_padding: int = 1) -> np.ndarray:
+    """
+    Adds padding to the left of the level, giving room
+    for the agent to land.
+    """
+    h, w = level.shape
+    padding = 2 * np.ones((h, n_padding))  # Starting with emptyness.
+    padding[-1, :] = 0  # Adding the ground.
+    level_with_padding = np.concatenate((padding, level), axis=1)
+
+    return level_with_padding
+
+
 def clean_level(level: np.ndarray) -> List[List[int]]:
     # Cleaning up Mario (11), replacing
     # it with empty space (2).
     level[level == 11] = 2
     level = level.astype(int)
+    level = add_padding_to_level(level, 2)
 
     return level.tolist()
