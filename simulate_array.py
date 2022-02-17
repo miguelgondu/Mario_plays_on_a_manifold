@@ -18,7 +18,7 @@ def test_level(
     array_name: str,
     exp_folder: str = None,
     visualize: bool = False,
-    verbose: bool = False
+    verbose: bool = False,
 ):
     if verbose:
         print(f"Processing level at index {i} (z={z})")
@@ -52,7 +52,12 @@ def test_level(
 
 
 def _simulate_array(
-    array_path, processes, repetitions_per_level, exp_folder=None, visualize=False
+    array_path,
+    processes,
+    repetitions_per_level,
+    exp_folder=None,
+    visualize=False,
+    verbose=False,
 ):
     array_path = Path(array_path)
     array_name = array_path.stem
@@ -93,6 +98,7 @@ def _simulate_array(
                 repeat(array_name),
                 repeat(exp_folder),
                 repeat(visualize),
+                repeat(verbose),
             ),
         )
 
