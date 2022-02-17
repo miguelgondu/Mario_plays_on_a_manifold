@@ -160,7 +160,9 @@ def testing_playability():
     run_level(str(clean_level(level.detach().numpy())), human_player=True)
 
 
-def test_playing_MarioGAN(z: torch.Tensor = None, visualize: bool = False):
+def test_playing_MarioGAN(
+    z: torch.Tensor = None, visualize: bool = False, epoch: int = 5800
+):
     map_size = 32
     nz = 2
     z_dims = 10
@@ -172,12 +174,12 @@ def test_playing_MarioGAN(z: torch.Tensor = None, visualize: bool = False):
     if z is None:
         z = torch.randn((1, 2))
     generator.load_state_dict(
-        torch.load(f"./models/MarioGAN/netG_epoch_5800_0_{nz}.pth")
+        torch.load(f"./models/MarioGAN/netG_epoch_{epoch}_0_{nz}.pth")
     )
     level = generator.get_level(z)[0]
 
     res = test_level_from_int_tensor(level, human_player=False, visualize=visualize)
-    print(res)
+    # print(res)
     return res
 
 
