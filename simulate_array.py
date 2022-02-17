@@ -12,9 +12,16 @@ from simulator import test_level_from_int_array
 
 
 def test_level(
-    i: int, z: np.ndarray, level: np.ndarray, array_name: str, exp_folder: str = None
+    i: int,
+    z: np.ndarray,
+    level: np.ndarray,
+    array_name: str,
+    exp_folder: str = None,
+    visualize: bool = False,
+    verbose: bool = False
 ):
-    # print(f"Processing level at index {i} (z={z})")
+    if verbose:
+        print(f"Processing level at index {i} (z={z})")
 
     if exp_folder is not None:
         res_path = Path("./data/array_simulation_jsons") / exp_folder
@@ -33,8 +40,10 @@ def test_level(
             assert (np.array(json.loads(res["level"])) == level).all()
             return res
 
-    res = test_level_from_int_array(level)
+    res = test_level_from_int_array(level, visualize=visualize)
     res = {"z": z.tolist(), "level": level.tolist(), **res}
+    if verbose:
+        print(f"Processed {i} (z={z}, p={res['marioStatus']})")
 
     with open(saving_path, "w") as fp:
         json.dump(res, fp)
@@ -42,7 +51,9 @@ def test_level(
     return res
 
 
-def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=None):
+def _simulate_array(
+    array_path, processes, repetitions_per_level, exp_folder=None, visualize=False
+):
     array_path = Path(array_path)
     array_name = array_path.stem
 
@@ -75,7 +86,14 @@ def _simulate_array(array_path, processes, repetitions_per_level, exp_folder=Non
     with mp.Pool(processes) as p:
         results = p.starmap(
             test_level,
-            zip(range(len(zs)), zs, levels, repeat(array_name), repeat(exp_folder)),
+            zip(
+                range(len(zs)),
+                zs,
+                levels,
+                repeat(array_name),
+                repeat(exp_folder),
+                repeat(visualize),
+            ),
         )
 
     rows = []

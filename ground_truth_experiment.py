@@ -65,11 +65,18 @@ def get_ground_truth_arrays():
         )
 
 
-def ground_truth_experiment(experiment="ten_vaes"):
+def ground_truth_experiment(experiment="MarioGAN"):
     array_paths = Path(f"./data/arrays/{experiment}/ground_truth").glob("*.npz")
     for path in array_paths:
         print(f"Simualting {path}.")
-        _simulate_array(path, 50, 5, exp_folder=f"{experiment}/ground_truth")
+        _simulate_array(
+            path,
+            18,
+            5,
+            exp_folder=f"{experiment}/ground_truth",
+            visualize=False,
+            verbose=True,
+        )
 
 
 def ground_truth_arrays_for_MarioGAN():

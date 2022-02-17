@@ -113,6 +113,6 @@ def clean_level(level: np.ndarray) -> List[List[int]]:
     # it with empty space (2).
     level[level == 11] = 2
     level = level.astype(int)
-    level = add_padding_to_level(level, 2)
+    # level = add_padding_to_level(level, 2)
 
     return level.tolist()
