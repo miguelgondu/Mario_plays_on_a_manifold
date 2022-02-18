@@ -121,6 +121,6 @@ def ground_truth_arrays_for_MarioGAN():
 
 if __name__ == "__main__":
     # get_ground_truth_arrays()
-    # ground_truth_experiment()
+    ground_truth_experiment(experiment="ten_vaes")
     # ground_truth_arrays_for_MarioGAN()
     ground_truth_experiment(experiment="MarioGAN")
