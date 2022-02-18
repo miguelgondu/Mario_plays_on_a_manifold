@@ -210,6 +210,6 @@ if __name__ == "__main__":
         geometry = DiscreteGeometry(p_map, "discrete_plotting_mariogan", model_path)
         # plot_ground_truth(geometry.grid)
         _, ax = plt.subplots(1, 1, figsize=(7, 7))
-        ax.imshow(geometry.grid, extent=[-10, 10, -10, 10])
+        ax.imshow(geometry.grid, extent=[-10, 10, -10, 10], cmap="Blues")
         ax.set_title(model_name)
         plt.show()

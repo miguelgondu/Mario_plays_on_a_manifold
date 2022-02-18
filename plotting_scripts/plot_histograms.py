@@ -9,6 +9,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from analysis_scripts.utils import load_experiment_csv_paths
 
@@ -50,11 +51,90 @@ def analyse(exp_name: str, column: str):
     plt.close()
 
 
-if __name__ == "__main__":
-    analyse("baseline_no_jump_gt", "jumpActionsPerformed")
-    analyse("discrete_no_jump_gt", "jumpActionsPerformed")
-    analyse("continuous_no_jump_gt", "jumpActionsPerformed")
+def bar_chart_comparison(column, experiments, filter_, title):
+    fig, (ax_interps, ax_diffs) = plt.subplots(1, 2, figsize=(7 * 2, 7))
+    table_interps = []
+    table_diffs = []
+    for exp_name in experiments:
+        interps, diffs = load_experiment_csv_paths(exp_name)
+        v_interps = get_all_values(interps, column)
+        n_values_interps = len(v_interps)
+        v_interps = list(filter(filter_, v_interps))
+        table_interps.append({"experiment": exp_name, "amount": len(v_interps)})
 
-    analyse("baseline_no_jump_gt", "marioStatus")
-    analyse("discrete_no_jump_gt", "marioStatus")
-    analyse("continuous_no_jump_gt", "marioStatus")
+        v_diffs = get_all_values(diffs, column)
+        n_values_diffs = len(v_diffs)
+        v_diffs = list(filter(filter_, v_diffs))
+        table_diffs.append({"experiment": exp_name, "amount": len(v_diffs)})
+
+    table_interps = pd.DataFrame(table_interps)
+    table_diffs = pd.DataFrame(table_diffs)
+
+    ax_interps = sns.barplot(
+        x="experiment", y="amount", data=table_interps, ax=ax_interps
+    )
+    ax_diffs = sns.barplot(x="experiment", y="amount", data=table_diffs, ax=ax_diffs)
+
+    # ax_interps.bar_label(
+    #     [f"{c/n_values_interps:.2f}" for c in ax_interps.containers[0]]
+    # )
+    # ax_diffs.bar_label([f"{c/n_values_diffs:.2f}" for c in ax_diffs.containers[0]])
+
+    ax_interps.set_title(f"Out of {n_values_interps} simulations.")
+    ax_diffs.set_title(f"Out of {n_values_diffs} simulations.")
+
+    fig.suptitle(title)
+
+    plt.show()
+
+
+def dist_comparison(column, experiments, filter_, title):
+    facet_table = []
+    # _, ax = plt.subplots(1, 1, figsize=(7, 7))
+    for exp_name in experiments:
+        interps, diffs = load_experiment_csv_paths(exp_name)
+        v_interps = get_all_values(interps, column)
+        v_interps = list(filter(filter_, v_interps))
+        for v in v_interps:
+            facet_table.append({"experiment": exp_name, column: v})
+
+    g = sns.FacetGrid(pd.DataFrame(facet_table), row="experiment")
+    g.map(sns.histplot, column)
+    plt.show()
+
+
+if __name__ == "__main__":
+    # analyse("baseline_no_jump_gt", "jumpActionsPerformed")
+    # analyse("discrete_no_jump_gt", "jumpActionsPerformed")
+    # analyse("continuous_no_jump_gt", "jumpActionsPerformed")
+
+    # analyse("baseline_no_jump_gt", "marioStatus")
+    # analyse("discrete_no_jump_gt", "marioStatus")
+    # analyse("continuous_no_jump_gt", "marioStatus")
+    # experiments = [
+    #     "normal_strict_gt",
+    #     "baseline_strict_gt",
+    #     "continuous_strict_gt",
+    #     "discrete_strict_gt",
+    # ]
+    # bar_chart_comparison(
+    #     "marioStatus",
+    #     experiments,
+    #     filter_=lambda x: x == 0.0,
+    #     title="Non-playable levels",
+    # )
+    experiments = [
+        # "normal_strict_gt",
+        "baseline_force_jump_gt",
+        # "continuous_force_jump_gt",
+        "discrete_force_jump_gt",
+    ]
+    # bar_chart_comparison(
+    #     "jumpActionsPerformed",
+    #     experiments,
+    #     filter_=lambda x: x == 0.0,
+    #     title="Levels without jumps",
+    # )
+    dist_comparison(
+        "jumpActionsPerformed", experiments, lambda x: x < 16, "Dist comparison"
+    )

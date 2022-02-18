@@ -14,11 +14,11 @@ from analysis_scripts.utils import (
 
 
 def build_table_layout() -> pd.DataFrame:
-    geometries = ["discrete geometry", "continuous geometry", "baselines"]
+    geometries = ["discrete geometry", "continuous geometry", "baseline", "normal"]
 
     index = []
     for geometry in geometries:
-        if geometry != "baselines":
+        if geometry != "baselines" and geometry != "normal":
             for m in [100, 200, 300, 400, 500]:
                 index.append((geometry, m))
 
@@ -95,6 +95,8 @@ def parse_exp_name(exp_name: str) -> Tuple[str, str]:
         first = "discrete geometry"
     elif "continuous" in exp_name:
         first = "continuous geometry"
+    elif "normal" in exp_name:
+        first = "normal"
     else:
         raise ValueError(f"Unkown experiment {exp_name}")
 
@@ -136,6 +138,9 @@ def process():
     # print(table)
     print("continuous_strict_gt")
     fill_out_experiment(table, "continuous_strict_gt", processes=None)
+    
+    print("normal_strict_gt")
+    fill_out_experiment(table, "normal_strict_gt", processes=None)
     # print(table)
     # for m in [100, 200, 300, 400, 500]:
     #     print(f"discrete_AL_{m}")
