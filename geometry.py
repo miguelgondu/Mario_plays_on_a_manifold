@@ -167,6 +167,7 @@ class DiscretizedGeometry(Geometry):
         vae_path: Path,
         beta: float = -5.5,
         n_grid: int = 100,
+        inner_steps_diff: int = 25,
     ) -> None:
         # Load the VAE
         vae = VAEWithObstacles()
@@ -203,7 +204,9 @@ class DiscretizedGeometry(Geometry):
         super().__init__(new_p_map, exp_name, vae_path)
 
         self.interpolation = DiscreteInterpolation(self.vae_path, self.playability_map)
-        self.diffusion = DiscreteDiffusion(self.vae_path, self.playability_map)
+        self.diffusion = DiscreteDiffusion(
+            self.vae_path, self.playability_map, inner_steps=inner_steps_diff
+        )
 
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
         return self.interpolation.interpolate(z, z_prime)
@@ -243,10 +246,24 @@ if __name__ == "__main__":
     )
     mean_p_map = load_csv_as_map(path_to_gt)
     strict_p_map = {z: 1.0 if p == 1.0 else 0.0 for z, p in mean_p_map.items()}
-    dg = DiscretizedGeometry(
-        strict_p_map, "discretized_gt", vae_path, beta=-5.5, n_grid=100
+    ddg = DiscretizedGeometry(
+        strict_p_map,
+        "discretized_strict_gt",
+        vae_path,
+        beta=-5.5,
+        n_grid=100,
+        inner_steps_diff=30,
     )
 
     _, ax = plt.subplots(1, 1)
-    ax.imshow(dg.grid, cmap="Blues", extent=[-5, 5, -5, 5])
+    ax.imshow(ddg.grid, cmap="Blues", extent=[-5, 5, -5, 5])
+
+    interp = ddg.interpolation._full_interpolation(
+        t.Tensor([-3.0, -4.5]), t.Tensor([3.0, 3.0])
+    )
+    diff, _ = ddg.diffuse(t.Tensor([-3.0, -4.5]))
+
+    ax.plot(interp[:, 0], interp[:, 1])
+    ax.scatter(diff[:, 0], diff[:, 1])
+
     plt.show()

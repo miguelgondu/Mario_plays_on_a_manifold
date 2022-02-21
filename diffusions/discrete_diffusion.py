@@ -11,10 +11,15 @@ from .base_diffusion import BaseDiffusion
 # TODO: implement this diffusion as a random walk on a graph.
 class DiscreteDiffusion(BaseDiffusion):
     def __init__(
-        self, vae_path: Path, p_map: Dict[tuple, float], n_steps: int = 50
+        self,
+        vae_path: Path,
+        p_map: Dict[tuple, float],
+        n_steps: int = 50,
+        inner_steps: int = 10,
     ) -> None:
         super().__init__(vae_path, p_map, n_steps)
         # Has nice methods for dealing with the graph.
+        self.inner_steps = inner_steps
         self.di = DiscreteInterpolation(vae_path, p_map)
 
     def run(self, z_0: t.Tensor) -> Tuple[t.Tensor]:
@@ -34,10 +39,10 @@ class DiscreteDiffusion(BaseDiffusion):
     def step(self, z_n: np.ndarray) -> np.ndarray:
         """
         One step in the random walk. It does
-        10 mini-steps and consolidates the result.
+        self.inner_steps mini-steps and consolidates the result.
         """
         current_pos = self.di.positions[tuple(z_n)]
-        for _ in range(10):
+        for _ in range(self.inner_steps):
             all_neighbours = np.array(self.di.get_neighbors(current_pos))
             all_neighbour_weights = np.array(
                 [self.di.weight(tuple(n)) for n in all_neighbours]

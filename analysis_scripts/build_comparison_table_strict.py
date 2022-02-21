@@ -14,7 +14,7 @@ from analysis_scripts.utils import (
 
 
 def build_table_layout() -> pd.DataFrame:
-    geometries = ["discrete geometry", "continuous geometry", "baseline", "normal"]
+    geometries = ["discretized geometry", "baseline", "normal"]
 
     index = []
     for geometry in geometries:
@@ -91,10 +91,8 @@ def process_experiment(exp_name: str, processes: int = None):
 def parse_exp_name(exp_name: str) -> Tuple[str, str]:
     if "baseline" in exp_name:
         first = "baselines"
-    elif "discrete" in exp_name:
-        first = "discrete geometry"
-    elif "continuous" in exp_name:
-        first = "continuous geometry"
+    elif "discretized" in exp_name:
+        first = "discretized geometry"
     elif "normal" in exp_name:
         first = "normal"
     else:
@@ -133,11 +131,11 @@ def process():
     print("baseline_strict_gt")
     fill_out_experiment(table, "baseline_strict_gt", processes=None)
     # print(table)
-    print("discrete_strict_gt")
-    fill_out_experiment(table, "discrete_strict_gt", processes=None)
+    print("discretized_strict_gt")
+    fill_out_experiment(table, "discretized_strict_gt", processes=None)
     # print(table)
-    print("continuous_strict_gt")
-    fill_out_experiment(table, "continuous_strict_gt", processes=None)
+    # print("continuous_strict_gt")
+    # fill_out_experiment(table, "continuous_strict_gt", processes=None)
     
     print("normal_strict_gt")
     fill_out_experiment(table, "normal_strict_gt", processes=None)
