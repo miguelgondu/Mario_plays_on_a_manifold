@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from geometry import (
     BaselineGeometry,
     DiscreteGeometry,
+    DiscretizedGeometry,
     Geometry,
     NormalGeometry,
     ContinuousGeometry,
@@ -30,7 +31,7 @@ def inspect_interpolations(geometry: Geometry):
     for array_path in all_arrays:
         a = np.load(array_path)
         zs = a["zs"]
-        if "discrete" in geometry.exp_name:
+        if "discrete" in geometry.exp_name or "discretized" in geometry.exp_name:
             ax.scatter(zs[:, 0], zs[:, 1], c="r")
             z, z_prime = zs[0], zs[-1]
             z = t.from_numpy(z).type(t.float)
@@ -205,8 +206,23 @@ def inspect_strict_experiment():
             inspect_diffusions(ng)
 
 
+def inspect_discretized_geometry():
+    model_paths = Path("./models/ten_vaes").glob("*.pt")
+    for vae_path in model_paths:
+        gt_path = Path(
+            f"./data/array_simulation_results/ten_vaes/ground_truth/{vae_path.stem}.csv"
+        )
+        mean_p_map = load_csv_as_map(gt_path)
+        strict_p_map = {z: 1.0 if p == 1.0 else 0.0 for z, p in mean_p_map.items()}
+
+        ddg = DiscretizedGeometry(strict_p_map, "discretized_strict_gt", vae_path)
+        inspect_interpolations(ddg)
+        inspect_diffusions(ddg)
+
+
 if __name__ == "__main__":
     # inspect_playability_experiment()
     # inspect_no_jump_experiment()
     # inspect_jump_experiment()
-    inspect_strict_experiment()
+    # inspect_strict_experiment()
+    inspect_discretized_geometry()

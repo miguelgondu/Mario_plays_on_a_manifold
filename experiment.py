@@ -15,6 +15,7 @@ from geometry import (
     BaselineGeometry,
     NormalGeometry,
     DiscreteGeometry,
+    DiscretizedGeometry,
     ContinuousGeometry,
 )
 
@@ -75,11 +76,16 @@ def save_all_arrays(
 
 if __name__ == "__main__":
     # # For the baseline
-    save_all_arrays("baseline_strict", BaselineGeometry, with_AL=False)
-    save_all_arrays("normal_strict", NormalGeometry, with_AL=False)
+    # save_all_arrays("baseline_strict", BaselineGeometry, with_AL=False)
+    # save_all_arrays("normal_strict", NormalGeometry, with_AL=False)
 
     # # Discrete
-    save_all_arrays("discrete_strict", DiscreteGeometry, with_AL=False)
+    # save_all_arrays("discrete_strict", DiscreteGeometry, with_AL=False)
+
+    # # Discretized
+    save_all_arrays(
+        "discretized_strict", DiscretizedGeometry, with_AL=False, force=True
+    )
 
     # Continuous
-    save_all_arrays("continuous_strict", ContinuousGeometry, with_AL=False)
+    # save_all_arrays("continuous_strict", ContinuousGeometry, with_AL=False)

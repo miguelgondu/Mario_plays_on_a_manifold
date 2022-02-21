@@ -43,10 +43,11 @@ def run_exp(exp_name: str, processes: int = 50):
 
 def run():
     # Running the ground truths
-    run_exp("baseline_strict_gt", processes=90)
-    run_exp("normal_strict_gt", processes=90)
-    run_exp("discrete_strict_gt", processes=90)
-    run_exp("continuous_strict_gt", processes=90)
+    # run_exp("baseline_strict_gt", processes=90)
+    # run_exp("normal_strict_gt", processes=90)
+    # run_exp("discrete_strict_gt", processes=90)
+    # run_exp("continuous_strict_gt", processes=90)
+    run_exp("discretized_strict_gt", processes=18)
 
     # Discrete AL
     # for m in [100, 200, 300, 400, 500]:

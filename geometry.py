@@ -8,18 +8,27 @@ from typing import Dict, Tuple
 
 import numpy as np
 import torch as t
-from diffusions.continuous_diffusion import ContinuousDiffusion
-from diffusions.discrete_diffusion import DiscreteDiffusion
-from experiment_utils import grid_from_map, positions_from_map, get_random_pairs
+import matplotlib.pyplot as plt
+from experiment_utils import (
+    grid_from_map,
+    load_arrays_as_map,
+    load_csv_as_map,
+    positions_from_map,
+    get_random_pairs,
+)
 
 from interpolations.discrete_interpolation import DiscreteInterpolation
 from interpolations.geodesic_interpolation import GeodesicInterpolation
 from interpolations.linear_interpolation import LinearInterpolation
+from diffusions.continuous_diffusion import ContinuousDiffusion
+from diffusions.discrete_diffusion import DiscreteDiffusion
 
 from diffusions.baseline_diffusion import BaselineDiffusion
 from diffusions.normal_diffusion import NormalDiffusion
 
 from geoml.discretized_manifold import DiscretizedManifold
+
+from vae_mario_obstacles import VAEWithObstacles
 
 
 class Geometry:
@@ -150,6 +159,59 @@ class DiscreteGeometry(Geometry):
         return self.diffusion.run(z_0)
 
 
+class DiscretizedGeometry(Geometry):
+    def __init__(
+        self,
+        p_map: Dict[tuple, int],
+        exp_name: str,
+        vae_path: Path,
+        beta: float = -5.5,
+        n_grid: int = 100,
+    ) -> None:
+        # Load the VAE
+        vae = VAEWithObstacles()
+        vae.load_state_dict(t.load(vae_path, map_location=vae.device))
+
+        # Set p_map == 0.0 as obstacles (given some beta)
+        vae.update_obstacles(
+            t.Tensor([z for z, p in p_map.items() if p == 0.0]), beta=beta
+        )
+
+        # Consider a grid of arbitrary fineness (given some m)
+        x_lims = (-5, 5)
+        y_lims = (-5, 5)
+        z1 = t.linspace(*x_lims, n_grid)
+        z2 = t.linspace(*y_lims, n_grid)
+
+        zs = t.Tensor([[x, y] for x in z1 for y in z2])
+        metric_volumes = []
+        metrics = vae.metric(zs)
+        for Mz in metrics:
+            detMz = t.det(Mz).item()
+            if detMz < 0:
+                metric_volumes.append(np.inf)
+            else:
+                metric_volumes.append(np.log(detMz))
+
+        metric_volumes = np.array(metric_volumes)
+
+        # build interpolation and diffusion with that new p_map
+        zs = zs.detach().numpy()
+        p = (metric_volumes < metric_volumes.mean()).astype(int)
+
+        new_p_map = load_arrays_as_map(zs, p)
+        super().__init__(new_p_map, exp_name, vae_path)
+
+        self.interpolation = DiscreteInterpolation(self.vae_path, self.playability_map)
+        self.diffusion = DiscreteDiffusion(self.vae_path, self.playability_map)
+
+    def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
+        return self.interpolation.interpolate(z, z_prime)
+
+    def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor]:
+        return self.diffusion.run(z_0)
+
+
 class ContinuousGeometry(Geometry):
     def __init__(
         self,
@@ -170,3 +232,21 @@ class ContinuousGeometry(Geometry):
 
     def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor]:
         return self.diffusion.run(z_0)
+
+
+if __name__ == "__main__":
+    vae_path = Path("models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+    model_name = vae_path.stem
+    path_to_gt = (
+        Path("./data/array_simulation_results/ten_vaes/ground_truth")
+        / f"{model_name}.csv"
+    )
+    mean_p_map = load_csv_as_map(path_to_gt)
+    strict_p_map = {z: 1.0 if p == 1.0 else 0.0 for z, p in mean_p_map.items()}
+    dg = DiscretizedGeometry(
+        strict_p_map, "discretized_gt", vae_path, beta=-5.5, n_grid=100
+    )
+
+    _, ax = plt.subplots(1, 1)
+    ax.imshow(dg.grid, cmap="Blues", extent=[-5, 5, -5, 5])
+    plt.show()
