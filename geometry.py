@@ -29,6 +29,10 @@ from diffusions.normal_diffusion import NormalDiffusion
 from geoml.discretized_manifold import DiscretizedManifold
 
 from vae_mario_obstacles import VAEWithObstacles
+from vae_zelda_hierachical import VAEZeldaHierarchical
+
+from grammar_zelda import grammar_check
+from vae_zelda_obstacles import VAEZeldaWithObstacles
 
 
 class Geometry:
@@ -76,6 +80,17 @@ class Geometry:
             print(f"Exception: {e}")
             raise e
 
+    def _get_arrays_for_interpolation(self) -> Dict[int, tuple]:
+        n_interpolations = 20
+        z1s, z2s = get_random_pairs(self.playable_points, n_interpolations)
+        all_interpolations = {}
+        for i, (z1, z2) in enumerate(zip(z1s, z2s)):
+            assert (z1 != z2).any()
+            zs, levels = self.interpolate(z1, z2)
+            all_interpolations[i] = (zs, levels)
+
+        return all_interpolations
+
     def _save_arrays_for_interpolation(self, force=False):
         n_interpolations = 20
         z1s, z2s = get_random_pairs(self.playable_points, n_interpolations)
@@ -89,6 +104,17 @@ class Geometry:
             print(f"Saving {path}")
             zs, levels = self.interpolate(z1, z2)
             np.savez(path, zs=zs.detach().numpy(), levels=levels.detach().numpy())
+
+    def _get_arrays_for_diffusion(self) -> Dict[int, tuple]:
+        n_diffusions = 10
+        random_idxs = np.random.permutation(len(self.playable_points))[:n_diffusions]
+        initial_points = self.playable_points[random_idxs]
+        all_diffusions = {}
+        for d, z_0 in enumerate(initial_points):
+            zs, levels = self.diffuse(z_0)
+            all_diffusions[d] = (zs, levels)
+
+        return all_diffusions
 
     def _save_arrays_for_diffusion(self, force=False):
         n_diffusions = 10
@@ -168,9 +194,16 @@ class DiscretizedGeometry(Geometry):
         beta: float = -5.5,
         n_grid: int = 100,
         inner_steps_diff: int = 25,
+        x_lims=(-5, 5),
+        y_lims=(-5, 5),
     ) -> None:
         # Load the VAE
-        vae = VAEWithObstacles()
+        if "zelda" in exp_name:
+            model = VAEZeldaWithObstacles
+        else:
+            model = VAEWithObstacles
+
+        vae = model()
         vae.load_state_dict(t.load(vae_path, map_location=vae.device))
 
         # Set p_map == 0.0 as obstacles (given some beta)
@@ -179,8 +212,6 @@ class DiscretizedGeometry(Geometry):
         )
 
         # Consider a grid of arbitrary fineness (given some m)
-        x_lims = (-5, 5)
-        y_lims = (-5, 5)
         z1 = t.linspace(*x_lims, n_grid)
         z2 = t.linspace(*y_lims, n_grid)
 
@@ -238,32 +269,86 @@ class ContinuousGeometry(Geometry):
 
 
 if __name__ == "__main__":
-    vae_path = Path("models/ten_vaes/vae_mario_hierarchical_id_0.pt")
-    model_name = vae_path.stem
-    path_to_gt = (
-        Path("./data/array_simulation_results/ten_vaes/ground_truth")
-        / f"{model_name}.csv"
-    )
-    mean_p_map = load_csv_as_map(path_to_gt)
-    strict_p_map = {z: 1.0 if p == 1.0 else 0.0 for z, p in mean_p_map.items()}
+    # vae_path = Path("models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+    # model_name = vae_path.stem
+    # path_to_gt = (
+    #     Path("./data/array_simulation_results/ten_vaes/ground_truth")
+    #     / f"{model_name}.csv"
+    # )
+    # mean_p_map = load_csv_as_map(path_to_gt)
+    # strict_p_map = {z: 1.0 if p == 1.0 else 0.0 for z, p in mean_p_map.items()}
+    # ddg = DiscretizedGeometry(
+    #     strict_p_map,
+    #     "discretized_strict_gt",
+    #     vae_path,
+    #     beta=-5.5,
+    #     n_grid=100,
+    #     inner_steps_diff=30,
+    # )
+
+    # _, ax = plt.subplots(1, 1)
+    # ax.imshow(ddg.grid, cmap="Blues", extent=[-5, 5, -5, 5])
+
+    # interp = ddg.interpolation._full_interpolation(
+    #     t.Tensor([-3.0, -4.5]), t.Tensor([3.0, 3.0])
+    # )
+    # diff, _ = ddg.diffuse(t.Tensor([-3.0, -4.5]))
+
+    # ax.plot(interp[:, 0], interp[:, 1])
+    # ax.scatter(diff[:, 0], diff[:, 1])
+
+    # plt.show()
+    vae_path = Path("./models/zelda/zelda_hierarchical_final.pt")
+    vae = VAEZeldaHierarchical()
+    vae.load_state_dict(t.load(vae_path))
+    x_lims = (-10, 10)
+    y_lims = (-10, 10)
+    n_rows = n_cols = 100
+    z1 = np.linspace(*x_lims, n_cols)
+    z2 = np.linspace(*y_lims, n_rows)
+
+    # zs = np.array([[a, b] for a, b in product(z1, z2)])
+    # images_dist = vae.decode(t.from_numpy(zs).type(t.float))
+    # images = images_dist.probs.argmax(dim=-1)
+    # for level in images:
+    #     print(grammar_check(level.detach().numpy()))
+
+    positions = {
+        (x, y): (i, j) for j, x in enumerate(z1) for i, y in enumerate(reversed(z2))
+    }
+    zs_in_positions = t.Tensor([z for z in positions.keys()]).type(t.float)
+    levels = vae.decode(zs_in_positions).probs.argmax(dim=-1)
+    p_map = {z: grammar_check(level) for z, level in zip(positions.keys(), levels)}
+
     ddg = DiscretizedGeometry(
-        strict_p_map,
-        "discretized_strict_gt",
+        p_map,
+        "zelda_discretized_grammar_gt",
         vae_path,
         beta=-5.5,
         n_grid=100,
         inner_steps_diff=30,
+        x_lims=x_lims,
+        y_lims=y_lims,
     )
 
-    _, ax = plt.subplots(1, 1)
-    ax.imshow(ddg.grid, cmap="Blues", extent=[-5, 5, -5, 5])
+    _, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(7 * 3, 7))
+    ax1.imshow(ddg.grid, cmap="Blues", extent=[*x_lims, *y_lims])
+    ax2.imshow(ddg.grid, cmap="Blues", extent=[*x_lims, *y_lims])
+    ax3.imshow(ddg.grid, cmap="Blues", extent=[*x_lims, *y_lims])
+    non_playable = np.array([z for z, p in p_map.items() if p == 0.0])
+    ax1.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
+    ax2.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
+    ax3.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
 
-    interp = ddg.interpolation._full_interpolation(
-        t.Tensor([-3.0, -4.5]), t.Tensor([3.0, 3.0])
-    )
-    diff, _ = ddg.diffuse(t.Tensor([-3.0, -4.5]))
+    encodings = vae.encode(vae.train_data).mean.detach().numpy()
+    ax3.scatter(encodings[:, 0], encodings[:, 1], marker="x", c="k")
 
-    ax.plot(interp[:, 0], interp[:, 1])
-    ax.scatter(diff[:, 0], diff[:, 1])
+    all_interps = ddg._get_arrays_for_interpolation()
+    all_diffs = ddg._get_arrays_for_diffusion()
+    for _, (interp, _) in all_interps.items():
+        ax1.plot(interp[:, 0], interp[:, 1])
+
+    for _, (diff, _) in all_diffs.items():
+        ax2.scatter(diff[:, 0], diff[:, 1])
 
     plt.show()
