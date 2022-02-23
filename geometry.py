@@ -301,8 +301,8 @@ if __name__ == "__main__":
     vae_path = Path("./models/zelda/zelda_hierarchical_final.pt")
     vae = VAEZeldaHierarchical()
     vae.load_state_dict(t.load(vae_path))
-    x_lims = (-10, 10)
-    y_lims = (-10, 10)
+    x_lims = (-4, 4)
+    y_lims = (-1, 1)
     n_rows = n_cols = 100
     z1 = np.linspace(*x_lims, n_cols)
     z2 = np.linspace(*y_lims, n_rows)
@@ -325,7 +325,7 @@ if __name__ == "__main__":
         "zelda_discretized_grammar_gt",
         vae_path,
         beta=-5.5,
-        n_grid=100,
+        n_grid=10,
         inner_steps_diff=30,
         x_lims=x_lims,
         y_lims=y_lims,
@@ -336,9 +336,10 @@ if __name__ == "__main__":
     ax2.imshow(ddg.grid, cmap="Blues", extent=[*x_lims, *y_lims])
     ax3.imshow(ddg.grid, cmap="Blues", extent=[*x_lims, *y_lims])
     non_playable = np.array([z for z, p in p_map.items() if p == 0.0])
-    ax1.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
-    ax2.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
-    ax3.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
+    if len(non_playable) > 0:
+        ax1.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
+        ax2.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
+        ax3.scatter(non_playable[:, 0], non_playable[:, 1], marker="x", c="#8F2D56")
 
     encodings = vae.encode(vae.train_data).mean.detach().numpy()
     ax3.scatter(encodings[:, 0], encodings[:, 1], marker="x", c="k")

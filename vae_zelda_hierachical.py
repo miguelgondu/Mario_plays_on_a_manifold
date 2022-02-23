@@ -162,11 +162,11 @@ class VAEZeldaHierarchical(nn.Module):
         lvl_height = images[0].shape[0]
         lvl_width = images[0].shape[1]
 
-        final_img = np.zeros((n_cols * lvl_height * 25, n_rows * lvl_width * 25, 3))
+        final_img = 255 * np.ones((n_cols * lvl_height, n_rows * lvl_width, 3))
         for z, (i, j) in positions.items():
             final_img[
-                i * lvl_height : (i + 1) * lvl_height,
-                j * lvl_width : (j + 1) * lvl_width,
+                i * (lvl_height) : (i + 1) * (lvl_height),
+                j * (lvl_width) : (j + 1) * (lvl_width),
                 :,
             ] = img_dict[z]
 
@@ -278,10 +278,10 @@ if __name__ == "__main__":
     vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final.pt"))
     vae.random_sample()
 
-    x_lims = (-10, 10)
-    y_lims = (-10, 10)
-    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=5, n_cols=5)
-    _, ax = plt.subplots(1, 1)
+    x_lims = (-3, 3)
+    y_lims = (-3, 3)
+    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=15, n_cols=15)
+    _, ax = plt.subplots(1, 1, figsize=(15 * 7, 15 * 7))
     ax.imshow(grid, extent=[*x_lims, *y_lims])
     ax.axis("off")
 
