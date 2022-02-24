@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     # # Discretized
     save_all_arrays(
-        "discretized_strict", DiscretizedGeometry, with_AL=False, force=True
+        "discretized_strict", DiscretizedGeometry, with_AL=True
     )
 
     # Continuous

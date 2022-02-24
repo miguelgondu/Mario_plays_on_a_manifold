@@ -301,8 +301,8 @@ if __name__ == "__main__":
     vae_path = Path("./models/zelda/zelda_hierarchical_final.pt")
     vae = VAEZeldaHierarchical()
     vae.load_state_dict(t.load(vae_path))
-    x_lims = (-4, 4)
-    y_lims = (-1, 1)
+    x_lims = (-10, 10)
+    y_lims = (-10, 10)
     n_rows = n_cols = 100
     z1 = np.linspace(*x_lims, n_cols)
     z2 = np.linspace(*y_lims, n_rows)
@@ -325,7 +325,7 @@ if __name__ == "__main__":
         "zelda_discretized_grammar_gt",
         vae_path,
         beta=-5.5,
-        n_grid=10,
+        n_grid=100,
         inner_steps_diff=30,
         x_lims=x_lims,
         y_lims=y_lims,
@@ -352,4 +352,6 @@ if __name__ == "__main__":
     for _, (diff, _) in all_diffs.items():
         ax2.scatter(diff[:, 0], diff[:, 1])
 
+    plt.tight_layout()
+    plt.savefig("./data/plots/zelda/geometry.png")
     plt.show()

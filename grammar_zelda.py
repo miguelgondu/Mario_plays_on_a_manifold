@@ -46,6 +46,16 @@ def has_doors_or_stairs(level: np.ndarray, possible_door_positions) -> bool:
     for xi, yi in zip(x, y):
         flag_ = flag_ and ((xi, yi) in possible_door_positions)
 
+    # Making sure doors are complete
+    left_doors = [(4, 1), (5, 1), (6, 1)]
+    right_doors = [(4, 14), (5, 14), (6, 14)]
+    upper_doors = [(1, 7), (1, 8)]
+    lower_doors = [(9, 7), (9, 8)]
+    for doors in [left_doors, right_doors, upper_doors, lower_doors]
+        if (xi, yi) in doors:
+            for xj, yj in doors:
+                flag_ = flag_ and (xj in x) and (yj in y)
+
     return flag_
 
 

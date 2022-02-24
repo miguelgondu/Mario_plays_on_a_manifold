@@ -12,6 +12,7 @@ from experiment_utils import (
     intersection,
 )
 from geometry import (
+    DiscretizedGeometry,
     Geometry,
     BaselineGeometry,
     NormalGeometry,
@@ -85,11 +86,13 @@ def save_all_arrays(
 
 if __name__ == "__main__":
     # # For the baseline
-    save_all_arrays("baseline_force_jump", BaselineGeometry, with_AL=False, force=True)
-    # save_all_arrays("normal", NormalGeometry, with_AL=False)
+    save_all_arrays("baseline_force_jump", BaselineGeometry, with_AL=True, force=True)
+    save_all_arrays("normal_force_jump", NormalGeometry, with_AL=False, force=True)
 
     # # Discrete
-    save_all_arrays("discrete_force_jump", DiscreteGeometry, with_AL=False, force=True)
+    save_all_arrays(
+        "discretized_force_jump", DiscretizedGeometry, with_AL=False, force=True
+    )
 
     # Continuous
     # save_all_arrays("continuous_jump", ContinuousGeometry, with_AL=False)
