@@ -47,11 +47,11 @@ def run():
     # run_exp("normal_strict_gt", processes=90)
     # run_exp("discrete_strict_gt", processes=90)
     # run_exp("continuous_strict_gt", processes=90)
-    run_exp("discretized_strict_gt", processes=18)
+    run_exp("discretized_strict_gt", processes=60)
 
     # Discrete AL
-    # for m in [100, 200, 300, 400, 500]:
-    #     run_exp(f"discrete_AL_{m}", processes=90)
+    for m in [100, 200, 300, 400, 500]:
+        run_exp(f"discretized_strict_AL_{m}", processes=60)
 
     # Cont AL
     # for m in [100, 200, 300, 400, 500]:
@@ -59,6 +59,9 @@ def run():
 
     # Discrete jump
     # run_exp("discrete_force_jump_gt", processes=90)
+    run_exp("discretized_force_jump_gt", processes=60)
+    run_exp("baseline_force_jump_gt", processes=60)
+    run_exp("normal_force_jump_gt", processes=60)
 
     # baseline jump
     # run_exp("baseline_force_jump_gt", processes=90)

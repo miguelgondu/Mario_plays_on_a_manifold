@@ -27,7 +27,9 @@ def has_outer_walls(level: np.ndarray) -> bool:
     return flag_
 
 
-def has_doors_or_stairs(level: np.ndarray, possible_door_positions) -> bool:
+def has_doors_or_stairs(
+    level: np.ndarray, possible_door_positions, num_doors: int = 1
+) -> bool:
     """
     Checks if it has doors in the right places
     """
@@ -51,12 +53,15 @@ def has_doors_or_stairs(level: np.ndarray, possible_door_positions) -> bool:
     right_doors = [(4, 14), (5, 14), (6, 14)]
     upper_doors = [(1, 7), (1, 8)]
     lower_doors = [(9, 7), (9, 8)]
-    for doors in [left_doors, right_doors, upper_doors, lower_doors]
-        if (xi, yi) in doors:
-            for xj, yj in doors:
-                flag_ = flag_ and (xj in x) and (yj in y)
+    doors_present_in_level = set([])
+    for doors in [left_doors, right_doors, upper_doors, lower_doors]:
+        for (xi, yi) in zip(x, y):
+            if (xi, yi) in doors:
+                doors_present_in_level.add(tuple(doors))
+                for xj, yj in doors:
+                    flag_ = flag_ and (xj in x) and (yj in y)
 
-    return flag_
+    return flag_ and (len(doors_present_in_level) >= num_doors)
 
 
 if __name__ == "__main__":

@@ -14,9 +14,9 @@ from vae_zelda_hierachical import VAEZeldaHierarchical
 vae = VAEZeldaHierarchical()
 vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final.pt"))
 
-x_lims = (-10, 10)
-y_lims = (-10, 10)
-n_rows = n_cols = 100
+x_lims = (-3, 3)
+y_lims = (-3, 3)
+n_rows = n_cols = 10
 z1 = np.linspace(*x_lims, n_cols)
 z2 = np.linspace(*y_lims, n_rows)
 
@@ -37,6 +37,9 @@ for (_, pos), level in zip(positions.items(), levels):
     # z_ = t.Tensor(z)
     # level = vae.decode(z_).probs.argmax(dim=-1)
     p = grammar_check(level)
+    print(p)
+    print(level)
+    print()
     grammar_img[pos] = int(p)
 
 _, ax = plt.subplots()

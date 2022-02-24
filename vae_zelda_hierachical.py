@@ -280,8 +280,8 @@ if __name__ == "__main__":
 
     x_lims = (-3, 3)
     y_lims = (-3, 3)
-    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=15, n_cols=15)
-    _, ax = plt.subplots(1, 1, figsize=(15 * 7, 15 * 7))
+    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=10, n_cols=10)
+    _, ax = plt.subplots(1, 1, figsize=(15 * 7, 11 * 7))
     ax.imshow(grid, extent=[*x_lims, *y_lims])
     ax.axis("off")
 
