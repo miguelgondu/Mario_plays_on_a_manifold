@@ -81,10 +81,10 @@ def process_experiment(exp_name: str, processes: int = None):
     # md_diffs = get_mean_diversities(diffs, processes=processes)
 
     return {
-        "i-playability": f"{mp_interps:.2f}" + r"$\pm$" + f"{sp_interps:.2f}",
-        "d-playability": f"{mp_diffs:.2f}" + r"$\pm$" + f"{sp_diffs:.2f}",
-        "i-diversity": f"{md_interps:.2f}" + r"$\pm$" + f"{sd_interps:.2f}",
-        "d-diversity": f"{md_diffs:.2f}" + r"$\pm$" + f"{sd_diffs:.2f}",
+        "i-playability": f"{mp_interps:.3f}" + r"$\pm$" + f"{sp_interps:.3f}",
+        "d-playability": f"{mp_diffs:.3f}" + r"$\pm$" + f"{sp_diffs:.3f}",
+        "i-diversity": f"{md_interps:.3f}" + r"$\pm$" + f"{sd_interps:.3f}",
+        "d-diversity": f"{md_diffs:.3f}" + r"$\pm$" + f"{sd_diffs:.3f}",
     }
 
 
@@ -136,7 +136,7 @@ def process():
     # print(table)
     # print("continuous_strict_gt")
     # fill_out_experiment(table, "continuous_strict_gt", processes=None)
-    
+
     print("normal_strict_gt")
     fill_out_experiment(table, "normal_strict_gt", processes=None)
     # print(table)
