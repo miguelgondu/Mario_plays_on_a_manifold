@@ -14,9 +14,9 @@ from vae_zelda_hierachical import VAEZeldaHierarchical
 vae = VAEZeldaHierarchical()
 vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final.pt"))
 
-x_lims = (-3, 3)
-y_lims = (-3, 3)
-n_rows = n_cols = 10
+x_lims = (-4, 4)
+y_lims = (-4, 4)
+n_rows = n_cols = 50
 z1 = np.linspace(*x_lims, n_cols)
 z2 = np.linspace(*y_lims, n_rows)
 
