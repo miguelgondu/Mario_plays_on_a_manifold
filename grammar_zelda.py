@@ -1,8 +1,12 @@
 """
 This script implements some grammar checks for Zelda.
 """
+from typing import Tuple
+import random
 
 import numpy as np
+
+from queue import Queue
 
 
 def grammar_check(level: np.ndarray) -> bool:
@@ -13,6 +17,12 @@ def grammar_check(level: np.ndarray) -> bool:
 
     flag_ = has_outer_walls(level)
     flag_ = flag_ and has_doors_or_stairs(level, possible_door_positions)
+
+    doors_in_level = list(get_doors_in_level(level))
+    if len(doors_in_level) >= 2:
+        for i, door_1 in enumerate(doors_in_level):
+            for door_2 in doors_in_level[(i + 1) :]:
+                flag_ = flag_ and are_doors_connected(level, door_1, door_2)
 
     return flag_
 
@@ -45,7 +55,7 @@ def get_doors_in_level(level) -> set:
                     is_door_complete = is_door_complete and (xj in x) and (yj in y)
 
                 if is_door_complete:
-                    doors_present_in_level.add(set(doors))
+                    doors_present_in_level.add(tuple(doors))
 
     return doors_present_in_level
 
@@ -87,11 +97,81 @@ def has_doors_or_stairs(
     return flag_ and (len(doors_present_in_level) >= num_doors)
 
 
-def are_doors_connected(level):
+def get_neighbors(position: Tuple[int, int]):
+    """
+    Given (i, j) in {position}, returns
+    all 8 neighbors (i-1, j-1), ..., (i+1, j+1).
+    """
+    i, j = position
+    width, height = 16, 11
+
+    if i < 0 or i >= width:
+        raise ValueError(f"Position is out of bounds in x: {position}")
+
+    if j < 0 or j >= height:
+        raise ValueError(f"Position is out of bounds in x: {position}")
+
+    neighbors = []
+
+    if i - 1 >= 0:
+        if j - 1 >= 0:
+            neighbors.append((i - 1, j - 1))
+
+        if j + 1 < height:
+            neighbors.append((i - 1, j + 1))
+
+        neighbors.append((i - 1, j))
+
+    if i + 1 < width:
+        if j - 1 >= 0:
+            neighbors.append((i + 1, j - 1))
+
+        if j + 1 < height:
+            neighbors.append((i + 1, j + 1))
+
+        neighbors.append((i + 1, j))
+
+    if j - 1 >= 0:
+        neighbors.append((i, j - 1))
+
+    if j + 1 < height:
+        neighbors.append((i, j + 1))
+
+    random.shuffle(neighbors)
+
+    return neighbors
+
+
+def are_doors_connected(level, door_1, door_2):
     doors_in_level = get_doors_in_level(level)
+    assert door_1 in doors_in_level
+    assert door_2 in doors_in_level
 
     if len(doors_in_level) <= 1:
         return True
+
+    passable_blocks = ["f", "3"]
+    first_position = list(door_1)[0]
+
+    neighbors = get_neighbors(first_position)
+    q = Queue()
+    for n in neighbors:
+        q.put(n)
+
+    visited_position = set([first_position])
+    while q.not_empty:
+        v = q.get()
+        visited_position.add(v)
+
+        if v in door_2:
+            return True
+
+        for n in get_neighbors(v):
+            if n in passable_blocks:
+                if n not in visited_position:
+                    q.put(n)
+
+    return False
 
 
 if __name__ == "__main__":
@@ -101,7 +181,8 @@ if __name__ == "__main__":
     print(levels)
     b, x, y = np.where(levels == 3)
     print(np.where(levels == 3))
-    for level in levels:
+    for i, level in enumerate(levels):
+        print(level)
         if not grammar_check(level):
             print(level)
 
