@@ -8,14 +8,16 @@ import torch.nn as nn
 from torch.distributions import Distribution, Normal, Categorical, kl_divergence
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
+from grammar_zelda import grammar_check
 
 from zelda_utils.plotting import encoding, get_img_from_level
 
 
 def load_data() -> t.Tensor:
-    training_percentage = 0.8
+    training_percentage = 0.9
 
     levels = np.load("./data/processed/zelda/onehot.npz")["levels"]
+    levels = np.array([l for l in levels if grammar_check(l.argmax(axis=-1))])
     np.random.shuffle(levels)
 
     n_data, _, _, _ = levels.shape
@@ -215,14 +217,14 @@ def test(
     return running_loss / len(test_loader)
 
 
-def run():
+def run(id_: int = 0):
     # Setting up the seeds
     # torch.manual_seed(seed)
     batch_size = 64
     lr = 1e-3
     comment = "zelda_hierarchical"
-    max_epochs = 500
-    overfit = True
+    max_epochs = 250
+    overfit = False
     save_every = 20
 
     # Loading the data.
@@ -254,7 +256,7 @@ def run():
             n_without_improvement = 0
 
             # Saving the best model so far.
-            t.save(vae.state_dict(), f"./models/zelda/{comment}_final.pt")
+            t.save(vae.state_dict(), f"./models/zelda/{comment}_final_{id_}.pt")
         else:
             n_without_improvement += 1
 
@@ -271,20 +273,21 @@ def run():
 
 if __name__ == "__main__":
     # train
-    # run()
+    for id_ in range(5):
+        run(id_)
 
     # inspect
-    vae = VAEZeldaHierarchical()
-    vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final.pt"))
-    vae.random_sample()
+    # vae = VAEZeldaHierarchical()
+    # vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final.pt"))
+    # vae.random_sample()
 
-    x_lims = (-3, 3)
-    y_lims = (-3, 3)
-    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=10, n_cols=10)
-    _, ax = plt.subplots(1, 1, figsize=(15 * 7, 11 * 7))
-    ax.imshow(grid, extent=[*x_lims, *y_lims])
-    ax.axis("off")
+    # x_lims = (-3, 3)
+    # y_lims = (-3, 3)
+    # grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=10, n_cols=10)
+    # _, ax = plt.subplots(1, 1, figsize=(15 * 7, 11 * 7))
+    # ax.imshow(grid, extent=[*x_lims, *y_lims])
+    # ax.axis("off")
 
-    plt.tight_layout()
-    plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
-    plt.close()
+    # plt.tight_layout()
+    # plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
+    # plt.close()

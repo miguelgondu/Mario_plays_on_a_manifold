@@ -8,6 +8,8 @@ import numpy as np
 
 from queue import Queue
 
+from zelda_utils.plotting import encoding
+
 
 def grammar_check(level: np.ndarray) -> bool:
     onehot = np.load("./data/processed/zelda/onehot.npz")["levels"]
@@ -105,10 +107,10 @@ def get_neighbors(position: Tuple[int, int]):
     i, j = position
     width, height = 16, 11
 
-    if i < 0 or i >= width:
+    if i < 0 or i >= height:
         raise ValueError(f"Position is out of bounds in x: {position}")
 
-    if j < 0 or j >= height:
+    if j < 0 or j >= width:
         raise ValueError(f"Position is out of bounds in x: {position}")
 
     neighbors = []
@@ -117,16 +119,16 @@ def get_neighbors(position: Tuple[int, int]):
         if j - 1 >= 0:
             neighbors.append((i - 1, j - 1))
 
-        if j + 1 < height:
+        if j + 1 < width:
             neighbors.append((i - 1, j + 1))
 
         neighbors.append((i - 1, j))
 
-    if i + 1 < width:
+    if i + 1 < height:
         if j - 1 >= 0:
             neighbors.append((i + 1, j - 1))
 
-        if j + 1 < height:
+        if j + 1 < width:
             neighbors.append((i + 1, j + 1))
 
         neighbors.append((i + 1, j))
@@ -134,7 +136,7 @@ def get_neighbors(position: Tuple[int, int]):
     if j - 1 >= 0:
         neighbors.append((i, j - 1))
 
-    if j + 1 < height:
+    if j + 1 < width:
         neighbors.append((i, j + 1))
 
     random.shuffle(neighbors)
@@ -150,7 +152,7 @@ def are_doors_connected(level, door_1, door_2):
     if len(doors_in_level) <= 1:
         return True
 
-    passable_blocks = ["f", "3"]
+    passable_blocks = [encoding[s] for s in ["F", "D", "O", "-"]]
     first_position = list(door_1)[0]
 
     neighbors = get_neighbors(first_position)
@@ -158,17 +160,20 @@ def are_doors_connected(level, door_1, door_2):
     for n in neighbors:
         q.put(n)
 
-    visited_position = set([first_position])
-    while q.not_empty:
+    visited_positions = set([first_position])
+    while not q.empty():
         v = q.get()
-        visited_position.add(v)
+
+        if v in visited_positions:
+            continue
+        visited_positions.add(v)
 
         if v in door_2:
             return True
 
         for n in get_neighbors(v):
-            if n in passable_blocks:
-                if n not in visited_position:
+            if level[n] in passable_blocks:
+                if n not in visited_positions:
                     q.put(n)
 
     return False
@@ -182,7 +187,7 @@ if __name__ == "__main__":
     b, x, y = np.where(levels == 3)
     print(np.where(levels == 3))
     for i, level in enumerate(levels):
-        print(level)
+        # print(level)
         if not grammar_check(level):
             print(level)
 
