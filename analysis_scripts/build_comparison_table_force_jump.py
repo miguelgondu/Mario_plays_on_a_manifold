@@ -15,11 +15,11 @@ from analysis_scripts.utils import (
 
 
 def build_table_layout() -> pd.DataFrame:
-    geometries = ["discrete geometry", "continuous geometry", "baselines"]
+    geometries = ["discretized geometry", "baselines", "normal"]
 
     index = []
     for geometry in geometries:
-        if geometry != "baselines":
+        if geometry not in ["baselines", "normal"]:
             for m in [100, 200, 300, 400, 500]:
                 index.append((geometry, m))
 
@@ -71,10 +71,10 @@ def process_experiment(exp_name: str, processes: int = None):
 def parse_exp_name(exp_name: str) -> Tuple[str, str]:
     if "baseline" in exp_name:
         first = "baselines"
-    elif "discrete" in exp_name:
-        first = "discrete geometry"
-    elif "continuous" in exp_name:
-        first = "continuous geometry"
+    elif "discretized" in exp_name:
+        first = "discretized geometry"
+    elif "normal" in exp_name:
+        first = "normal"
     else:
         raise ValueError(f"Unkown experiment {exp_name}")
 
@@ -108,18 +108,21 @@ def process():
     table = build_table_layout()
 
     print(table)
-    print("baseline_jump_gt")
+    print("baseline_force_jump_gt")
     fill_out_experiment(table, "baseline_force_jump_gt", processes=None)
-    # print(table)
-    print("discrete_jump_gt")
-    fill_out_experiment(table, "discrete_force_jump_gt", processes=None)
+
+    print("discrized_force_jump_gt")
+    fill_out_experiment(table, "discretized_force_jump_gt", processes=None)
+
+    print("normal_force_jump_gt")
+    fill_out_experiment(table, "normal_force_jump_gt", processes=None)
     # print(table)
     # print("continuous_jump_gt")
     # fill_out_experiment(table, "continuous_jump_gt", processes=None)
     # print(table)
     # for m in [100, 200, 300, 400, 500]:
     #     print(f"discrete_AL_{m}")
-    #     fill_out_experiment(table, f"discrete_AL_{m}", processes=None)
+    #     fill_out_experiment(table, f"discretized_force_jump_AL_{m}", processes=None)
 
     # for m in [100, 200, 300, 400, 500]:
     #     print(f"continuous_AL_{m}")
