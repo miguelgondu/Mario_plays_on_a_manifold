@@ -164,7 +164,7 @@ class VAEZeldaHierarchical(nn.Module):
         lvl_height = images[0].shape[0]
         lvl_width = images[0].shape[1]
 
-        final_img = 255 * np.ones((n_cols * lvl_height, n_rows * lvl_width, 3))
+        final_img = 255 * np.ones((n_cols * lvl_height, n_rows * lvl_width, 4))
         for z, (i, j) in positions.items():
             final_img[
                 i * (lvl_height) : (i + 1) * (lvl_height),
@@ -273,21 +273,21 @@ def run(id_: int = 0):
 
 if __name__ == "__main__":
     # train
-    for id_ in range(5):
-        run(id_)
+    # for id_ in range(5):
+    #     run(id_)
 
     # inspect
-    # vae = VAEZeldaHierarchical()
-    # vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final.pt"))
-    # vae.random_sample()
+    vae = VAEZeldaHierarchical()
+    vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final_0.pt"))
+    vae.random_sample()
 
-    # x_lims = (-3, 3)
-    # y_lims = (-3, 3)
-    # grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=10, n_cols=10)
-    # _, ax = plt.subplots(1, 1, figsize=(15 * 7, 11 * 7))
-    # ax.imshow(grid, extent=[*x_lims, *y_lims])
-    # ax.axis("off")
+    x_lims = (-3, 3)
+    y_lims = (-3, 3)
+    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=10, n_cols=10)
+    _, ax = plt.subplots(1, 1, figsize=(15 * 7, 11 * 7))
+    ax.imshow(grid, extent=[*x_lims, *y_lims])
+    ax.axis("off")
 
-    # plt.tight_layout()
-    # plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
-    # plt.close()
+    plt.tight_layout()
+    plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
+    plt.close()

@@ -35,8 +35,6 @@ for id_ in range(5):
 
     grammar_img = np.zeros((n_cols, n_rows))
     for (_, pos), p in zip(positions.items(), ps):
-        # z_ = t.Tensor(z)
-        # level = vae.decode(z_).probs.argmax(dim=-1)
         grammar_img[pos] = int(p)
 
     encodings = vae.encode(vae.train_data).mean.detach().numpy()

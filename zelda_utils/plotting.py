@@ -70,7 +70,8 @@ def get_img_from_level(level: np.ndarray):
     for row in level:
         image_row = []
         for c in row:
-            tile = np.asarray(PIL.Image.open(sprites[c]).convert("RGB")).astype(int)
+            tile = np.asarray(PIL.Image.open(sprites[c]).convert("RGBA")).astype(int)
+            tile[tile[:, :, 3] == 0] = [255, 255, 255, 255]
             image_row.append(tile)
         image.append(image_row)
 
