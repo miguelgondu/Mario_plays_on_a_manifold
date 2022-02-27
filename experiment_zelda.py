@@ -42,20 +42,27 @@ def load_discretized_geometry(vae_path) -> DiscretizedGeometry:
     return ddg
 
 
-def save_all_arrays(ddg: DiscretizedGeometry):
-    ddg.save_arrays()
-
-
 if __name__ == "__main__":
-    for path_ in Path("./models/zelda").glob("zelda_hierarchical_final_*.pt"):
+    # for path_ in Path("./models/zelda").glob("zelda_hierarchical_final_*.pt"):
+    for _id in [0, 3, 5, 6]:
+        path_ = Path(f"./models/zelda/zelda_hierarchical_final_{_id}.pt")
         ddg = load_discretized_geometry(path_)
         interps = ddg._get_arrays_for_interpolation()
         # Plot grid and interps.
         fig, ax = plt.subplots(1, 1, figsize=(7, 7))
         grid = ddg.grid
-        ax.imshow(grid, extent=[-4, 4, -4, 4])
-        for interp in interps.values():
-            ax.plot(interp[0][:, 0], interp[0][:, 1])
+        ax.imshow(grid, extent=[-4, 4, -4, 4], cmap="Blues")
+
+        means_interps = []
+        for (interp, levels) in interps.values():
+            ps = [grammar_check(level) for level in levels]
+            means_interps.append(np.mean(ps))
+            ax.plot(interp[:, 0], interp[:, 1])
+
+        ax.axis("off")
+        print(
+            f"means for interpolations: {np.mean(means_interps)}, {np.std(means_interps)}"
+        )
 
         plt.show()
         plt.close(fig)

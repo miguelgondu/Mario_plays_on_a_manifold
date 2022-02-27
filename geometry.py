@@ -232,11 +232,10 @@ class DiscretizedGeometry(Geometry):
                 else:
                     metric_volumes.append(np.log(detMz))
 
+            zs = zs.detach().numpy()
             metric_volumes = np.array(metric_volumes)
 
-            np.savez(
-                metric_vol_path, zs=zs.detach().numpy(), metric_volumes=metric_volumes
-            )
+            np.savez(metric_vol_path, zs=zs, metric_volumes=metric_volumes)
 
         # build interpolation and diffusion with that new p_map
         p = (metric_volumes < metric_volumes.mean()).astype(int)
@@ -308,20 +307,14 @@ if __name__ == "__main__":
     # ax.scatter(diff[:, 0], diff[:, 1])
 
     # plt.show()
-    vae_path = Path("./models/zelda/zelda_hierarchical_final.pt")
+    vae_path = Path("./models/zelda/zelda_hierarchical_final_0.pt")
     vae = VAEZeldaHierarchical()
     vae.load_state_dict(t.load(vae_path))
-    x_lims = (-10, 10)
-    y_lims = (-10, 10)
+    x_lims = (-4, 4)
+    y_lims = (-4, 4)
     n_rows = n_cols = 100
     z1 = np.linspace(*x_lims, n_cols)
     z2 = np.linspace(*y_lims, n_rows)
-
-    # zs = np.array([[a, b] for a, b in product(z1, z2)])
-    # images_dist = vae.decode(t.from_numpy(zs).type(t.float))
-    # images = images_dist.probs.argmax(dim=-1)
-    # for level in images:
-    #     print(grammar_check(level.detach().numpy()))
 
     positions = {
         (x, y): (i, j) for j, x in enumerate(z1) for i, y in enumerate(reversed(z2))
