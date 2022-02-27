@@ -6,6 +6,8 @@ from pathlib import Path
 
 import torch as t
 import numpy as np
+import matplotlib.pyplot as plt
+from experiment_utils import load_arrays_as_map
 
 from vae_zelda_hierachical import VAEZeldaHierarchical
 
@@ -14,27 +16,17 @@ from grammar_zelda import grammar_check
 
 
 def load_discretized_geometry(vae_path) -> DiscretizedGeometry:
-    # vae_path = Path("./models/zelda/zelda_hierarchical_final.pt")
-    vae = VAEZeldaHierarchical()
-    vae.load_state_dict(t.load(vae_path))
-    x_lims = (-10, 10)
-    y_lims = (-10, 10)
-    n_rows = n_cols = 100
-    z1 = np.linspace(*x_lims, n_cols)
-    z2 = np.linspace(*y_lims, n_rows)
+    # This should be with Zelda obstacles? No, that's
+    # being taken care of by the ddg itself.
+    x_lims = (-4, 4)
+    y_lims = (-4, 4)
 
-    # zs = np.array([[a, b] for a, b in product(z1, z2)])
-    # images_dist = vae.decode(t.from_numpy(zs).type(t.float))
-    # images = images_dist.probs.argmax(dim=-1)
-    # for level in images:
-    #     print(grammar_check(level.detach().numpy()))
-
-    positions = {
-        (x, y): (i, j) for j, x in enumerate(z1) for i, y in enumerate(reversed(z2))
-    }
-    zs_in_positions = t.Tensor([z for z in positions.keys()]).type(t.float)
-    levels = vae.decode(zs_in_positions).probs.argmax(dim=-1)
-    p_map = {z: grammar_check(level) for z, level in zip(positions.keys(), levels)}
+    # TODO: replace this one for the grammar array
+    array = np.load(f"./data/processed/zelda/grammar_checks/{vae_path.stem}.npz")
+    zs = array["zs"]
+    ps = array["playabilities"]
+    p_map = load_arrays_as_map(zs, ps)
+    # p_map = {tuple(z.tolist()): p for z, p in zip(zs, ps)}
 
     ddg = DiscretizedGeometry(
         p_map,
@@ -50,8 +42,20 @@ def load_discretized_geometry(vae_path) -> DiscretizedGeometry:
     return ddg
 
 
-if __name__ == "__main__":
-    vae_path = Path("./models/zelda/zelda_hierarchical_final.pt")
-    ddg = load_discretized_geometry(vae_path)
+def save_all_arrays(ddg: DiscretizedGeometry):
+    ddg.save_arrays()
 
-    ddg._get_arrays_for_interpolation()
+
+if __name__ == "__main__":
+    for path_ in Path("./models/zelda").glob("zelda_hierarchical_final_*.pt"):
+        ddg = load_discretized_geometry(path_)
+        interps = ddg._get_arrays_for_interpolation()
+        # Plot grid and interps.
+        fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+        grid = ddg.grid
+        ax.imshow(grid, extent=[-4, 4, -4, 4])
+        for interp in interps.values():
+            ax.plot(interp[0][:, 0], interp[0][:, 1])
+
+        plt.show()
+        plt.close(fig)

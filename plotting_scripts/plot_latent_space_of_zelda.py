@@ -12,11 +12,13 @@ import matplotlib.pyplot as plt
 from grammar_zelda import grammar_check
 from vae_zelda_hierachical import VAEZeldaHierarchical
 
-for id_ in range(5):
+
+force = True
+for id_ in range(10):
     model_name = f"zelda_hierarchical_final_{id_}"
     g_path = Path(f"./data/processed/zelda/grammar_checks/{model_name}.npz")
     vae = VAEZeldaHierarchical()
-    vae.load_state_dict(t.load(f"./models/zelda/zelda_hierarchical_final_{id_}.pt"))
+    vae.load_state_dict(t.load(f"./models/zelda/{model_name}.pt"))
     x_lims = (-4, 4)
     y_lims = (-4, 4)
     n_rows = n_cols = 50
@@ -27,7 +29,7 @@ for id_ in range(5):
     }
     zs_in_positions = t.Tensor([z for z in positions.keys()]).type(t.float)
 
-    if g_path.exists():
+    if g_path.exists() and not force:
         ps = np.load(g_path)["playabilities"]
     else:
         levels = vae.decode(zs_in_positions).probs.argmax(dim=-1)
@@ -39,7 +41,7 @@ for id_ in range(5):
 
     encodings = vae.encode(vae.train_data).mean.detach().numpy()
     np.savez(
-        f"./data/processed/zelda/grammar_checks/zelda_hierarchical_final_{id_}.npz",
+        f"./data/processed/zelda/grammar_checks/{model_name}.npz",
         zs=zs_in_positions.detach().numpy(),
         playabilities=np.array(ps).astype(float),
     )

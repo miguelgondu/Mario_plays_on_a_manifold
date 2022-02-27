@@ -196,39 +196,49 @@ class DiscretizedGeometry(Geometry):
         inner_steps_diff: int = 25,
         x_lims=(-5, 5),
         y_lims=(-5, 5),
+        force: bool = False,
     ) -> None:
-        # Load the VAE
-        if "zelda" in exp_name:
-            model = VAEZeldaWithObstacles
+        metric_vol_path = Path(f"./data/processed/metric_volumes/{vae_path.stem}.npz")
+
+        if metric_vol_path.exists() and not force:
+            array = np.load(metric_vol_path)
+            zs = array["zs"]
+            metric_volumes = array["metric_volumes"]
         else:
-            model = VAEWithObstacles
-
-        vae = model()
-        vae.load_state_dict(t.load(vae_path, map_location=vae.device))
-
-        # Set p_map == 0.0 as obstacles (given some beta)
-        vae.update_obstacles(
-            t.Tensor([z for z, p in p_map.items() if p == 0.0]), beta=beta
-        )
-
-        # Consider a grid of arbitrary fineness (given some m)
-        z1 = t.linspace(*x_lims, n_grid)
-        z2 = t.linspace(*y_lims, n_grid)
-
-        zs = t.Tensor([[x, y] for x in z1 for y in z2])
-        metric_volumes = []
-        metrics = vae.metric(zs)
-        for Mz in metrics:
-            detMz = t.det(Mz).item()
-            if detMz < 0:
-                metric_volumes.append(np.inf)
+            # Load the VAE
+            if "zelda" in exp_name:
+                model = VAEZeldaWithObstacles
             else:
-                metric_volumes.append(np.log(detMz))
+                model = VAEWithObstacles
 
-        metric_volumes = np.array(metric_volumes)
+            # Set p_map == 0.0 as obstacles (given some beta)
+            vae = model()
+            vae.load_state_dict(t.load(vae_path, map_location=vae.device))
+            vae.update_obstacles(
+                t.Tensor([z for z, p in p_map.items() if p == 0.0]), beta=beta
+            )
+
+            # Consider a grid of arbitrary fineness (given some m)
+            z1 = t.linspace(*x_lims, n_grid)
+            z2 = t.linspace(*y_lims, n_grid)
+
+            zs = t.Tensor([[x, y] for x in z1 for y in z2])
+            metric_volumes = []
+            metrics = vae.metric(zs)
+            for Mz in metrics:
+                detMz = t.det(Mz).item()
+                if detMz < 0:
+                    metric_volumes.append(np.inf)
+                else:
+                    metric_volumes.append(np.log(detMz))
+
+            metric_volumes = np.array(metric_volumes)
+
+            np.savez(
+                metric_vol_path, zs=zs.detach().numpy(), metric_volumes=metric_volumes
+            )
 
         # build interpolation and diffusion with that new p_map
-        zs = zs.detach().numpy()
         p = (metric_volumes < metric_volumes.mean()).astype(int)
 
         new_p_map = load_arrays_as_map(zs, p)

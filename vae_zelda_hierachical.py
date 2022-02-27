@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from typing import List
 from itertools import product
 
@@ -115,26 +117,28 @@ class VAEZeldaHierarchical(nn.Module):
 
         return (rec_loss + kld).mean()
 
-    def random_sample(self):
+    def random_sample(self, fig_name: str = None) -> t.Tensor:
         z = t.randn((64, 2))
         levels = self.decode(z).probs.argmax(dim=-1)
-        # final_levels = np.zeros_like(levels).astype(str)
-        # for text, id_ in encoding.items():
-        #     final_levels[levels == id_] = text
 
-        fig, axes = plt.subplots(8, 8, figsize=(8 * 7, 8 * 7))
-        for level, ax in zip(levels.detach().numpy(), axes.flatten()):
-            img = get_img_from_level(level)
-            ax.imshow(255 * np.ones_like(img))
-            ax.imshow(img)
-            ax.axis("off")
-        fig.set_facecolor("white")
-        plt.tight_layout()
-        plt.savefig(
-            "./data/plots/zelda/random_samples.png", dpi=100, bbox_inches="tight"
-        )
-        plt.close()
-        # plt.show()
+        if fig_name is not None:
+            fig, axes = plt.subplots(8, 8, figsize=(8 * 7, 8 * 7))
+            for level, ax in zip(levels.detach().numpy(), axes.flatten()):
+                img = get_img_from_level(level)
+                ax.imshow(255 * np.ones_like(img))
+                ax.imshow(img)
+                ax.axis("off")
+            fig.set_facecolor("white")
+            plt.tight_layout()
+            plt.savefig(
+                f"./data/plots/zelda/random_samples/{fig_name}.png",
+                dpi=100,
+                bbox_inches="tight",
+            )
+            plt.close()
+            # plt.show()
+
+        return levels
 
     def plot_grid(
         self,
@@ -221,7 +225,7 @@ def run(id_: int = 0):
     # Setting up the seeds
     # torch.manual_seed(seed)
     batch_size = 64
-    lr = 1e-3
+    lr = 1e-4
     comment = "zelda_hierarchical"
     max_epochs = 250
     overfit = False
@@ -247,16 +251,19 @@ def run(id_: int = 0):
     print(f"Training experiment {comment}")
     best_loss = np.Inf
     n_without_improvement = 0
+    losses = {"train": [], "test": []}
     for epoch in range(max_epochs):
         print(f"Epoch {epoch + 1} of {max_epochs}.")
         train_loss = fit(vae, optimizer, data_loader)
         test_loss = test(vae, test_loader, epoch=epoch)
+        losses["train"].append(train_loss)
+        losses["test"].append(test_loss)
         if test_loss < best_loss:
             best_loss = test_loss
             n_without_improvement = 0
 
             # Saving the best model so far.
-            t.save(vae.state_dict(), f"./models/zelda/{comment}_final_{id_}.pt")
+            t.save(vae.state_dict(), f"./models/zelda/{comment}_final_{id_}_n.pt")
         else:
             n_without_improvement += 1
 
@@ -270,6 +277,80 @@ def run(id_: int = 0):
             print("Stopping early")
             break
 
+    with open(f"./data/training_results/zelda/{comment}_final_{id_}.json", "w") as fp:
+        json.dump(losses, fp)
+
+
+def plot_grid_of_levels(vae_path: Path):
+    x_lims = (-4, 4)
+    y_lims = (-4, 4)
+
+    vae = VAEZeldaHierarchical()
+    vae.load_state_dict(t.load(vae_path, map_location=vae.device))
+
+    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=10, n_cols=10)
+
+    fig, ax = plt.subplots(1, 1, figsize=(15 * 7, 11 * 7))
+    ax.imshow(grid, extent=[*x_lims, *y_lims])
+    ax.axis("off")
+
+    fig.tight_layout()
+    fig.savefig(
+        f"./data/plots/zelda/grids/{vae_path.stem}.png", dpi=100, bbox_inches="tight"
+    )
+    plt.close(fig)
+
+
+def plot_grammar_in_latent_space(vae_path: Path, force: bool = False):
+    model_name = vae_path.stem
+    g_path = Path(f"./data/processed/zelda/grammar_checks/{model_name}.npz")
+    vae = VAEZeldaHierarchical()
+    vae.load_state_dict(t.load(vae_path))
+    x_lims = (-4, 4)
+    y_lims = (-4, 4)
+    n_rows = n_cols = 50
+    z1 = np.linspace(*x_lims, n_cols)
+    z2 = np.linspace(*y_lims, n_rows)
+    positions = {
+        (x, y): (i, j) for j, x in enumerate(z1) for i, y in enumerate(reversed(z2))
+    }
+    zs_in_positions = t.Tensor([z for z in positions.keys()]).type(t.float)
+
+    if g_path.exists() and not force:
+        ps = np.load(g_path)["playabilities"]
+    else:
+        levels = vae.decode(zs_in_positions).probs.argmax(dim=-1)
+        ps = [int(grammar_check(level)) for level in levels]
+
+    grammar_img = np.zeros((n_cols, n_rows))
+    for (_, pos), p in zip(positions.items(), ps):
+        grammar_img[pos] = int(p)
+
+    encodings = vae.encode(vae.train_data).mean.detach().numpy()
+    np.savez(
+        f"./data/processed/zelda/grammar_checks/{model_name}.npz",
+        zs=zs_in_positions.detach().numpy(),
+        playabilities=np.array(ps).astype(float),
+    )
+
+    fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+    ax.imshow(grammar_img, extent=[*x_lims, *y_lims], cmap="Blues")
+    ax.scatter(encodings[:, 0], encodings[:, 1])
+    ax.axis("off")
+    fig.savefig(
+        f"./data/plots/zelda/ground_truths/{model_name}.png",
+        dpi=100,
+        bbox_inches="tight",
+    )
+    # plt.show()
+    plt.close(fig)
+
+
+def plot_random_samples(vae_path: Path):
+    vae = VAEZeldaHierarchical()
+    vae.load_state_dict(t.load(vae_path))
+    vae.random_sample(fig_name=vae_path.stem)
+
 
 if __name__ == "__main__":
     # train
@@ -277,17 +358,23 @@ if __name__ == "__main__":
     #     run(id_)
 
     # inspect
-    vae = VAEZeldaHierarchical()
-    vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final_0.pt"))
-    vae.random_sample()
+    for path_ in Path("./models/zelda").glob("zelda_hierarchical_final_*.pt"):
+        print(f"Processing {path_}")
+        plot_grammar_in_latent_space(path_)
+        plot_grid_of_levels(path_)
+        plot_random_samples(path_)
 
-    x_lims = (-3, 3)
-    y_lims = (-3, 3)
-    grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=10, n_cols=10)
-    _, ax = plt.subplots(1, 1, figsize=(15 * 7, 11 * 7))
-    ax.imshow(grid, extent=[*x_lims, *y_lims])
-    ax.axis("off")
+    # vae = VAEZeldaHierarchical()
+    # vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final_0.pt"))
+    # vae.random_sample()
 
-    plt.tight_layout()
-    plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
-    plt.close()
+    # x_lims = (-3, 3)
+    # y_lims = (-3, 3)
+    # grid = vae.plot_grid(x_lims=x_lims, y_lims=y_lims, n_rows=10, n_cols=10)
+    # _, ax = plt.subplots(1, 1, figsize=(15 * 7, 11 * 7))
+    # ax.imshow(grid, extent=[*x_lims, *y_lims])
+    # ax.axis("off")
+
+    # plt.tight_layout()
+    # plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
+    # plt.close()
