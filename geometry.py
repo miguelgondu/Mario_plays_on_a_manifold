@@ -36,7 +36,13 @@ from vae_zelda_obstacles import VAEZeldaWithObstacles
 
 
 class Geometry:
-    def __init__(self, p_map: Dict[tuple, int], exp_name: str, vae_path: Path) -> None:
+    def __init__(
+        self,
+        p_map: Dict[tuple, int],
+        exp_name: str,
+        vae_path: Path,
+        exp_folder: str = "ten_vaes",
+    ) -> None:
         pass
         self.playability_map = p_map
         self.exp_name = exp_name
@@ -48,10 +54,10 @@ class Geometry:
         self.playable_points = t.from_numpy(self.zs[self.p == 1]).type(t.float)
 
         self.interpolation_path = Path(
-            f"./data/arrays/ten_vaes/interpolations/{exp_name}"
+            f"./data/arrays/{exp_folder}/interpolations/{exp_name}"
         )
         self.interpolation_path.mkdir(exist_ok=True, parents=True)
-        self.diffusion_path = Path(f"./data/arrays/ten_vaes/diffusions/{exp_name}")
+        self.diffusion_path = Path(f"./data/arrays/{exp_folder}/diffusions/{exp_name}")
         self.diffusion_path.mkdir(exist_ok=True, parents=True)
         self.model_name = vae_path.stem
 
@@ -142,9 +148,13 @@ class Geometry:
 
 class BaselineGeometry(Geometry):
     def __init__(
-        self, playability_map: Dict[tuple, int], exp_name: str, vae_path: Path
+        self,
+        playability_map: Dict[tuple, int],
+        exp_name: str,
+        vae_path: Path,
+        exp_folder: str = "ten_vaes",
     ) -> None:
-        super().__init__(playability_map, exp_name, vae_path)
+        super().__init__(playability_map, exp_name, vae_path, exp_folder=exp_folder)
         self.interpolation = LinearInterpolation(vae_path, playability_map)
         self.diffusion = BaselineDiffusion(vae_path, playability_map)
 
@@ -157,9 +167,13 @@ class BaselineGeometry(Geometry):
 
 class NormalGeometry(Geometry):
     def __init__(
-        self, playability_map: Dict[tuple, int], exp_name: str, vae_path: Path
+        self,
+        playability_map: Dict[tuple, int],
+        exp_name: str,
+        vae_path: Path,
+        exp_folder: str = "ten_vaes",
     ) -> None:
-        super().__init__(playability_map, exp_name, vae_path)
+        super().__init__(playability_map, exp_name, vae_path, exp_folder=exp_folder)
         self.interpolation = LinearInterpolation(vae_path, playability_map)
         self.diffusion = NormalDiffusion(vae_path, playability_map)
 
@@ -191,6 +205,7 @@ class DiscretizedGeometry(Geometry):
         p_map: Dict[tuple, int],
         exp_name: str,
         vae_path: Path,
+        exp_folder: str = "ten_vaes",
         beta: float = -5.5,
         n_grid: int = 100,
         inner_steps_diff: int = 25,
@@ -241,7 +256,7 @@ class DiscretizedGeometry(Geometry):
         p = (metric_volumes < metric_volumes.mean()).astype(int)
 
         new_p_map = load_arrays_as_map(zs, p)
-        super().__init__(new_p_map, exp_name, vae_path)
+        super().__init__(new_p_map, exp_name, vae_path, exp_folder=exp_folder)
 
         self.interpolation = DiscreteInterpolation(self.vae_path, self.playability_map)
         self.diffusion = DiscreteDiffusion(

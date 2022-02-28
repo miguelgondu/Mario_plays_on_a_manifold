@@ -51,6 +51,7 @@ def load_discretized_geometry(
         p_map,
         "zelda_discretized_grammar_gt",
         vae_path,
+        exp_folder="zelda",
         beta=beta,
         n_grid=100,
         inner_steps_diff=30,
@@ -64,16 +65,45 @@ def load_discretized_geometry(
 
 def load_baseline_geometry(vae_path: Path) -> BaselineGeometry:
     p_map = load_grammar_p_map(vae_path)
-    bg = BaselineGeometry(p_map, "zelda_baseline_grammar_gt", vae_path)
+    bg = BaselineGeometry(p_map, "zelda_baseline_grammar_gt", vae_path, exp_folder="zelda")
 
     return bg
 
 
 def load_normal_geometry(vae_path: Path) -> NormalGeometry:
     p_map = load_grammar_p_map(vae_path)
-    ng = NormalGeometry(p_map, "zelda_normal_grammar_gt", vae_path)
+    ng = NormalGeometry(p_map, "zelda_normal_grammar_gt", vae_path, exp_folder="zelda")
 
     return ng
+
+def experiment(geometry: Geometry, force: bool = False) -> None:
+    """
+    Saves results for a given geometry
+    """
+    geometry.save_arrays(force=force)
+    interp_res_path = Path("./data/array_simulation_results/zelda/interpolations")
+    diff_res_path = Path("./data/array_simulation_results/zelda/diffusions")
+
+    interp_res_path.mkdir(exist_ok=True, parents=True)
+    diff_res_path.mkdir(exist_ok=True, parents=True)
+    
+    for path_ in geometry.interpolation_path.glob("*.npz"):
+        # Load and check for playability and diversity.
+        array = np.load(path_)
+        zs = array["zs"]
+        levels = array["levels"]
+        ps = np.array([grammar_check(level) for level in levels]).astype(int)
+
+        np.savez(interp_res_path / f"{path_.stem}", zs=zs, levels=levels, ps=ps)
+    
+    for path_ in geometry.diffusion_path.glob("*.npz"):
+        # Load and check for playability and diversity.
+        array = np.load(path_)
+        zs = array["zs"]
+        levels = array["levels"]
+        ps = np.array([grammar_check(level) for level in levels]).astype(int)
+
+        np.savez(diff_res_path / f"{path_.stem}", zs=zs, levels=levels, ps=ps)
 
 
 def discrete_geometry_experiment() -> pd.DataFrame:
@@ -173,7 +203,16 @@ def normal_experiment():
 if __name__ == "__main__":
     # discrete_geometry_experiment()
     # baseline_experiment()
-    normal_experiment()
-    plt.show()
+    # normal_experiment()
+    # plt.show()
+    for _id in [0, 3, 5, 6]:
+        vae_path = Path(f"./models/zelda/zelda_hierarchical_final_{_id}.pt")
+        ddg = load_discretized_geometry(vae_path)
+        bg = load_baseline_geometry(vae_path)
+        ng = load_normal_geometry(vae_path)
+
+        experiment(ddg)
+        experiment(bg)
+        experiment(ng)
 
     
