@@ -81,8 +81,8 @@ def experiment(geometry: Geometry, force: bool = False) -> None:
     Saves results for a given geometry
     """
     geometry.save_arrays(force=force)
-    interp_res_path = Path("./data/array_simulation_results/zelda/interpolations")
-    diff_res_path = Path("./data/array_simulation_results/zelda/diffusions")
+    interp_res_path = Path("./data/array_simulation_results/zelda/interpolations") / geometry.exp_name
+    diff_res_path = Path("./data/array_simulation_results/zelda/diffusions") / geometry.exp_name
 
     interp_res_path.mkdir(exist_ok=True, parents=True)
     diff_res_path.mkdir(exist_ok=True, parents=True)

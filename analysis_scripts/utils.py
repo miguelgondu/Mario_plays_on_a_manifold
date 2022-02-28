@@ -127,23 +127,21 @@ def similarity(level_a: np.ndarray, level_b: np.ndarray) -> float:
     return (1 / (w * h)) * coincide
 
 
-def get_mean_diversities(experiment: List[Path], processes: int = None) -> float:
-    levels = get_all_levels(experiment, processes=processes)
-
+def get_mean_diversities_of_levels(levels: List[np.ndarray]) -> float:
     similarities = []
     for a, level in enumerate(levels):
-        if processes is not None:
-            with mp.Pool(processes) as pool:
-                res_ = pool.starmap(similarity, zip(repeat(level), levels[a + 1 :]))
-                similarities.extend(res_)
-        else:
-            for another_level in levels[a + 1 :]:
-                sim_ = similarity(level, another_level)
-                similarities.append(sim_)
+        for another_level in levels[a + 1 :]:
+            sim_ = similarity(level, another_level)
+            similarities.append(sim_)
 
     similarities = np.array(similarities)
 
     return np.mean(1 - similarities)
+
+
+def get_mean_diversities(experiment: List[Path], processes: int = None) -> float:
+    levels = get_all_levels(experiment, processes=processes)
+    return get_mean_diversities_of_levels(levels)
 
 
 def load_experiment_csv_paths(exp_name: str) -> Tuple[List[Path], List[Path]]:
