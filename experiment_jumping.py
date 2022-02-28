@@ -86,12 +86,14 @@ def save_all_arrays(
 
 if __name__ == "__main__":
     # # For the baseline
-    save_all_arrays("baseline_force_jump", BaselineGeometry, with_AL=True, force=True)
-    save_all_arrays("normal_force_jump", NormalGeometry, with_AL=False, force=True)
+    save_all_arrays(
+        "baseline_force_jump_2", BaselineGeometry, with_AL=False, force=False
+    )
+    save_all_arrays("normal_force_jump_2", NormalGeometry, with_AL=False, force=False)
 
     # # Discrete
     save_all_arrays(
-        "discretized_force_jump", DiscretizedGeometry, with_AL=False, force=True
+        "discretized_force_jump_2", DiscretizedGeometry, with_AL=False, force=False
     )
 
     # Continuous

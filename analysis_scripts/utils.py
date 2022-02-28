@@ -87,6 +87,24 @@ def get_mean(
         return np.mean(means)
 
 
+def get_mean_w_conditioning(
+    experiment: List[Path], column: str = "jumpActionsPerformed"
+) -> Tuple[float]:
+    # Get all arrays and concatenate them together
+    dfs = [pd.read_csv(p) for p in experiment]
+    df = pd.concat(dfs)
+    # maybe do a grouping by z (?)
+
+    # Slice w. the condition of playability
+    df_playable = df[df["marioStatus"] == 1.0]
+
+    # compute means and stds.
+    mean = df_playable[column].mean()
+    std = df_playable[column].std()
+
+    return mean, std
+
+
 def get_mean_playability(
     experiment: List[Path], processes: int = None, return_std: bool = False
 ) -> float:
