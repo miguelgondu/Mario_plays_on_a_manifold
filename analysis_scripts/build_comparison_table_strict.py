@@ -17,13 +17,14 @@ def build_table_layout() -> pd.DataFrame:
     geometries = ["discretized geometry", "baseline", "normal"]
 
     index = []
-    for geometry in geometries:
-        if geometry != "baselines" and geometry != "normal":
-            for m in [100, 200, 300, 400, 500]:
-                index.append((geometry, m))
+    # for geometry in geometries:
+    #     # if geometry != "baselines" and geometry != "normal":
+    #     #     for m in [100, 200, 300, 400, 500]:
+    #     #         index.append((geometry, m))
 
-        index.append((geometry, "full"))
-    index = pd.MultiIndex.from_tuples(index, names=["Geometry", "AL queries"])
+    #     index.append((geometry))
+    # index = pd.Index.f.from_tuples(index, names=["Geometry"])
+    index = geometries
 
     columns = [
         (r"$\mathbb{E}[\text{playability}]$", "Interpolation"),
@@ -88,9 +89,9 @@ def process_experiment(exp_name: str, processes: int = None):
     }
 
 
-def parse_exp_name(exp_name: str) -> Tuple[str, str]:
+def parse_exp_name(exp_name: str) -> str:
     if "baseline" in exp_name:
-        first = "baselines"
+        first = "baseline"
     elif "discretized" in exp_name:
         first = "discretized geometry"
     elif "normal" in exp_name:
@@ -98,15 +99,15 @@ def parse_exp_name(exp_name: str) -> Tuple[str, str]:
     else:
         raise ValueError(f"Unkown experiment {exp_name}")
 
-    if "gt" in exp_name:
-        second = "full"
-    elif "AL" in exp_name:
-        m = int(exp_name.split("_")[-1])
-        second = m
-    else:
-        raise ValueError(f"Unkown experiment {exp_name}")
+    # if "gt" in exp_name:
+    #     second = "full"
+    # elif "AL" in exp_name:
+    #     m = int(exp_name.split("_")[-1])
+    #     second = m
+    # else:
+    #     raise ValueError(f"Unkown experiment {exp_name}")
 
-    return (first, second)
+    return first
 
 
 def fill_out_experiment(table: pd.DataFrame, exp_name: str, processes: int = None):
@@ -140,9 +141,9 @@ def process():
     print("normal_strict_gt")
     fill_out_experiment(table, "normal_strict_gt", processes=None)
     # print(table)
-    for m in [100, 200, 300, 400, 500]:
-        print(f"discrete_AL_{m}")
-        fill_out_experiment(table, f"discretized_strict_AL_{m}", processes=None)
+    # for m in [100, 200, 300, 400, 500]:
+    #     print(f"discrete_AL_{m}")
+    #     fill_out_experiment(table, f"discretized_strict_AL_{m}", processes=None)
 
     # for m in [100, 200, 300, 400, 500]:
     #     print(f"continuous_AL_{m}")

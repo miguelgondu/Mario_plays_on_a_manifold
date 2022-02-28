@@ -43,6 +43,34 @@ def get_all_means(exp: List[Path]) -> Tuple[List[float]]:
     return all_ps, all_ds
 
 
+def build_table_layout() -> pd.DataFrame:
+    geometries = ["discretized geometry", "baseline", "normal"]
+
+    # index = []
+    # for geometry in geometries:
+    #     index.append((geometry))
+    # index = pd.MultiIndex.from_tuples(index, names=["Geometry", "grid"])
+    index = geometries
+
+    columns = [
+        (r"$\mathbb{E}[\text{playability}]$", "Interpolation"),
+        (r"$\mathbb{E}[\text{playability}]$", "Random Walks"),
+        (r"$\mathbb{E}[\text{diversity}]$", "Interpolation"),
+        (r"$\mathbb{E}[\text{diversity}]$", "Random Walks"),
+    ]
+    columns = pd.MultiIndex.from_tuples(columns)
+    data = np.zeros((len(index), 4))
+    table = pd.DataFrame(
+        data,
+        index=index,
+        columns=columns,
+    )
+
+    print("Table layout:")
+    print(table.to_latex(escape=False, float_format="%1.3f"))
+    return table
+
+
 def build_table() -> Tuple[pd.DataFrame]:
     experiments = [
         "zelda_baseline_grammar_gt",
@@ -125,6 +153,140 @@ def build_table() -> Tuple[pd.DataFrame]:
 
 
 if __name__ == "__main__":
+    table = build_table_layout()
+    E_playability = r"$\mathbb{E}[\text{playability}]$"
+    E_diversity = r"$\mathbb{E}[\text{diversity}]$"
+
     df, df2 = build_table()
     print(df.to_latex())
     print(df2.to_latex())
+
+    # for interps
+    mp_interp_discretized = df[df["experiment"] == "zelda_discretized_grammar_gt"][
+        "mean_playability"
+    ].values[0]
+    sp_interp_discretized = df[df["experiment"] == "zelda_discretized_grammar_gt"][
+        "std_playability"
+    ].values[0]
+    md_interp_discretized = df[df["experiment"] == "zelda_discretized_grammar_gt"][
+        "mean_diversity"
+    ].values[0]
+    sd_interp_discretized = df[df["experiment"] == "zelda_discretized_grammar_gt"][
+        "std_diversity"
+    ].values[0]
+
+    mp_interp_normal = df[df["experiment"] == "zelda_normal_grammar_gt"][
+        "mean_playability"
+    ].values[0]
+    sp_interp_normal = df[df["experiment"] == "zelda_normal_grammar_gt"][
+        "std_playability"
+    ].values[0]
+    md_interp_normal = df[df["experiment"] == "zelda_normal_grammar_gt"][
+        "mean_diversity"
+    ].values[0]
+    sd_interp_normal = df[df["experiment"] == "zelda_normal_grammar_gt"][
+        "std_diversity"
+    ].values[0]
+
+    mp_interp_baseline = df[df["experiment"] == "zelda_baseline_grammar_gt"][
+        "mean_playability"
+    ].values[0]
+    sp_interp_baseline = df[df["experiment"] == "zelda_baseline_grammar_gt"][
+        "std_playability"
+    ].values[0]
+    md_interp_baseline = df[df["experiment"] == "zelda_baseline_grammar_gt"][
+        "mean_diversity"
+    ].values[0]
+    sd_interp_baseline = df[df["experiment"] == "zelda_baseline_grammar_gt"][
+        "std_diversity"
+    ].values[0]
+
+    # for diffs
+    mp_diff_discretized = df2[df2["experiment"] == "zelda_discretized_grammar_gt"][
+        "mean_playability"
+    ].values[0]
+    sp_diff_discretized = df2[df2["experiment"] == "zelda_discretized_grammar_gt"][
+        "std_playability"
+    ].values[0]
+    md_diff_discretized = df2[df2["experiment"] == "zelda_discretized_grammar_gt"][
+        "mean_diversity"
+    ].values[0]
+    sd_diff_discretized = df2[df2["experiment"] == "zelda_discretized_grammar_gt"][
+        "std_diversity"
+    ].values[0]
+
+    mp_diff_normal = df2[df2["experiment"] == "zelda_normal_grammar_gt"][
+        "mean_playability"
+    ].values[0]
+    sp_diff_normal = df2[df2["experiment"] == "zelda_normal_grammar_gt"][
+        "std_playability"
+    ].values[0]
+    md_diff_normal = df2[df2["experiment"] == "zelda_normal_grammar_gt"][
+        "mean_diversity"
+    ].values[0]
+    sd_diff_normal = df2[df2["experiment"] == "zelda_normal_grammar_gt"][
+        "std_diversity"
+    ].values[0]
+
+    mp_diff_baseline = df2[df2["experiment"] == "zelda_baseline_grammar_gt"][
+        "mean_playability"
+    ].values[0]
+    sp_diff_baseline = df2[df2["experiment"] == "zelda_baseline_grammar_gt"][
+        "std_playability"
+    ].values[0]
+    md_diff_baseline = df2[df2["experiment"] == "zelda_baseline_grammar_gt"][
+        "mean_diversity"
+    ].values[0]
+    sd_diff_baseline = df2[df2["experiment"] == "zelda_baseline_grammar_gt"][
+        "std_diversity"
+    ].values[0]
+
+    table.loc[("discretized geometry"), (E_playability, "Interpolation")] = (
+        f"{mp_interp_discretized:.3f}" + r"$\pm$" + f"{sp_interp_discretized:.3f}"
+    )
+
+    table.loc[("discretized geometry"), (E_playability, "Random Walks")] = (
+        f"{mp_diff_discretized:.3f}" + r"$\pm$" + f"{sp_diff_discretized:.3f}"
+    )
+
+    table.loc[("discretized geometry"), (E_diversity, "Interpolation")] = (
+        f"{md_interp_discretized:.3f}" + r"$\pm$" + f"{sd_interp_discretized:.3f}"
+    )
+
+    table.loc[("discretized geometry"), (E_diversity, "Random Walks")] = (
+        f"{md_diff_discretized:.3f}" + r"$\pm$" + f"{sd_diff_discretized:.3f}"
+    )
+
+    table.loc[("normal"), (E_playability, "Interpolation")] = (
+        f"{mp_interp_normal:.3f}" + r"$\pm$" + f"{sp_interp_normal:.3f}"
+    )
+
+    table.loc[("normal"), (E_playability, "Random Walks")] = (
+        f"{mp_diff_normal:.3f}" + r"$\pm$" + f"{sp_diff_normal:.3f}"
+    )
+
+    table.loc[("normal"), (E_diversity, "Interpolation")] = (
+        f"{md_interp_normal:.3f}" + r"$\pm$" + f"{sd_interp_normal:.3f}"
+    )
+
+    table.loc[("normal"), (E_diversity, "Random Walks")] = (
+        f"{md_diff_normal:.3f}" + r"$\pm$" + f"{sd_diff_normal:.3f}"
+    )
+
+    table.loc[("baseline"), (E_playability, "Interpolation")] = (
+        f"{mp_interp_baseline:.3f}" + r"$\pm$" + f"{sp_interp_baseline:.3f}"
+    )
+
+    table.loc[("baseline"), (E_playability, "Random Walks")] = (
+        f"{mp_diff_baseline:.3f}" + r"$\pm$" + f"{sp_diff_baseline:.3f}"
+    )
+
+    table.loc[("baseline"), (E_diversity, "Interpolation")] = (
+        f"{md_interp_baseline:.3f}" + r"$\pm$" + f"{sd_interp_baseline:.3f}"
+    )
+
+    table.loc[("baseline"), (E_diversity, "Random Walks")] = (
+        f"{md_diff_baseline:.3f}" + r"$\pm$" + f"{sd_diff_baseline:.3f}"
+    )
+
+    print(table.to_latex(escape=False))
