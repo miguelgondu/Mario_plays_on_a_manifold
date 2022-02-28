@@ -87,6 +87,18 @@ def get_mean(
         return np.mean(means)
 
 
+def get_proportion_w_jump(experiment: List[Path]) -> Tuple[float]:
+    means = []
+    for i in range(10):
+        exps_in_id = filter(lambda x: f"_id_{i}_" in x.name, experiment)
+        dfs = [pd.read_csv(p) for p in exps_in_id]
+        df = pd.concat(dfs)
+        prop = len(df[df["jumpActionsPerformed"] > 0.0]) / len(df)
+        means.append(prop)
+
+    return np.mean(means), np.std(means)
+
+
 def get_mean_w_conditioning(
     experiment: List[Path], column: str = "jumpActionsPerformed"
 ) -> Tuple[float]:
