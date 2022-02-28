@@ -59,9 +59,9 @@ def run():
 
     # Discrete jump
     # run_exp("discrete_force_jump_gt", processes=90)
-    run_exp("discretized_force_jump_2_gt", processes=60)
+    # run_exp("discretized_force_jump_2_gt", processes=60)
     run_exp("baseline_force_jump_2_gt", processes=60)
-    run_exp("normal_force_jump_2_gt", processes=60)
+    # run_exp("normal_force_jump_2_gt", processes=60)
 
     # baseline jump
     # run_exp("baseline_force_jump_gt", processes=90)

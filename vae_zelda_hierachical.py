@@ -358,11 +358,11 @@ if __name__ == "__main__":
     #     run(id_)
 
     # inspect
-    for path_ in Path("./models/zelda").glob("zelda_hierarchical_final_*.pt"):
-        print(f"Processing {path_}")
-        plot_grammar_in_latent_space(path_)
-        plot_grid_of_levels(path_)
-        plot_random_samples(path_)
+    # for path_ in Path("./models/zelda").glob("zelda_hierarchical_final_*.pt"):
+    #     print(f"Processing {path_}")
+    #     plot_grammar_in_latent_space(path_)
+    #     plot_grid_of_levels(path_)
+    #     plot_random_samples(path_)
 
     # vae = VAEZeldaHierarchical()
     # vae.load_state_dict(t.load("./models/zelda/zelda_hierarchical_final_0.pt"))
@@ -378,3 +378,4 @@ if __name__ == "__main__":
     # plt.tight_layout()
     # plt.savefig("./data/plots/zelda/grid.png", dpi=100, bbox_inches="tight")
     # plt.close()
+    load_data()

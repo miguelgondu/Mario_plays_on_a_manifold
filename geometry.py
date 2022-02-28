@@ -70,8 +70,8 @@ class Geometry:
     def save_arrays(self, force=False):
         """
         Loads up the VAE at said path and runs
-        - 100 random interpolations of 10 points each.
-        - 10 random walks (or diffusions) of 100 steps each.
+        - 20 random interpolations of 10 points each.
+        - 10 random walks (or diffusions) of 20 steps each.
         """
         try:
             self._save_arrays_for_interpolation(force)
