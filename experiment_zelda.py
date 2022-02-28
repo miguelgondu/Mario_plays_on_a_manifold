@@ -3,6 +3,8 @@ Computes the levels for Zelda, measures expected
 grammar passing.
 """
 from pathlib import Path
+from typing import List, Dict
+import pandas as pd
 
 import torch as t
 import numpy as np
@@ -11,11 +13,28 @@ from experiment_utils import load_arrays_as_map
 
 from vae_zelda_hierachical import VAEZeldaHierarchical
 
-from geometry import DiscretizedGeometry, Geometry
+from geometry import BaselineGeometry, DiscretizedGeometry, Geometry, NormalGeometry
 from grammar_zelda import grammar_check
 
 
-def load_discretized_geometry(vae_path) -> DiscretizedGeometry:
+def load_grammar_p_map(vae_path) -> Dict[tuple, float]:
+    # This should be with Zelda obstacles? No, that's
+    # being taken care of by the ddg itself.
+    x_lims = (-4, 4)
+    y_lims = (-4, 4)
+
+    # TODO: replace this one for the grammar array
+    array = np.load(f"./data/processed/zelda/grammar_checks/{vae_path.stem}.npz")
+    zs = array["zs"]
+    ps = array["playabilities"]
+    p_map = load_arrays_as_map(zs, ps)
+
+    return p_map
+
+
+def load_discretized_geometry(
+    vae_path: Path, beta: float = -5.0, force: bool = False
+) -> DiscretizedGeometry:
     # This should be with Zelda obstacles? No, that's
     # being taken care of by the ddg itself.
     x_lims = (-4, 4)
@@ -32,21 +51,36 @@ def load_discretized_geometry(vae_path) -> DiscretizedGeometry:
         p_map,
         "zelda_discretized_grammar_gt",
         vae_path,
-        beta=-5.5,
+        beta=beta,
         n_grid=100,
         inner_steps_diff=30,
         x_lims=x_lims,
         y_lims=y_lims,
+        force=force,
     )
 
     return ddg
 
 
-if __name__ == "__main__":
-    # for path_ in Path("./models/zelda").glob("zelda_hierarchical_final_*.pt"):
+def load_baseline_geometry(vae_path: Path) -> BaselineGeometry:
+    p_map = load_grammar_p_map(vae_path)
+    bg = BaselineGeometry(p_map, "zelda_baseline_grammar_gt", vae_path)
+
+    return bg
+
+
+def load_normal_geometry(vae_path: Path) -> NormalGeometry:
+    p_map = load_grammar_p_map(vae_path)
+    ng = NormalGeometry(p_map, "zelda_normal_grammar_gt", vae_path)
+
+    return ng
+
+
+def discrete_geometry_experiment() -> pd.DataFrame:
+    beta = -5.0
     for _id in [0, 3, 5, 6]:
         path_ = Path(f"./models/zelda/zelda_hierarchical_final_{_id}.pt")
-        ddg = load_discretized_geometry(path_)
+        ddg = load_discretized_geometry(path_, beta=-5.0, force=True)
         interps = ddg._get_arrays_for_interpolation()
         # Plot grid and interps.
         fig, ax = plt.subplots(1, 1, figsize=(7, 7))
@@ -64,5 +98,82 @@ if __name__ == "__main__":
             f"means for interpolations: {np.mean(means_interps)}, {np.std(means_interps)}"
         )
 
-        plt.show()
+        fig.savefig(f"./data/plots/zelda/different_betas/{path_.stem}_beta_{beta}.png")
+        # plt.show()
         plt.close(fig)
+
+
+def baseline_experiment():
+    for _id in [0, 3, 5, 6]:
+        vae_path = Path(f"./models/zelda/zelda_hierarchical_final_{_id}.pt")
+        bg = load_baseline_geometry(vae_path)
+        interps = bg._get_arrays_for_interpolation()
+        diffs = bg._get_arrays_for_diffusion()
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(2 * 7, 1 * 7))
+        grid = bg.grid
+        ax1.imshow(grid, extent=[-4, 4, -4, 4], cmap="Blues")
+        ax2.imshow(grid, extent=[-4, 4, -4, 4], cmap="Blues")
+
+        means_interps = []
+        for (interp, levels) in interps.values():
+            ps = [grammar_check(level) for level in levels]
+            means_interps.append(np.mean(ps))
+            ax1.plot(interp[:, 0], interp[:, 1])
+
+        print(
+            f"means for interpolations: {np.mean(means_interps)}, {np.std(means_interps)}"
+        )
+
+        means_diffs = []
+        for (diff, levels) in diffs.values():
+            ps = [grammar_check(level) for level in levels]
+            means_diffs.append(np.mean(ps))
+            ax2.scatter(diff[:, 0], diff[:, 1], c=ps)
+        
+        print(
+            f"means for diffusions: {np.mean(means_diffs)}, {np.std(means_diffs)}"
+        )
+        fig.suptitle(f"{vae_path.stem} - baseline")
+
+def normal_experiment():
+    for _id in [0, 3, 5, 6]:
+        vae_path = Path(f"./models/zelda/zelda_hierarchical_final_{_id}.pt")
+        ng = load_normal_geometry(vae_path)
+        interps = ng._get_arrays_for_interpolation()
+        diffs = ng._get_arrays_for_diffusion()
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(2 * 7, 1 * 7))
+        grid = ng.grid
+        ax1.imshow(grid, extent=[-4, 4, -4, 4], cmap="Blues")
+        ax2.imshow(grid, extent=[-4, 4, -4, 4], cmap="Blues")
+
+        means_interps = []
+        for (interp, levels) in interps.values():
+            ps = [grammar_check(level) for level in levels]
+            means_interps.append(np.mean(ps))
+            ax1.plot(interp[:, 0], interp[:, 1])
+
+        print(
+            f"means for interpolations: {np.mean(means_interps)}, {np.std(means_interps)}"
+        )
+
+        means_diffs = []
+        for (diff, levels) in diffs.values():
+            ps = [grammar_check(level) for level in levels]
+            means_diffs.append(np.mean(ps))
+            ax2.scatter(diff[:, 0], diff[:, 1], c=ps)
+        
+        print(
+            f"means for diffusions: {np.mean(means_diffs)}, {np.std(means_diffs)}"
+        )
+        fig.suptitle(f"{vae_path.stem} - baseline")
+
+
+if __name__ == "__main__":
+    # discrete_geometry_experiment()
+    # baseline_experiment()
+    normal_experiment()
+    plt.show()
+
+    
