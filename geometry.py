@@ -212,8 +212,11 @@ class DiscretizedGeometry(Geometry):
         x_lims=(-5, 5),
         y_lims=(-5, 5),
         force: bool = False,
+        with_obstacles: bool = True,
     ) -> None:
-        metric_vol_path = Path(f"./data/processed/metric_volumes/{vae_path.stem}.npz")
+        metric_vol_folder = Path(f"./data/processed/metric_volumes/{exp_name}/")
+        metric_vol_folder.mkdir(exist_ok=True, parents=True)
+        metric_vol_path = metric_vol_folder / f"{vae_path.stem}.npz"
 
         if metric_vol_path.exists() and not force:
             array = np.load(metric_vol_path)
@@ -229,9 +232,10 @@ class DiscretizedGeometry(Geometry):
             # Set p_map == 0.0 as obstacles (given some beta)
             vae = model()
             vae.load_state_dict(t.load(vae_path, map_location=vae.device))
-            vae.update_obstacles(
-                t.Tensor([z for z, p in p_map.items() if p == 0.0]), beta=beta
-            )
+            if with_obstacles:
+                vae.update_obstacles(
+                    t.Tensor([z for z, p in p_map.items() if p == 0.0]), beta=beta
+                )
 
             # Consider a grid of arbitrary fineness (given some m)
             z1 = t.linspace(*x_lims, n_grid)

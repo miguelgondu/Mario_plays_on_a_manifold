@@ -24,6 +24,8 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
         device: str = None,
     ):
         super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
+        self.translated_sigmoid = None
+        self.obstacles = []
 
     # This method overwrites the decode of the vanilla one.
     def decode(self, z: t.Tensor, reweight: bool = True) -> Categorical:

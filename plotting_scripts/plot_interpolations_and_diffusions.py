@@ -220,6 +220,10 @@ def inspect_discretized_geometry():
         inspect_diffusions(ddg)
 
 
+def plot_interpolations_and_diffusions_for_jumping():
+    vae_path = Path("./models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+
+
 if __name__ == "__main__":
     # inspect_playability_experiment()
     # inspect_no_jump_experiment()
