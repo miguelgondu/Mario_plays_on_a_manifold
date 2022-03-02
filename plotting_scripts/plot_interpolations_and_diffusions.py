@@ -32,14 +32,14 @@ def inspect_interpolations(geometry: Geometry):
         a = np.load(array_path)
         zs = a["zs"]
         if "discrete" in geometry.exp_name or "discretized" in geometry.exp_name:
-            ax.scatter(zs[:, 0], zs[:, 1], c="r")
+            # ax.scatter(zs[:, 0], zs[:, 1], c="r")
             z, z_prime = zs[0], zs[-1]
             z = t.from_numpy(z).type(t.float)
             z_prime = t.from_numpy(z_prime).type(t.float)
             full_path = geometry.interpolation._full_interpolation(z, z_prime)
-            ax.plot(full_path[:, 0], full_path[:, 1], "r")
+            ax.plot(full_path[:, 0], full_path[:, 1], "r", linewidth=3)
         else:
-            ax.plot(zs[:, 0], zs[:, 1], "r")
+            ax.plot(zs[:, 0], zs[:, 1], "r", linewidth=3)
 
     ax.imshow(geometry.grid, extent=[-5, 5, -5, 5], cmap="Blues")
     plots_path = Path(f"./data/plots/ten_vaes/interpolations/{exp_name}")
@@ -153,6 +153,9 @@ def inspect_no_jump_experiment():
 def inspect_jump_experiment():
     model_paths = Path("./models/ten_vaes").glob("*.pt")
     for vae_path in model_paths:
+        if "id_0" not in vae_path.name:
+            continue
+
         gt_path = Path(
             f"./data/array_simulation_results/ten_vaes/ground_truth/{vae_path.stem}.csv"
         )
@@ -168,13 +171,17 @@ def inspect_jump_experiment():
             }
             p_map = intersection(strict_playability, strict_jump_map)
 
-            dg = DiscreteGeometry(p_map, "discrete_force_jump_gt", vae_path)
-            inspect_interpolations(dg)
-            inspect_diffusions(dg)
+            ddg = DiscretizedGeometry(p_map, "discretized_force_jump_2_gt", vae_path)
+            inspect_interpolations(ddg)
+            inspect_diffusions(ddg)
 
-            bg = BaselineGeometry(p_map, "baseline_force_jump_gt", vae_path)
+            bg = BaselineGeometry(p_map, "baseline_force_jump_2_gt", vae_path)
             inspect_interpolations(bg)
             inspect_diffusions(bg)
+
+            ng = NormalGeometry(p_map, "normal_force_jump_2_gt", vae_path)
+            inspect_interpolations(ng)
+            inspect_diffusions(ng)
 
 
 def inspect_strict_experiment():
@@ -227,6 +234,6 @@ def plot_interpolations_and_diffusions_for_jumping():
 if __name__ == "__main__":
     # inspect_playability_experiment()
     # inspect_no_jump_experiment()
-    # inspect_jump_experiment()
+    inspect_jump_experiment()
     # inspect_strict_experiment()
-    inspect_discretized_geometry()
+    # inspect_discretized_geometry()
