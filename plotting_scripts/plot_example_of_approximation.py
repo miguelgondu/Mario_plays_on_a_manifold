@@ -52,7 +52,7 @@ def plot_example():
 
     fig, ax = plt.subplots(1, 1, figsize=(7, 7))
     ax.imshow(obstacles, cmap="Blues", extent=[-4, 4, -4, 4])
-    ax.set_title("Functional regions", fontsize=BIGGER_SIZE)
+    # ax.set_title("Functional regions", fontsize=BIGGER_SIZE)
     ax.axis("off")
     fig.savefig(
         "./data/plots/ten_vaes/paper_ready/example_approximation/obstacles.png",
@@ -63,8 +63,9 @@ def plot_example():
 
     fig, ax = plt.subplots(1, 1, figsize=(7, 7))
     plot = ax.imshow(calibrated, cmap="viridis", extent=[-4, 4, -4, 4])
-    plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04, aspect=20)
-    ax.set_title("Metric volume", fontsize=BIGGER_SIZE)
+    cbar = plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04, aspect=20)
+    cbar.set_ticks([])
+    # ax.set_title("Metric volume", fontsize=BIGGER_SIZE)
     ax.axis("off")
     fig.savefig(
         "./data/plots/ten_vaes/paper_ready/example_approximation/metric_volume.png",
@@ -76,7 +77,7 @@ def plot_example():
     fig, ax = plt.subplots(1, 1, figsize=(7, 7))
     plot = ax.imshow(approximation, cmap="Blues", extent=[-4, 4, -4, 4])
     # plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
-    ax.set_title("Graph approximation", fontsize=BIGGER_SIZE)
+    # ax.set_title("Graph approximation", fontsize=BIGGER_SIZE)
     ax.axis("off")
     fig.savefig(
         "./data/plots/ten_vaes/paper_ready/example_approximation/approximation.png",
@@ -88,7 +89,7 @@ def plot_example():
     fig, ax = plt.subplots(1, 1, figsize=(7, 7))
     plot = ax.imshow(levels_grid, extent=[-4, 4, -4, 4])
     # plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
-    ax.set_title("Decoded levels", fontsize=BIGGER_SIZE)
+    # ax.set_title("Decoded levels", fontsize=BIGGER_SIZE)
     ax.axis("off")
     fig.savefig(
         "./data/plots/ten_vaes/paper_ready/example_approximation/grid.png",

@@ -43,14 +43,14 @@ def plot_grid_and_levels():
     # Plotting the grid of levels
     fig, ax = plt.subplots(1, 1, figsize=(7, 7))
     _, imgs = vae.plot_grid(n_rows=10, n_cols=10, ax=ax, return_imgs=True)
-    ax.set_title("Latent Space of Super Mario Bros", fontsize=BIGGER_SIZE)
+    # ax.set_title("Latent Space of Super Mario Bros", fontsize=BIGGER_SIZE)
     ax.axis("off")
 
     layer_on_top = np.where(bg.grid == 1.0, np.NaN, bg.grid)
     ax.imshow(
         layer_on_top,
         extent=[-5, 5, -5, 5],
-        alpha=0.2,
+        alpha=0.4,
         cmap="autumn",
         vmin=0.0,
         vmax=1.0,
@@ -68,7 +68,7 @@ def plot_grid_and_levels():
     fig1, ax1 = plt.subplots(1, 1, figsize=(7, 7))
     ax1.imshow(non_playable)
     ax1.axis("off")
-    ax1.set_title("Not functional", fontsize=BIGGER_SIZE)
+    # ax1.set_title("Not functional", fontsize=BIGGER_SIZE)
     fig1.savefig(
         "./data/plots/ten_vaes/paper_ready/banner_not_playable.png",
         dpi=100,
@@ -79,7 +79,7 @@ def plot_grid_and_levels():
     fig2, ax2 = plt.subplots(1, 1, figsize=(7, 7))
     ax2.imshow(playable)
     ax2.axis("off")
-    ax2.set_title("Functional", fontsize=BIGGER_SIZE)
+    # ax2.set_title("Functional", fontsize=BIGGER_SIZE)
     fig2.savefig(
         "./data/plots/ten_vaes/paper_ready/banner_playable.png",
         dpi=100,
