@@ -142,11 +142,12 @@ class VAEZeldaHierarchical(nn.Module):
 
     def plot_grid(
         self,
-        x_lims=(-5, 5),
-        y_lims=(-5, 5),
+        x_lims=(-4, 4),
+        y_lims=(-4, 4),
         n_rows=10,
         n_cols=10,
         ax=None,
+        plot_all_levels: bool = False,
     ):
         z1 = np.linspace(*x_lims, n_cols)
         z2 = np.linspace(*y_lims, n_rows)
@@ -164,6 +165,14 @@ class VAEZeldaHierarchical(nn.Module):
         positions = {
             (x, y): (i, j) for j, x in enumerate(z1) for i, y in enumerate(reversed(z2))
         }
+
+        if plot_all_levels:
+            for m, img in enumerate(images):
+                fig, ax_ = plt.subplots(1, 1, figsize=(16, 11))
+                ax_.imshow(img)
+                ax_.axis("off")
+                fig.savefig(f"./data/plots/zelda/grids/all_levels/{m:05d}", dpi=100, bbox_inches="tight")
+                plt.close(fig)
 
         lvl_height = images[0].shape[0]
         lvl_width = images[0].shape[1]
