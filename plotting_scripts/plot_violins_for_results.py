@@ -65,6 +65,43 @@ def parse_exp_name(exp_name: str) -> str:
     return first
 
 
+def plot_violins_for_dataviz_course(experiments, vae_ids):
+    rows_interps = []
+    for exp_folder, exp_name in experiments:
+        for id_ in vae_ids:
+            interps, _ = load_experiment(exp_folder, exp_name, id_)
+            all_ps, all_ds = get_all_means(interps)
+            rows_interps.extend(
+                [
+                    {
+                        "id": id_,
+                        "playability": m,
+                        "experiment": parse_exp_name(exp_name),
+                        "diversity": d,
+                    }
+                    for m, d in zip(all_ps, all_ds)
+                ]
+            )
+
+    p_interp = pd.DataFrame(rows_interps)
+    fig, ax_interp_p = plt.subplots(1, 1, figsize=(7, 4))
+    sns.violinplot(
+        data=p_interp,
+        x="experiment",
+        y="playability",
+        ax=ax_interp_p,
+        cut=1.0,
+        palette="Blues",
+    )
+    ax_interp_p.set_ylabel("Playability (I)", fontsize=14)
+    ax_interp_p.set_xlabel("")
+    ax_interp_p.tick_params("x", labelsize=BIGGER_SIZE)
+    fig.tight_layout()
+    fig.savefig(
+        "./data/plots/data_viz_course/violins.png", dpi=100, bbox_inches="tight"
+    )
+
+
 def plot_violins(experiments, vae_ids, ax_interp_p, ax_diff_p, ax_interp_d, ax_diff_d):
     rows_interps = []
     rows_diffs = []
@@ -144,86 +181,96 @@ def plot_violins(experiments, vae_ids, ax_interp_p, ax_diff_p, ax_interp_d, ax_d
         ax.set_ylabel("")
 
 
-# First plots for playability
-fig, axes = plt.subplots(4, 3, figsize=(3 * 6, 2 * 5), sharex=True, sharey="row")
-# fig_d, axes_d = plt.subplots(2, 3, figsize=(3 * 7, 2 * 4), sharex=True, sharey=True)
-axes_p = axes[:2, :]
-axes_d = axes[2:, :]
+def plot_all_violins():
+    # First plots for playability
+    fig, axes = plt.subplots(4, 3, figsize=(3 * 6, 2 * 5), sharex=True, sharey="row")
+    # fig_d, axes_d = plt.subplots(2, 3, figsize=(3 * 7, 2 * 4), sharex=True, sharey=True)
+    axes_p = axes[:2, :]
+    axes_d = axes[2:, :]
 
-# First column: SMB
-ax_1, ax_2 = axes_p[:, 0]
-ax_3, ax_4 = axes_d[:, 0]
+    # First column: SMB
+    ax_1, ax_2 = axes_p[:, 0]
+    ax_3, ax_4 = axes_d[:, 0]
 
-experiments = [
-    ("ten_vaes", "discretized_strict_gt"),
-    ("ten_vaes", "baseline_strict_gt"),
-    ("ten_vaes", "normal_strict_gt"),
-]
-plot_violins(experiments, range(10), ax_1, ax_2, ax_3, ax_4)
-# First column: SMB
-ax_1, ax_2 = axes_p[:, 0]
-ax_3, ax_4 = axes_d[:, 0]
+    experiments = [
+        ("ten_vaes", "discretized_strict_gt"),
+        ("ten_vaes", "baseline_strict_gt"),
+        ("ten_vaes", "normal_strict_gt"),
+    ]
+    plot_violins(experiments, range(10), ax_1, ax_2, ax_3, ax_4)
+    # First column: SMB
+    ax_1, ax_2 = axes_p[:, 0]
+    ax_3, ax_4 = axes_d[:, 0]
 
-experiments = [
-    ("ten_vaes", "discretized_strict_gt"),
-    ("ten_vaes", "baseline_strict_gt"),
-    ("ten_vaes", "normal_strict_gt"),
-]
-plot_violins(experiments, range(10), ax_1, ax_2, ax_3, ax_4)
+    experiments = [
+        ("ten_vaes", "discretized_strict_gt"),
+        ("ten_vaes", "baseline_strict_gt"),
+        ("ten_vaes", "normal_strict_gt"),
+    ]
+    plot_violins(experiments, range(10), ax_1, ax_2, ax_3, ax_4)
 
-# Second column: Zelda
-ax_1, ax_2 = axes_p[:, 2]
-ax_3, ax_4 = axes_d[:, 2]
+    # Second column: Zelda
+    ax_1, ax_2 = axes_p[:, 2]
+    ax_3, ax_4 = axes_d[:, 2]
 
-experiments = [
-    ("zelda", "zelda_discretized_grammar_gt"),
-    ("zelda", "zelda_baseline_grammar_gt"),
-    ("zelda", "zelda_normal_grammar_gt"),
-]
-plot_violins(experiments, [0, 3, 5, 6], ax_1, ax_2, ax_3, ax_4)
+    experiments = [
+        ("zelda", "zelda_discretized_grammar_gt"),
+        ("zelda", "zelda_baseline_grammar_gt"),
+        ("zelda", "zelda_normal_grammar_gt"),
+    ]
+    plot_violins(experiments, [0, 3, 5, 6], ax_1, ax_2, ax_3, ax_4)
 
-# First column: SMB (jumping)
-ax_1, ax_2 = axes_p[:, 1]
-ax_3, ax_4 = axes_d[:, 1]
+    # First column: SMB (jumping)
+    ax_1, ax_2 = axes_p[:, 1]
+    ax_3, ax_4 = axes_d[:, 1]
 
-experiments = [
-    ("ten_vaes", "discretized_force_jump_2_gt"),
-    ("ten_vaes", "baseline_force_jump_2_gt"),
-    ("ten_vaes", "normal_force_jump_2_gt"),
-]
-plot_violins(experiments, range(10), ax_1, ax_2, ax_3, ax_4)
+    experiments = [
+        ("ten_vaes", "discretized_force_jump_2_gt"),
+        ("ten_vaes", "baseline_force_jump_2_gt"),
+        ("ten_vaes", "normal_force_jump_2_gt"),
+    ]
+    plot_violins(experiments, range(10), ax_1, ax_2, ax_3, ax_4)
 
-# Setting up titles
-axes[0, 0].set_title("SMB", fontsize=BIGGER_SIZE)
-# axes_d[0, 0].set_title("SMB", fontsize=BIGGER_SIZE)
+    # Setting up titles
+    axes[0, 0].set_title("SMB", fontsize=BIGGER_SIZE)
+    # axes_d[0, 0].set_title("SMB", fontsize=BIGGER_SIZE)
 
-axes[0, 1].set_title("SMB (Jump)", fontsize=BIGGER_SIZE)
-# axes_d[0, 1].set_title("SMB (Jump)", fontsize=BIGGER_SIZE)
+    axes[0, 1].set_title("SMB (Jump)", fontsize=BIGGER_SIZE)
+    # axes_d[0, 1].set_title("SMB (Jump)", fontsize=BIGGER_SIZE)
 
-axes[0, 2].set_title("Zelda", fontsize=BIGGER_SIZE)
-# axes_d[0, 2].set_title("Zelda", fontsize=BIGGER_SIZE)
+    axes[0, 2].set_title("Zelda", fontsize=BIGGER_SIZE)
+    # axes_d[0, 2].set_title("Zelda", fontsize=BIGGER_SIZE)
 
-# Setting up x labels
-axes[-1, 1].set_xlabel("\nExperiment", fontsize=BIGGER_SIZE)
-# axes_d[1, 1].set_xlabel("\nExperiment", fontsize=BIGGER_SIZE)
+    # Setting up x labels
+    axes[-1, 1].set_xlabel("\nExperiment", fontsize=BIGGER_SIZE)
+    # axes_d[1, 1].set_xlabel("\nExperiment", fontsize=BIGGER_SIZE)
 
-# Setting up y labels
-axes_p[0, 0].set_ylabel("Playability (I)", fontsize=14)
-axes_p[1, 0].set_ylabel("Playability (RW)", fontsize=14)
+    # Setting up y labels
+    axes_p[0, 0].set_ylabel("Playability (I)", fontsize=14)
+    axes_p[1, 0].set_ylabel("Playability (RW)", fontsize=14)
 
-axes_d[0, 0].set_ylabel("Diversity (I)", fontsize=14)
-axes_d[1, 0].set_ylabel("Diversity (RW)", fontsize=14)
+    axes_d[0, 0].set_ylabel("Diversity (I)", fontsize=14)
+    axes_d[1, 0].set_ylabel("Diversity (RW)", fontsize=14)
 
-# Setting up tick label sizes
-axes[-1, 0].tick_params(axis="x", labelsize=BIGGER_SIZE)
-axes[-1, 1].tick_params(axis="x", labelsize=BIGGER_SIZE)
-axes[-1, 2].tick_params(axis="x", labelsize=BIGGER_SIZE)
+    # Setting up tick label sizes
+    axes[-1, 0].tick_params(axis="x", labelsize=BIGGER_SIZE)
+    axes[-1, 1].tick_params(axis="x", labelsize=BIGGER_SIZE)
+    axes[-1, 2].tick_params(axis="x", labelsize=BIGGER_SIZE)
 
-# plt.show()
-# fig_p.tight_layout()
-# fig_d.tight_layout()
-# fig_p.savefig("./data/plots/ten_vaes/paper_ready/violin_plots_playability.png")
-# fig_d.savefig("./data/plots/ten_vaes/paper_ready/violin_plots_diversity.png")
-fig.tight_layout()
-fig.savefig("./data/plots/ten_vaes/paper_ready/violin_plots.png", dpi=120)
-# plt.show()
+    # plt.show()
+    # fig_p.tight_layout()
+    # fig_d.tight_layout()
+    # fig_p.savefig("./data/plots/ten_vaes/paper_ready/violin_plots_playability.png")
+    # fig_d.savefig("./data/plots/ten_vaes/paper_ready/violin_plots_diversity.png")
+    fig.tight_layout()
+    fig.savefig("./data/plots/ten_vaes/paper_ready/violin_plots.png", dpi=120)
+    # plt.show()
+
+
+if __name__ == "__main__":
+    experiments = [
+        ("zelda", "zelda_discretized_grammar_gt"),
+        ("zelda", "zelda_baseline_grammar_gt"),
+        ("zelda", "zelda_normal_grammar_gt"),
+    ]
+    plot_violins_for_dataviz_course(experiments, [0, 3, 5, 6])
