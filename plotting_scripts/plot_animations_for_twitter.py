@@ -40,9 +40,11 @@ p_map = load_csv_as_map(path_to_gt)
 bg = BaselineGeometry(p_map, "baseline_for_plotting", vae_path)
 dg = DiscretizedGeometry(p_map, "geometry_for_plotting_banner", vae_path)
 
+
+bg_internal = BaselineGeometry(p_map, "baseline_for_plotting_internally", vae_path)
 # Getting more levels for plotting.
-bg.interpolation.n_points_in_line = 100
-dg.interpolation.n_points_in_line = 100
+bg.interpolation.n_points_in_line = 200
+dg.interpolation.n_points_in_line = 200
 
 vae = VAEMarioHierarchical()
 vae.load_state_dict(t.load(vae_path, map_location=vae.device))
@@ -65,32 +67,81 @@ def all_animations():
     #     vmin=0.0,
     #     vmax=1.0,
     # )
+    base_image = vae.plot_grid(n_rows=20, n_cols=20)
 
     z = t.Tensor([4.8, 3.0])
     z_prime = t.Tensor([3.0, 3.6])
     full_geodesic_interpolation = (
         dg.interpolation._full_interpolation(z, z_prime).detach().numpy()
     )
-    geodesic_interpolation, levels_geodesic = dg.interpolate(z, z_prime)
+
+    geodesic_interpolation = t.cat(
+        [
+            bg_internal.interpolate(z_i, z_i_plus_one)[0]
+            for z_i, z_i_plus_one in zip(
+                full_geodesic_interpolation[:-1], full_geodesic_interpolation[1:]
+            )
+        ]
+    )
+
+    # geodesic_interpolation, levels_geodesic = dg.interpolate(z, z_prime)
     linear_interpolation, levels_linear = bg.interpolate(z, z_prime)
     linear_interpolation = linear_interpolation.detach().numpy()
 
     # First half of the linear interpolation
-    save_path = "./data/plots/animation_for_twitter/linear_interpolation_first_half/"
+    save_path = Path(
+        "./data/plots/animation_for_twitter/linear_interpolation_first_half/"
+    )
+    save_path.mkdir(exist_ok=True)
     animation_linear_interpolation_from(
         1,
         len(linear_interpolation) // 2,
         linear_interpolation,
+        base_image,
         layer_on_top,
         save_path=save_path,
     )
 
     # Second half of the linear interpolation
-    save_path = "./data/plots/animation_for_twitter/linear_interpolation_second_half/"
+    save_path = Path(
+        "./data/plots/animation_for_twitter/linear_interpolation_second_half/"
+    )
+    save_path.mkdir(exist_ok=True)
     animation_linear_interpolation_from(
         len(linear_interpolation) // 2,
-        len(linear_interpolation),
+        len(linear_interpolation) + 1,
         linear_interpolation,
+        base_image,
+        layer_on_top,
+        save_path=save_path,
+    )
+
+    # First half of the geodesic interpolation
+    save_path = Path(
+        "./data/plots/animation_for_twitter/geodesic_interpolation_first_half/"
+    )
+    save_path.mkdir(exist_ok=True)
+    animate_geodesic_interpolation_from(
+        1,
+        len(geodesic_interpolation) // 2,
+        linear_interpolation,
+        geodesic_interpolation,
+        base_image,
+        layer_on_top,
+        save_path=save_path,
+    )
+
+    # Second half of the geodesic interpolation
+    save_path = Path(
+        "./data/plots/animation_for_twitter/geodesic_interpolation_second_half/"
+    )
+    save_path.mkdir(exist_ok=True)
+    animate_geodesic_interpolation_from(
+        len(geodesic_interpolation) // 2,
+        len(geodesic_interpolation) + 1,
+        linear_interpolation,
+        geodesic_interpolation,
+        base_image,
         layer_on_top,
         save_path=save_path,
     )
@@ -170,6 +221,7 @@ def animation_linear_interpolation_from(
     end: int,
     linear_interpolation: t.Tensor,
     base_image: np.ndarray,
+    layer_on_top: np.ndarray,
     save_path: Path,
 ):
     linear_color = "#2A94DF"
@@ -180,9 +232,9 @@ def animation_linear_interpolation_from(
         line_to_plot = linear_interpolation[:i]
 
         # Plotting the background
-        _, _ = vae.plot_grid(n_rows=20, n_cols=20, ax=ax, return_imgs=True)
+        ax.imshow(base_image, extent=[-5, 5, -5, 5])
         ax.imshow(
-            base_image,
+            layer_on_top,
             extent=[-5, 5, -5, 5],
             alpha=0.4,
             cmap="autumn",
@@ -220,10 +272,100 @@ def animation_linear_interpolation_from(
             zorder=3,
         )
 
-        ax.set_xlim((2.5, 5.0))
+        ax.set_xlim((2.8, 5.0))
         ax.set_ylim((2.5, 4.2))
 
-        fig.savefig(save_path / f"{i:05d}.png")
+        save_path_for_image = save_path / f"{i:05d}.png"
+        print(f"Saving image in: {save_path_for_image}")
+        fig.savefig(save_path_for_image, bbox_inches="tight")
+        plt.close(fig)
+
+
+def animate_geodesic_interpolation_from(
+    beginning: int,
+    end: int,
+    linear_interpolation: t.Tensor,
+    geodesic_interpolation: t.Tensor,
+    base_image: np.ndarray,
+    layer_on_top: np.ndarray,
+    save_path: Path,
+):
+    linear_color = "#2A94DF"
+    geodesic_color = "#F2BB05"
+
+    for i in range(beginning, end):
+        fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+        ax.axis("off")
+
+        line_to_plot = geodesic_interpolation[:i]
+
+        # Plotting the background
+        ax.imshow(base_image, extent=[-5, 5, -5, 5])
+        ax.imshow(
+            layer_on_top,
+            extent=[-5, 5, -5, 5],
+            alpha=0.4,
+            cmap="autumn",
+            vmin=0.0,
+            vmax=1.0,
+        )
+
+        # Starting and ending points
+        ax.scatter(
+            linear_interpolation[[0, -1], 0],
+            linear_interpolation[[0, -1], 1],
+            s=120,
+            c="black",
+            edgecolors="k",
+            zorder=3,
+        )
+
+        # The linear interpolation
+        ax.plot(
+            linear_interpolation[:, 0],
+            linear_interpolation[:, 1],
+            lw=3,
+            label="Linear",
+            c=linear_color,
+            path_effects=[pe.Stroke(linewidth=5, foreground="k"), pe.Normal()],
+        )
+
+        # Final point of linear interpolation
+        ax.scatter(
+            linear_interpolation[[-1], 0],
+            linear_interpolation[[-1], 1],
+            s=120,
+            c=linear_color,
+            edgecolors="k",
+            zorder=3,
+        )
+
+        # The geodesic interpolation
+        ax.plot(
+            line_to_plot[:, 0],
+            line_to_plot[:, 1],
+            lw=3,
+            # label="Linear",
+            c=geodesic_color,
+            path_effects=[pe.Stroke(linewidth=5, foreground="k"), pe.Normal()],
+        )
+
+        # Final point of linear interpolation
+        ax.scatter(
+            line_to_plot[[-1], 0],
+            line_to_plot[[-1], 1],
+            s=120,
+            c=geodesic_color,
+            edgecolors="k",
+            zorder=3,
+        )
+
+        ax.set_xlim((2.8, 5.0))
+        ax.set_ylim((2.5, 4.2))
+
+        save_path_for_image = save_path / f"{i:05d}.png"
+        print(f"Saving image in: {save_path_for_image}")
+        fig.savefig(save_path_for_image, bbox_inches="tight")
         plt.close(fig)
 
 
@@ -240,3 +382,7 @@ def plot_all_levels():
 if __name__ == "__main__":
     all_animations()
     # animation_linear_interpolation_first_half()
+
+
+# ffmpeg -framerate 60 -i %05d.png -c:v libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -pix_fmt yuv420p -crf 5 second_half.mp4
+# ffmpeg -framerate 60 -start_number 110 -i %05d.png -c:v libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -pix_fmt yuv420p -crf 5 second_half.mp4
