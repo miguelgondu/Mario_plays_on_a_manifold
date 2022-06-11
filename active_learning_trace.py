@@ -7,6 +7,7 @@ import json
 from itertools import product
 import multiprocessing as mp
 from pathlib import Path
+from time import time
 
 import click
 import torch as t
@@ -97,7 +98,8 @@ def simulate_level(level: t.Tensor, processes: int, repeats: int) -> int:
 
 @click.command()
 @click.argument("model-name", type=str)
-def run(model_name):
+@click.option("--overwrite/--not-overwrite", default=False)
+def run(model_name, overwrite):
     """
     Runs 500 AL queries for this model.
     """
@@ -120,7 +122,7 @@ def run(model_name):
         zs = a["zs"]
         playabilities = a["playabilities"]
 
-        if len(zs) > n_iterations + 100:
+        if len(zs) > n_iterations + 100 and not overwrite:
             # We don't need to run anything
             print(f"We already have a trace at {trace_path}. Queries: {len(zs) - 100}")
             return
@@ -134,19 +136,32 @@ def run(model_name):
             get_initial_data(model_name)
             zs, playabilities = load_initial_data(model_name)
 
+    if overwrite:
+        to_run = n_iterations
+        zs = zs[:100]
+        playabilities = playabilities[:100]
+
     # Loading models
+    it = time()
     vae = load_vae(model_name)
     gpc = GaussianProcessClassifier(kernel=kernel)
+    print(f"Loaded the models: {time() - it:.2f}")
 
     # Bootstrapping with initial data
+    it = time()
     gpc.fit(zs, playabilities)
+    print(f"Fitted the initial gpc: {time() - it:.2f}")
 
     for i in range(to_run):
+        it = time()
         # Get next point to query
         next_point, als = query(gpc)
+        print(f"Queried the next point: {time() - it:.2f}")
 
+        it = time()
         next_level = vae.decode(t.Tensor(next_point)).probs.argmax(dim=-1)
         p = simulate_level(next_level, 5, 5)
+        print(f"Simulated the level: {time() - it:.2f}")
 
         print(
             f"Tested {next_point}. p={p:.1f}. ALS={als:1.4f} ({len(zs)-100}/{n_iterations})"
@@ -162,9 +177,11 @@ def run(model_name):
                 playabilities=playabilities,
             )
 
+        it = time()
         kernel = 1.0 * Matern(nu=3 / 2) + 1.0 * WhiteKernel()
         gpc = GaussianProcessClassifier(kernel=kernel)
         gpc.fit(zs, playabilities)
+        print(f"Fitted the GPC (on {len(zs)}): {time() - it:.2f}")
 
 
 if __name__ == "__main__":

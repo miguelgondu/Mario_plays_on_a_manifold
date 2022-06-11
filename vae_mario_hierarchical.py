@@ -151,7 +151,7 @@ class VAEMarioHierarchical(nn.Module):
         n_cols=10,
         sample=False,
         ax=None,
-        return_imgs=False
+        return_imgs=False,
     ):
         if self.z_dim != 2:
             return np.zeros((16 * 14, 16 * 14, 3))

@@ -183,8 +183,9 @@ class DiscreteInterpolation(BaseInterpolation):
         idxs = np.round(
             np.linspace(0, len(zs_in_path) - 1, self.n_points_in_line)
         ).astype(int)
-        assert (zs_in_path[0] == z).all()
-        assert (zs_in_path[-1] == z_prime).all()
+        # assert t.isclose(zs_in_path[0], z, atol=1e-1)
+        # assert (zs_in_path[0] == z).all()
+        # assert (zs_in_path[-1] == z_prime).all()
 
         zs_in_path = zs_in_path[idxs]
         vae = self._load_vae()

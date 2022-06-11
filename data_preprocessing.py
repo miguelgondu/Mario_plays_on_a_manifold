@@ -12,6 +12,7 @@ from itertools import product
 import numpy as np
 
 from mario_utils.levels import levels_to_onehot
+from mario_utils.plotting import save_level_from_array
 
 
 def create_level_array_from_rows(strings: List[str]):
@@ -121,10 +122,25 @@ def process_zelda():
     np.savez(processed_level_path / "onehot.npz", levels=onehot_levels)
 
 
+def plot_all_levels():
+    """
+    Loads all the training levels and plots them
+    """
+    levels_path = Path("./data/processed/all_levels_onehot.npz")
+    levels = np.load(levels_path)["levels"].argmax(axis=1)
+
+    plotting_path = Path("./data/plots/all_training_levels")
+    plotting_path.mkdir(exist_ok=True, parents=True)
+
+    for i, lvl in enumerate(levels):
+        save_level_from_array(plotting_path / f"{i:04d}.png", lvl)
+
+
 if __name__ == "__main__":
     # process()
     # process(width=16, comment="rasmus_")
     # all_levels_encoded = np.load("./data/processed/all_levels_encoded.npz")["levels"]
     # print("Amount of levels: ")
     # print(all_levels_encoded.shape)
-    process_zelda()
+    # process_zelda()
+    plot_all_levels()
