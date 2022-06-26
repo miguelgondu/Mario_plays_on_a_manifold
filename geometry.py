@@ -256,6 +256,9 @@ class DiscretizedGeometry(Geometry):
 
             np.savez(metric_vol_path, zs=zs, metric_volumes=metric_volumes)
 
+        self.zs_of_metric_volumes = zs
+        self.metric_volumes = metric_volumes
+
         # build interpolation and diffusion with that new p_map
         p = (metric_volumes < metric_volumes.mean()).astype(int)
 

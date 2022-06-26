@@ -385,7 +385,3 @@ def plot_all_levels():
 if __name__ == "__main__":
     all_animations()
     # animation_linear_interpolation_first_half()
-
-
-# ffmpeg -framerate 60 -i %05d.png -c:v libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -pix_fmt yuv420p -crf 5 geodesic_interp.mp4
-# ffmpeg -framerate 60 -start_number 110 -i %05d.png -c:v libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -pix_fmt yuv420p -crf 5 second_half.mp4
