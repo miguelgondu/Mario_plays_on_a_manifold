@@ -10,7 +10,7 @@ from utils.experiment import (
     load_csv_as_map,
     load_trace_as_map,
 )
-from geometry import (
+from geometries import (
     Geometry,
     BaselineGeometry,
     NormalGeometry,

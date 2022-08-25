@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from simulate_array import _simulate_array
-from geometry import DiscreteGeometry, ContinuousGeometry, BaselineGeometry
+from geometries import DiscreteGeometry, ContinuousGeometry, BaselineGeometry
 from utils.experiment import (
     load_csv_as_arrays,
     load_csv_as_map,

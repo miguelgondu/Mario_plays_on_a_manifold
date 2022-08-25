@@ -11,7 +11,7 @@ from utils.experiment import (
     load_trace_as_map,
     intersection,
 )
-from geometry import (
+from geometries import (
     DiscretizedGeometry,
     Geometry,
     BaselineGeometry,

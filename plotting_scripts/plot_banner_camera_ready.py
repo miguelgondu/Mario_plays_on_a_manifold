@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.patheffects as pe
 import numpy as np
-from geometry import BaselineGeometry, DiscretizedGeometry
+from geometries import BaselineGeometry, DiscretizedGeometry
 
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 from utils.experiment import load_csv_as_map

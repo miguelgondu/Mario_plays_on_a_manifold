@@ -7,7 +7,8 @@ from interpolations.linear_interpolation import LinearInterpolation
 
 from diffusions.normal_diffusion import NormalDiffusion
 
-from geometries.geometry import Geometry
+from .geometry import Geometry
+
 
 class NormalGeometry(Geometry):
     def __init__(

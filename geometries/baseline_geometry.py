@@ -12,7 +12,7 @@ from interpolations.linear_interpolation import LinearInterpolation
 
 from diffusions.baseline_diffusion import BaselineDiffusion
 
-from geometries.geometry import Geometry
+from .geometry import Geometry
 
 
 class BaselineGeometry(Geometry):

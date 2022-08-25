@@ -10,7 +10,7 @@ from utils.experiment import load_csv_as_map, load_experiment
 import torch as t
 import matplotlib.pyplot as plt
 
-from geometry import DiscreteGeometry
+from geometries import DiscreteGeometry
 from vae_mario_hierarchical import VAEMarioHierarchical
 
 

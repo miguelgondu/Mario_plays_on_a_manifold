@@ -11,7 +11,7 @@ import torch as t
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 import numpy as np
-from geometry import BaselineGeometry, DiscretizedGeometry
+from geometries import BaselineGeometry, DiscretizedGeometry
 from plotting_scripts.plot_before_and_after_calibrating import BIGGER_SIZE
 
 from vae_mario_hierarchical import VAEMarioHierarchical

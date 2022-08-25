@@ -13,7 +13,7 @@ from utils.experiment import load_arrays_as_map
 
 from vae_zelda_hierachical import VAEZeldaHierarchical
 
-from geometry import BaselineGeometry, DiscretizedGeometry, Geometry, NormalGeometry
+from geometries import BaselineGeometry, DiscretizedGeometry, Geometry, NormalGeometry
 from grammar_zelda import grammar_check
 
 

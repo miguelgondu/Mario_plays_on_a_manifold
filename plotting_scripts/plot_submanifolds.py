@@ -3,7 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from utils.experiment import load_csv_as_map, intersection
-from geometry import DiscreteGeometry
+from geometries import DiscreteGeometry
 
 path_to_gt = Path(
     "./data/array_simulation_results/ten_vaes/ground_truth/vae_mario_hierarchical_id_0.csv"

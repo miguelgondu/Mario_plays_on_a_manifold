@@ -8,7 +8,7 @@ from pathlib import Path
 import torch as t
 import matplotlib.pyplot as plt
 import numpy as np
-from geometry import BaselineGeometry
+from geometries import BaselineGeometry
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 from utils.experiment import load_csv_as_map

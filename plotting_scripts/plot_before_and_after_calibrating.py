@@ -3,7 +3,7 @@ from pathlib import Path
 import torch as t
 import matplotlib.pyplot as plt
 import numpy as np
-from geometry import BaselineGeometry, DiscretizedGeometry
+from geometries import BaselineGeometry, DiscretizedGeometry
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 from vae_mario_obstacles import VAEWithObstacles

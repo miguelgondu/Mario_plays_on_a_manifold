@@ -13,7 +13,7 @@ from vae_models.vae_mario_obstacles import VAEWithObstacles
 
 from vae_models.vae_zelda_obstacles import VAEZeldaWithObstacles
 
-from geometries.geometry import Geometry
+from .geometry import Geometry
 
 
 class DiscretizedGeometry(Geometry):

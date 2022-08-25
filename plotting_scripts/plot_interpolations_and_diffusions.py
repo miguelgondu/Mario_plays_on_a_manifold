@@ -7,7 +7,7 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geometry import (
+from geometries import (
     BaselineGeometry,
     DiscreteGeometry,
     DiscretizedGeometry,

@@ -6,7 +6,7 @@ import torch as t
 from interpolations.discrete_interpolation import DiscreteInterpolation
 from diffusions.discrete_diffusion import DiscreteDiffusion
 
-from geometries.geometry import Geometry
+from .geometry import Geometry
 
 
 class DiscreteGeometry(Geometry):

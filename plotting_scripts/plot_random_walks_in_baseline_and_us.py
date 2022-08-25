@@ -6,7 +6,7 @@ import random
 
 import torch
 
-from geometry import BaselineGeometry, DiscretizedGeometry, NormalGeometry
+from geometries import BaselineGeometry, DiscretizedGeometry, NormalGeometry
 from utils.experiment import load_csv_as_map
 
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
