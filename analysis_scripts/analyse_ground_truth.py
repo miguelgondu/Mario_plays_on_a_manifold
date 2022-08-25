@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 from vae_models.vae_geometry_hierarchical import VAEGeometryHierarchical
-from train_hierarchical_vae import load_data
+from experiments.train_hierarchical_vae import load_data
 from utils.mario.levels import onehot_to_levels
 
 # print(list(all_experiments))
