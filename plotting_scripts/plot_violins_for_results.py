@@ -102,7 +102,16 @@ def plot_violins_for_dataviz_course(experiments, vae_ids):
     )
 
 
-def plot_violins(experiments, vae_ids, ax_interp_p, ax_diff_p, ax_interp_d, ax_diff_d):
+def plot_violins(
+    experiments,
+    vae_ids,
+    ax_interp_p,
+    ax_diff_p,
+    ax_interp_d,
+    ax_diff_d,
+    points=False,
+    palette="Blues",
+):
     rows_interps = []
     rows_diffs = []
     for exp_folder, exp_name in experiments:
@@ -142,38 +151,43 @@ def plot_violins(experiments, vae_ids, ax_interp_p, ax_diff_p, ax_interp_d, ax_d
     p_interp = pd.DataFrame(rows_interps)
     p_diff = pd.DataFrame(rows_diffs)
 
+    if points:
+        function_that_plots = sns.pointplot
+    else:
+        function_that_plots = sns.violinplot
+
     # _, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(7 * 2, 7 * 2), sharey=True)
-    sns.violinplot(
+    function_that_plots(
         data=p_interp,
         x="experiment",
         y="playability",
         ax=ax_interp_p,
         cut=1.0,
-        palette="Blues",
+        palette=palette,
     )
-    sns.violinplot(
+    function_that_plots(
         data=p_diff,
         x="experiment",
         y="playability",
         ax=ax_diff_p,
         cut=1.0,
-        palette="Blues",
+        palette=palette,
     )
-    sns.violinplot(
+    function_that_plots(
         data=p_interp,
         x="experiment",
         y="diversity",
         ax=ax_interp_d,
         cut=0.0,
-        palette="Blues",
+        palette=palette,
     )
-    sns.violinplot(
+    function_that_plots(
         data=p_diff,
         x="experiment",
         y="diversity",
         ax=ax_diff_d,
         cut=0.0,
-        palette="Blues",
+        palette=palette,
     )
 
     for ax in [ax_interp_p, ax_interp_d, ax_diff_d, ax_diff_p]:
@@ -263,14 +277,46 @@ def plot_all_violins():
     # fig_p.savefig("./data/plots/ten_vaes/paper_ready/violin_plots_playability.png")
     # fig_d.savefig("./data/plots/ten_vaes/paper_ready/violin_plots_diversity.png")
     fig.tight_layout()
-    fig.savefig("./data/plots/ten_vaes/paper_ready/violin_plots.png", dpi=120)
+    fig.savefig("./violin_plots_for_presentation.png", dpi=120)
     # plt.show()
 
 
-if __name__ == "__main__":
+def plot_violins_for_cog_presentation():
+    """
+    Plots the violin comparison for playability and
+    diversity independently
+    """
     experiments = [
-        ("zelda", "zelda_discretized_grammar_gt"),
-        ("zelda", "zelda_baseline_grammar_gt"),
-        ("zelda", "zelda_normal_grammar_gt"),
+        ("ten_vaes", "discretized_strict_gt"),
+        ("ten_vaes", "baseline_strict_gt"),
+        ("ten_vaes", "normal_strict_gt"),
     ]
-    plot_violins_for_dataviz_course(experiments, [0, 3, 5, 6])
+
+    fig_p, (ax_interp_p, ax_diff_p) = plt.subplots(1, 2, figsize=(2 * 5, 5))
+    fig_d, (ax_interp_d, ax_diff_d) = plt.subplots(1, 2, figsize=(2 * 5, 5))
+    plot_violins(
+        experiments,
+        range(10),
+        ax_interp_p,
+        ax_diff_p,
+        ax_interp_d,
+        ax_diff_d,
+        points=True,
+        palette="bright",
+    )
+
+    fig_p.savefig("./violins_playability.png")
+    fig_d.savefig("./violins_diversity.png")
+
+    plt.close()
+
+
+if __name__ == "__main__":
+    # experiments = [
+    #     ("zelda", "zelda_discretized_grammar_gt"),
+    #     ("zelda", "zelda_baseline_grammar_gt"),
+    #     ("zelda", "zelda_normal_grammar_gt"),
+    # ]
+    # plot_violins_for_dataviz_course(experiments, [0, 3, 5, 6])
+    # plot_all_violins()
+    plot_violins_for_cog_presentation()

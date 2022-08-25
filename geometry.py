@@ -273,7 +273,7 @@ class DiscretizedGeometry(Geometry):
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
         return self.interpolation.interpolate(z, z_prime)
 
-    def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor]:
+    def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor, t.Tensor]:
         return self.diffusion.run(z_0)
 
 
