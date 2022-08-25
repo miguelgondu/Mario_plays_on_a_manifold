@@ -11,7 +11,7 @@ import numpy as np
 from geometry import BaselineGeometry
 
 from vae_mario_hierarchical import VAEMarioHierarchical
-from experiment_utils import load_csv_as_map
+from utils.experiment import load_csv_as_map
 
 SMALL_SIZE = 8
 MEDIUM_SIZE = 10

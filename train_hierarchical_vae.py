@@ -14,7 +14,7 @@ from torch.utils.data.dataset import Dataset
 import numpy as np
 from tqdm import tqdm
 
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 from torch.utils.tensorboard import SummaryWriter
 
 

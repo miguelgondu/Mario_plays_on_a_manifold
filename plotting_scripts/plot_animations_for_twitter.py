@@ -11,9 +11,9 @@ import matplotlib.patheffects as pe
 import numpy as np
 from geometry import BaselineGeometry, DiscretizedGeometry
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from experiment_utils import load_csv_as_map
-from mario_utils.plotting import get_img_from_level, save_level_from_array
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from utils.experiment import load_csv_as_map
+from utils.mario.plotting import get_img_from_level, save_level_from_array
 
 from simulator import test_level_from_decoded_tensor
 

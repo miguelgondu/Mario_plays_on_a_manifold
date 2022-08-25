@@ -18,8 +18,8 @@ from torch.distributions import (
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from mario_utils.plotting import get_img_from_level
-from vae_mario_hierarchical import load_data
+from utils.mario.plotting import get_img_from_level
+from vae_models.vae_mario_hierarchical import load_data
 
 
 class VAEStructured(nn.Module):

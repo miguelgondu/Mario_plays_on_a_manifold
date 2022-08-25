@@ -7,11 +7,11 @@ import torch as t
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from mario_utils.plotting import plot_level_from_decoded_tensor
+from utils.mario.plotting import plot_level_from_decoded_tensor
 
-from playability_base import PlayabilityBase
-from playability_convnet import PlayabilityConvnet
-from playability_mlp import PlayabilityMLP
+from playability_nets.playability_base import PlayabilityBase
+from playability_nets.playability_convnet import PlayabilityConvnet
+from playability_nets.playability_mlp import PlayabilityMLP
 
 
 def get_random_misclassified(

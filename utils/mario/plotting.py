@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import PIL
 
-from mario_utils.levels import onehot_to_levels
+from utils.mario.levels import onehot_to_levels
 
 filepath = Path(__file__).parent.resolve()
 Tensor = torch.Tensor

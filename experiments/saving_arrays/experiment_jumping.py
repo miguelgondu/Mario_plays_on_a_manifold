@@ -5,7 +5,7 @@ The forcing-mario-to-jump experiment
 from pathlib import Path
 from typing import Dict, Type
 
-from experiment_utils import (
+from utils.experiment import (
     build_discretized_manifold,
     load_csv_as_map,
     load_trace_as_map,

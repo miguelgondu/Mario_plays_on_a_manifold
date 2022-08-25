@@ -11,12 +11,12 @@ import matplotlib.pyplot as plt
 
 from simulate_array import _simulate_array
 from geometry import DiscreteGeometry, ContinuousGeometry, BaselineGeometry
-from experiment_utils import (
+from utils.experiment import (
     load_csv_as_arrays,
     load_csv_as_map,
     build_discretized_manifold,
 )
-from mario_utils.plotting import get_img_from_level
+from utils.mario.plotting import get_img_from_level
 
 
 def saving_the_interpolations_as_arrays():

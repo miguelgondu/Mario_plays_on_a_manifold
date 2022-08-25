@@ -6,7 +6,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from experiment_utils import intersection, load_csv_as_map
+from utils.experiment import intersection, load_csv_as_map
 from geometry import DiscretizedGeometry, NormalGeometry, BaselineGeometry
 from plotting_scripts.utils import load_and_order_results
 

@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from mario_utils.plotting import get_img_from_level
+from utils.mario.plotting import get_img_from_level
 
 
 def get_mean_playability(experiment: List[Path]) -> float:

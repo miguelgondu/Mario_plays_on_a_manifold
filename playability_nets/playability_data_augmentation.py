@@ -10,7 +10,7 @@ From experimentation:
 import random
 from typing import List, Tuple
 import numpy as np
-from mario_utils.levels import clean_level
+from utils.mario.levels import clean_level
 
 from simulator import run_level
 

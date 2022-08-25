@@ -3,10 +3,12 @@ from typing import Tuple
 
 import numpy as np
 
-from experiment_utils import load_csv_as_arrays
+from utils.experiment import load_csv_as_arrays
 
 
-def load_and_order_results(csv_path: Path, array_path: Path, column: str) -> Tuple[np.ndarray]:
+def load_and_order_results(
+    csv_path: Path, array_path: Path, column: str
+) -> Tuple[np.ndarray]:
     """
     Gets the csvs and returns points, results and levels in the right order
     """

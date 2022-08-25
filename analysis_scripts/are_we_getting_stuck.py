@@ -15,7 +15,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from mario_utils.plotting import get_img_from_level
+from utils.mario.plotting import get_img_from_level
 
 geometric_diffusions = list(
     Path("./data/array_simulation_results/geometric").glob(

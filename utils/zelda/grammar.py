@@ -8,7 +8,7 @@ import numpy as np
 
 from queue import Queue
 
-from zelda_utils.plotting import encoding
+from utils.zelda.plotting import encoding
 
 
 def grammar_check(level: np.ndarray) -> bool:

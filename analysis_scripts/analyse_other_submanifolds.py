@@ -2,7 +2,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from experiment_utils import grid_from_map, load_csv_as_arrays
+from utils.experiment import grid_from_map, load_csv_as_arrays
 
 # Let's check the different ground truths for their other columns
 

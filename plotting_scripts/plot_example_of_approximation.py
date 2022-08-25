@@ -15,7 +15,7 @@ from plotting_scripts.plot_before_and_after_calibrating import BIGGER_SIZE
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 from vae_mario_obstacles import VAEWithObstacles
-from experiment_utils import grid_from_map, load_arrays_as_map, load_csv_as_map
+from utils.experiment import grid_from_map, load_arrays_as_map, load_csv_as_map
 from vae_zelda_hierachical import VAEZeldaHierarchical
 
 

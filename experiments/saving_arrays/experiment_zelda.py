@@ -9,7 +9,7 @@ import pandas as pd
 import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
-from experiment_utils import load_arrays_as_map
+from utils.experiment import load_arrays_as_map
 
 from vae_zelda_hierachical import VAEZeldaHierarchical
 
@@ -65,7 +65,9 @@ def load_discretized_geometry(
 
 def load_baseline_geometry(vae_path: Path) -> BaselineGeometry:
     p_map = load_grammar_p_map(vae_path)
-    bg = BaselineGeometry(p_map, "zelda_baseline_grammar_gt", vae_path, exp_folder="zelda")
+    bg = BaselineGeometry(
+        p_map, "zelda_baseline_grammar_gt", vae_path, exp_folder="zelda"
+    )
 
     return bg
 
@@ -76,17 +78,22 @@ def load_normal_geometry(vae_path: Path) -> NormalGeometry:
 
     return ng
 
+
 def experiment(geometry: Geometry, force: bool = False) -> None:
     """
     Saves results for a given geometry
     """
     geometry.save_arrays(force=force)
-    interp_res_path = Path("./data/array_simulation_results/zelda/interpolations") / geometry.exp_name
-    diff_res_path = Path("./data/array_simulation_results/zelda/diffusions") / geometry.exp_name
+    interp_res_path = (
+        Path("./data/array_simulation_results/zelda/interpolations") / geometry.exp_name
+    )
+    diff_res_path = (
+        Path("./data/array_simulation_results/zelda/diffusions") / geometry.exp_name
+    )
 
     interp_res_path.mkdir(exist_ok=True, parents=True)
     diff_res_path.mkdir(exist_ok=True, parents=True)
-    
+
     for path_ in geometry.interpolation_path.glob("*.npz"):
         # Load and check for playability and diversity.
         array = np.load(path_)
@@ -95,7 +102,7 @@ def experiment(geometry: Geometry, force: bool = False) -> None:
         ps = np.array([grammar_check(level) for level in levels]).astype(int)
 
         np.savez(interp_res_path / f"{path_.stem}", zs=zs, levels=levels, ps=ps)
-    
+
     for path_ in geometry.diffusion_path.glob("*.npz"):
         # Load and check for playability and diversity.
         array = np.load(path_)
@@ -160,11 +167,10 @@ def baseline_experiment():
             ps = [grammar_check(level) for level in levels]
             means_diffs.append(np.mean(ps))
             ax2.scatter(diff[:, 0], diff[:, 1], c=ps)
-        
-        print(
-            f"means for diffusions: {np.mean(means_diffs)}, {np.std(means_diffs)}"
-        )
+
+        print(f"means for diffusions: {np.mean(means_diffs)}, {np.std(means_diffs)}")
         fig.suptitle(f"{vae_path.stem} - baseline")
+
 
 def normal_experiment():
     for _id in [0, 3, 5, 6]:
@@ -193,10 +199,8 @@ def normal_experiment():
             ps = [grammar_check(level) for level in levels]
             means_diffs.append(np.mean(ps))
             ax2.scatter(diff[:, 0], diff[:, 1], c=ps)
-        
-        print(
-            f"means for diffusions: {np.mean(means_diffs)}, {np.std(means_diffs)}"
-        )
+
+        print(f"means for diffusions: {np.mean(means_diffs)}, {np.std(means_diffs)}")
         fig.suptitle(f"{vae_path.stem} - baseline")
 
 
@@ -214,5 +218,3 @@ if __name__ == "__main__":
         experiment(ddg)
         experiment(bg)
         experiment(ng)
-
-    

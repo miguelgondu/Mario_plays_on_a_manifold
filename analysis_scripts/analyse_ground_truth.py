@@ -1,16 +1,16 @@
 import json
 from pathlib import Path
-from mario_utils.plotting import plot_level_from_array
+from utils.mario.plotting import plot_level_from_array
 
 import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from vae_geometry_hierarchical import VAEGeometryHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_geometry_hierarchical import VAEGeometryHierarchical
 from train_hierarchical_vae import load_data
-from mario_utils.levels import onehot_to_levels
+from utils.mario.levels import onehot_to_levels
 
 # print(list(all_experiments))
 def create_table(model_name, path):

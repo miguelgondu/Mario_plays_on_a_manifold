@@ -13,7 +13,7 @@ from torch.nn import functional as F
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from mario_utils.plotting import get_img_from_level
+from utils.mario.plotting import get_img_from_level
 
 Tensor = torch.Tensor
 

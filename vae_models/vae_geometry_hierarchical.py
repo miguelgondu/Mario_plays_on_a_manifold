@@ -2,12 +2,12 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.distributions import Categorical, Normal
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 from sklearn.cluster import KMeans
 from geoml.nnj import TranslatedSigmoid
 from geoml.manifold import Manifold
-from vae_mario_hierarchical import load_data
+from vae_models.vae_mario_hierarchical import load_data
 
 from geoml.discretized_manifold import DiscretizedManifold
 from metric_approximation_with_jacobians import approximate_metric, plot_approximation

@@ -7,13 +7,13 @@ import random
 import torch
 
 from geometry import BaselineGeometry, DiscretizedGeometry, NormalGeometry
-from experiment_utils import load_csv_as_map
+from utils.experiment import load_csv_as_map
 
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 from simulator import test_level_from_int_tensor
 
-from mario_utils.plotting import save_level_from_array
+from utils.mario.plotting import save_level_from_array
 
 
 def plot_levels_in_random_walk():

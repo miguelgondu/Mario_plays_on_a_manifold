@@ -1,26 +1,19 @@
-"""
-This script will send things to
-the MarioGAN.jar compiled simulator.
-
-When ran, it lets a human play a level.
-"""
 import subprocess
 import json
 from pathlib import Path
 
 import torch
 import numpy as np
-from mariogan import DCGAN_G
-from vae_geometry_hierarchical import VAEGeometryHierarchical
+from vae_models.vae_geometry_hierarchical import VAEGeometryHierarchical
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from mario_utils.levels import tensor_to_sim_level, clean_level
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from utils.mario.levels import tensor_to_sim_level, clean_level
 
 Tensor = torch.Tensor
 
 
-filepath = Path(__file__).parent.resolve()
-JARFILE_PATH = f"{filepath}/simulator.jar"
+ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
+JARFILE_PATH = f"{ROOT_DIR}/utils/simulator/simulator.jar"
 
 
 def test_level_from_decoded_tensor(
@@ -158,48 +151,3 @@ def testing_playability():
     # level[-1, :6] = 9.0
 
     run_level(str(clean_level(level.detach().numpy())), human_player=True)
-
-
-def test_playing_MarioGAN(
-    z: torch.Tensor = None, visualize: bool = False, epoch: int = 5800
-):
-    map_size = 32
-    nz = 2
-    z_dims = 10
-    ngf = 64
-    ngpu = 1
-    n_extra_layers = 0
-    generator = DCGAN_G(map_size, nz, z_dims, ngf, ngpu, n_extra_layers)
-
-    if z is None:
-        z = torch.randn((1, 2))
-    generator.load_state_dict(
-        torch.load(f"./models/MarioGAN/netG_epoch_{epoch}_0_{nz}.pth")
-    )
-    level = generator.get_level(z)[0]
-
-    res = test_level_from_int_tensor(level, human_player=False, visualize=visualize)
-    # print(res)
-    return res
-
-
-if __name__ == "__main__":
-    human_player = True
-    z_dim = 2
-    # checkpoint = 100
-    # model_name = f"mariovae_video_for_tv2_lorry_2_epoch_80"
-    # model_name = f"hierarchical_final_playable_final"
-
-    # print(f"Loading model {model_name}")
-    # vae = VAEGeometryHierarchical()
-    # vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
-    # vae.update_cluster_centers()
-    # vae.eval()
-
-    # random_z = 2.5 * torch.randn((1, z_dim))
-    # print(f"Playing {random_z[0]}")
-    # res = test_level_from_z(random_z[0], vae, human_player=human_player)
-    # print(res)
-    # video_for_tv2(vae)
-    # testing_playability()
-    test_playing_MarioGAN()

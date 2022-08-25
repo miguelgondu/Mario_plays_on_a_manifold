@@ -8,9 +8,9 @@ import torch as t
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.dataset import Dataset
-from mario_utils.plotting import get_img_from_level
+from utils.mario.plotting import get_img_from_level
 
-from vae_mario_hierarchical import load_data
+from vae_models.vae_mario_hierarchical import load_data
 
 
 class MLP_G(nn.Module):

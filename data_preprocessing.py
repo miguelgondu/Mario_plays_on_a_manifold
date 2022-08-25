@@ -11,8 +11,8 @@ from itertools import product
 
 import numpy as np
 
-from mario_utils.levels import levels_to_onehot
-from mario_utils.plotting import save_level_from_array
+from utils.mario.levels import levels_to_onehot
+from utils.mario.plotting import save_level_from_array
 
 
 def create_level_array_from_rows(strings: List[str]):

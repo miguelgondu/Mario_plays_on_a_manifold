@@ -5,7 +5,7 @@ Gets all arrays once ground truth and AL traces are computed.
 from pathlib import Path
 from typing import Type
 
-from experiment_utils import (
+from utils.experiment import (
     build_discretized_manifold,
     load_csv_as_map,
     load_trace_as_map,
@@ -83,9 +83,7 @@ if __name__ == "__main__":
     # save_all_arrays("discrete_strict", DiscreteGeometry, with_AL=False)
 
     # # Discretized
-    save_all_arrays(
-        "discretized_strict", DiscretizedGeometry, with_AL=True
-    )
+    save_all_arrays("discretized_strict", DiscretizedGeometry, with_AL=True)
 
     # Continuous
     # save_all_arrays("continuous_strict", ContinuousGeometry, with_AL=False)

@@ -5,7 +5,7 @@ grid of levels, interpolations and diffusions.
 
 from pathlib import Path
 
-from experiment_utils import load_csv_as_map, load_experiment
+from utils.experiment import load_csv_as_map, load_experiment
 
 import torch as t
 import matplotlib.pyplot as plt

@@ -6,7 +6,7 @@ import torch as t
 import torch.nn as nn
 import torch.nn.parallel
 
-from mario_utils.plotting import get_img_from_level
+from utils.mario.plotting import get_img_from_level
 
 # Taken from the MarioGAN repo
 class DCGAN_G(nn.Module):

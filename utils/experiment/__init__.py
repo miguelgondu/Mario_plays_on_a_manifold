@@ -14,7 +14,7 @@ from sklearn.gaussian_process.kernels import WhiteKernel, Matern
 
 from geoml.discretized_manifold import DiscretizedManifold
 
-from vae_mario_obstacles import VAEWithObstacles
+from vae_models.vae_mario_obstacles import VAEWithObstacles
 
 
 def load_csv_as_arrays(path: Path, column="marioStatus") -> Tuple[np.ndarray]:
@@ -150,6 +150,7 @@ def load_experiment(path_to_array: Path, path_to_csv: Path) -> Tuple[np.ndarray]
     # re-ordering the playabilities
     p_original = [p[zs.tolist().index(z.tolist())] for z in zs_original]
     return zs_original, p_original, levels_original
+
 
 def intersection(
     char_1: Dict[tuple, float], char_2: Dict[tuple, float]

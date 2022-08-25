@@ -7,7 +7,7 @@ from geometry import BaselineGeometry, DiscretizedGeometry
 
 from vae_mario_hierarchical import VAEMarioHierarchical
 from vae_mario_obstacles import VAEWithObstacles
-from experiment_utils import grid_from_map, load_csv_as_map
+from utils.experiment import grid_from_map, load_csv_as_map
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
