@@ -10,7 +10,10 @@ from geoml.manifold import Manifold
 from vae_models.vae_mario_hierarchical import load_data
 
 from geoml.discretized_manifold import DiscretizedManifold
-from metric_approximation_with_jacobians import approximate_metric, plot_approximation
+from utils.metric_approximation.finite_difference import (
+    approximate_metric,
+    plot_approximation,
+)
 
 
 Tensor = torch.Tensor

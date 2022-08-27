@@ -22,7 +22,7 @@ data/compressed_results/
 data/plots/
 data/evolution_traces/
 simulator_experiment/
-models/
+trained_models/
 models_experiment/
 notebooks/
 models_backup/
