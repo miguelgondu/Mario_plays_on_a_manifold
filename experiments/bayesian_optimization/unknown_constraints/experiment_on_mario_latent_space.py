@@ -82,22 +82,22 @@ def run_first_samples(
     return latent_codes, t.Tensor(playability), t.Tensor(jumps)
 
 
-def run_experiment():
+def bayesian_optimization_iteration(
+    latent_codes: t.Tensor, jumps: t.Tensor
+) -> Tuple[t.Tensor, t.Tensor]:
+    """
+    Runs a B.O. iteration and returns the next candidate and its value.
+    """
     vae = load_model()
 
-    # Get some first samples and save them.
-    latent_codes, playability, jumps = run_first_samples(vae)
-
-    # Initialize the GPR model for the predicted number
-    # of jumps.
-    model = SingleTaskGP(latent_codes, jumps.type(t.float32).unsqueeze(1))
+    model = SingleTaskGP(latent_codes, jumps)
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)
 
     EI = ExpectedImprovement(model, max(jumps))
 
     bounds = t.stack([t.Tensor([-5, -5]), t.Tensor([5, 5])])
-    candidate, acq_value = optimize_acqf(
+    candidate, _ = optimize_acqf(
         EI,
         bounds=bounds,
         q=1,
@@ -108,7 +108,25 @@ def run_experiment():
     print(candidate)
     level = vae.decode(candidate).probs.argmax(dim=-1)
     print(level)
-    test_level_from_int_tensor(level[0], visualize=True)
+    results = test_level_from_int_tensor(level[0], visualize=True)
+
+    return candidate, t.Tensor([[results["jumpActionsPerformed"]]])
+
+
+def run_experiment():
+    vae = load_model()
+
+    # Get some first samples and save them.
+    latent_codes, playability, jumps = run_first_samples(vae)
+    jumps = jumps.type(t.float32).unsqueeze(1)
+
+    # Initialize the GPR model for the predicted number
+    # of jumps.
+    for _ in range(20):
+        candidate, jump = bayesian_optimization_iteration(latent_codes, jumps)
+        print(f"tested {candidate} and got {jump}")
+        latent_codes = t.vstack((latent_codes, candidate))
+        jumps = t.vstack((jumps, jump))
 
 
 if __name__ == "__main__":
