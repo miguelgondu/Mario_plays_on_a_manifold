@@ -6,6 +6,7 @@ simulator while constraining that the level should be playable.
 """
 from typing import Tuple
 from pathlib import Path
+from matplotlib import pyplot as plt
 
 import torch as t
 import numpy as np
@@ -22,6 +23,7 @@ from utils.simulator.interface import (
     test_level_from_decoded_tensor,
     test_level_from_int_tensor,
 )
+from utils.visualization.latent_space import plot_prediction
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
@@ -36,9 +38,6 @@ def load_model() -> VAEMarioHierarchical:
     vae.eval()
 
     return vae
-
-
-# Implement EI.
 
 
 # Run first samples
@@ -83,7 +82,7 @@ def run_first_samples(
 
 
 def bayesian_optimization_iteration(
-    latent_codes: t.Tensor, jumps: t.Tensor
+    latent_codes: t.Tensor, jumps: t.Tensor, plot_latent_space: bool = False
 ) -> Tuple[t.Tensor, t.Tensor]:
     """
     Runs a B.O. iteration and returns the next candidate and its value.
@@ -110,6 +109,16 @@ def bayesian_optimization_iteration(
     print(level)
     results = test_level_from_int_tensor(level[0], visualize=True)
 
+    if plot_latent_space:
+        fig, ax = plt.subplots(1, 1)
+        plot_prediction(model, ax)
+
+        ax.scatter(latent_codes[:, 0], latent_codes[:, 1], c="black", marker="x")
+        ax.scatter(candidate[:, 0], candidate[:, 1], c="red", marker="d")
+
+        plt.show()
+        plt.close(fig)
+
     return candidate, t.Tensor([[results["jumpActionsPerformed"]]])
 
 
@@ -122,8 +131,15 @@ def run_experiment():
 
     # Initialize the GPR model for the predicted number
     # of jumps.
-    for _ in range(20):
-        candidate, jump = bayesian_optimization_iteration(latent_codes, jumps)
+    for iteration in range(20):
+        if (iteration + 1) % 5 == 0:
+            plot_latent_space = True
+        else:
+            plot_latent_space = False
+
+        candidate, jump = bayesian_optimization_iteration(
+            latent_codes, jumps, plot_latent_space=plot_latent_space
+        )
         print(f"tested {candidate} and got {jump}")
         latent_codes = t.vstack((latent_codes, candidate))
         jumps = t.vstack((jumps, jump))
