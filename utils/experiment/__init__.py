@@ -15,6 +15,7 @@ from sklearn.gaussian_process.kernels import WhiteKernel, Matern
 from geoml.discretized_manifold import DiscretizedManifold
 
 from vae_models.vae_mario_obstacles import VAEWithObstacles
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 
 def load_csv_as_arrays(path: Path, column="marioStatus") -> Tuple[np.ndarray]:
@@ -169,3 +170,14 @@ def intersection(
             res[z] = 0.0
 
     return res
+
+
+def load_model() -> VAEMarioHierarchical:
+    model_name = "vae_mario_hierarchical_id_0"
+    vae = VAEMarioHierarchical()
+    vae.load_state_dict(
+        t.load(f"./trained_models/ten_vaes/{model_name}.pt", map_location=vae.device)
+    )
+    vae.eval()
+
+    return vae
