@@ -10,9 +10,9 @@ from pathlib import Path
 import torch as t
 import numpy as np
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from mariogan import DCGAN_G
-from simulate_array import _simulate_array
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from gan_models.mariogan import DCGAN_G
+from utils.simulator.simulate_array import _simulate_array
 
 
 def get_ground_truth_arrays():

@@ -3,9 +3,7 @@ Runs all arrays in the experiment
 """
 from pathlib import Path
 
-import numpy as np
-
-from simulate_array import _simulate_array
+from utils.simulator.simulate_array import _simulate_array
 
 
 def run_exp(exp_name: str, processes: int = 50):

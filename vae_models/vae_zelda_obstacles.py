@@ -2,12 +2,15 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.distributions import Categorical, Normal
-from vae_zelda_hierachical import VAEZeldaHierarchical
+from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 from geoml.nnj import TranslatedSigmoid
 from geoml.manifold import Manifold
 
-from metric_approximation_with_jacobians import approximate_metric, plot_approximation
+from utils.metric_approximation.finite_difference import (
+    approximate_metric,
+    plot_approximation,
+)
 
 
 class VAEZeldaWithObstacles(VAEZeldaHierarchical, Manifold):

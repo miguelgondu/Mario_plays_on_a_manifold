@@ -26,7 +26,6 @@ from utils.acquisition.constrained_expected_improvement import (
 from utils.visualization.latent_space import plot_prediction
 
 from utils.experiment import load_model
-from utils.gp_models.dirichlet_gp import DirichletGPModel
 from utils.gp_models.bernoulli_gp import GPClassificationModel
 
 from experiments.bayesian_optimization.unknown_constraints.vanilla_bo_on_mario_latent_space import (

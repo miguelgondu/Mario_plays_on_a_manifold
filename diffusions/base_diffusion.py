@@ -4,8 +4,8 @@ from typing import Dict, Tuple
 import torch as t
 import numpy as np
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from vae_zelda_hierachical import VAEZeldaHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 
 class BaseDiffusion:

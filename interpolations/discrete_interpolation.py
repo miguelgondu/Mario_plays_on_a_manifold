@@ -12,7 +12,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 from utils.experiment import grid_from_map, positions_from_map
 
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 from .base_interpolation import BaseInterpolation
 

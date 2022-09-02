@@ -1,8 +1,10 @@
 from pathlib import Path
 from typing import Dict, Tuple
+from itertools import product
 
 import torch as t
 import numpy as np
+import networkx as nx
 
 from utils.experiment import load_arrays_as_map
 
@@ -92,3 +94,49 @@ class DiscretizedGeometry(Geometry):
 
     def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor, t.Tensor]:
         return self.diffusion.run(z_0)
+
+    def _get_edges_from_grid(self):
+        """
+        Constructs a list of all pairs ((i, j), (k, l)) s.t.
+        a 1 is connected to a neighbouring 1.
+        """
+        n, m = self.grid.shape
+        assert n == m
+
+        pos_id = lambda i, j: i + (m * j)
+        all_positions = list(product(range(n), range(m)))
+        graph_edges = []
+        for (i, j) in all_positions:
+            if self.grid[i, j] != 1:
+                continue
+
+            neighbours = [
+                (i + 1, j),
+                (i - 1, j),
+                (i, j + 1),
+                (i, j - 1),
+            ]
+            for r, s in neighbours:
+                if r >= n or r < 0:
+                    continue
+                if s >= m or s < 0:
+                    continue
+
+                if self.grid[r, s] == 1:
+                    min_ = min(pos_id(i, j), pos_id(r, s))
+                    max_ = max(pos_id(i, j), pos_id(r, s))
+                    graph_edges.append((min_, max_))
+                    print(f"added {(min_, max_)} to graph")
+
+        # Removing duplicates
+        graph_edges = list(set(graph_edges))
+
+        return graph_edges
+
+    def to_graph(self) -> nx.Graph:
+        """
+        Uses the internal grid to construct a graph of
+        all the connected ones.
+        """
+        graph_edges = self._get_edges_from_grid()
+        return nx.Graph(graph_edges)

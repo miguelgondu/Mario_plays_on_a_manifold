@@ -10,9 +10,9 @@ import torch.nn as nn
 from torch.distributions import Distribution, Normal, Categorical, kl_divergence
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
-from grammar_zelda import grammar_check
+from utils.zelda.grammar import grammar_check
 
-from zelda_utils.plotting import encoding, get_img_from_level
+from utils.zelda.plotting import encoding, get_img_from_level
 
 
 def load_data() -> t.Tensor:
@@ -171,7 +171,11 @@ class VAEZeldaHierarchical(nn.Module):
                 fig, ax_ = plt.subplots(1, 1, figsize=(16, 11))
                 ax_.imshow(img)
                 ax_.axis("off")
-                fig.savefig(f"./data/plots/zelda/grids/all_levels/{m:05d}", dpi=100, bbox_inches="tight")
+                fig.savefig(
+                    f"./data/plots/zelda/grids/all_levels/{m:05d}",
+                    dpi=100,
+                    bbox_inches="tight",
+                )
                 plt.close(fig)
 
         lvl_height = images[0].shape[0]
