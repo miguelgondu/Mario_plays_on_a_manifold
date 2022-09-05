@@ -15,9 +15,15 @@ from botorch.acquisition import ExpectedImprovement
 from geometries.discretized_geometry import DiscretizedGeometry
 
 from utils.experiment import load_csv_as_map, load_model
-from utils.experiment.bayesian_optimization import load_geometry, run_first_samples
+from utils.experiment.bayesian_optimization import (
+    load_geometry,
+    run_first_samples,
+    run_first_samples_from_graph,
+)
 from utils.gp_models.graph_gp import GraphBasedGP
 from utils.simulator.interface import test_level_from_int_tensor
+
+t.set_default_dtype(t.float64)
 
 
 def bayesian_optimization_iteration(
@@ -26,30 +32,45 @@ def bayesian_optimization_iteration(
     vae = load_model()
     graph = discretized_geometry.to_graph()
     adjacency_matrix = nx.adjacency_matrix(graph).todense().astype(float)
+    graph_idxs = (
+        t.Tensor(
+            [
+                discretized_geometry.graph_nodes.index((int(i.item()), int(j.item())))
+                for (i, j) in nodes
+            ]
+        )
+        .type(t.long)
+        .unsqueeze(1)
+    )
 
     # TODO: these nodes should be ints... so we need to implement
     # a transformation from R2 to the graph.
-    graph_gp = GraphBasedGP(nodes, jumps, adjacency_matrix)
+    graph_gp = GraphBasedGP(graph_idxs, jumps, adjacency_matrix)
 
     # Training the GP
     optimizer = t.optim.Adam(graph_gp.parameters(), lr=0.1)
     mll_graph = gpytorch.mlls.ExactMarginalLogLikelihood(graph_gp.likelihood, graph_gp)
 
     # Training the success model
-    for i in range(50):
+    for i in range(10):
         optimizer.zero_grad()
-        output = graph_gp(nodes)
-        loss = -mll_graph(output, jumps)
+        output = graph_gp(graph_idxs)
+        loss = -mll_graph(output, jumps).mean()
         loss.backward()
         print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
         optimizer.step()
+
+    graph_gp.eval()
+    # There's something weird with the graph gp.
+    graph_gp.num_outputs = 1
+    graph_gp.posterior = graph_gp.__call__
 
     EI = ExpectedImprovement(graph_gp, max(jumps))
 
     # ooooh, how do we optimize the acquisition function?
     # In this case we don't have any combinatorial explotion.
     # We could just do a "grid search", evaluate in all nodes.
-    all_nodes = t.Tensor(graph.nodes)
+    all_nodes = t.Tensor(list(range(len(graph.nodes())))).view(-1, 1, 1).type(t.long)
     grid_search = EI(all_nodes)
     candidate = all_nodes[t.argmax(grid_search)]
 
@@ -84,17 +105,26 @@ def bayesian_optimization_iteration(
 
 
 def run_experiment():
+    print("Loading the model and geometry")
     vae = load_model()
     discretized_geoemtry = load_geometry()
 
-    # Get some first samples and save them.
-    latent_codes, playability, jumps = run_first_samples(vae)
-    jumps = jumps.type(t.float32).unsqueeze(1)
+    print("Populating the graph")
+    discretized_geoemtry.to_graph()
 
-    graph_idxs = discretized_geoemtry.from_latent_code_to_graph_idx(latent_codes)
+    # Get some first samples and save them.
+    print("Getting the first samples")
+    latent_codes, playability, jumps = run_first_samples_from_graph(
+        vae, discretized_geoemtry
+    )
+    jumps = jumps.type(t.float64).unsqueeze(1)
+
+    print("Querying to graph ids:")
+    nodes = discretized_geoemtry.from_latent_code_to_graph_node(latent_codes)
 
     # Initialize the GPR model for the predicted number
     # of jumps.
+    print("BO iterations")
     for iteration in range(20):
         if (iteration + 1) % 5 == 0:
             plot_latent_space = True
@@ -102,7 +132,7 @@ def run_experiment():
             plot_latent_space = False
 
         candidate, jump, p = bayesian_optimization_iteration(
-            latent_codes, jumps, discretized_geoemtry
+            nodes, jumps, discretized_geoemtry
         )
         print(f"tested {candidate} and got {jump}")
         latent_codes = t.vstack((latent_codes, candidate))

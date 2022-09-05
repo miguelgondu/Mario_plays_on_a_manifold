@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import DefaultDict, Dict, Tuple, Union
 from itertools import product
 
 import torch as t
@@ -33,6 +33,9 @@ class DiscretizedGeometry(Geometry):
         force: bool = False,
         with_obstacles: bool = True,
     ) -> None:
+        self.graph = None
+        self.graph_nodes = None
+
         metric_vol_folder = Path(f"./data/processed/metric_volumes/{exp_name}/")
         metric_vol_folder.mkdir(exist_ok=True, parents=True)
         metric_vol_path = metric_vol_folder / f"{vae_path.stem}.npz"
@@ -107,7 +110,7 @@ class DiscretizedGeometry(Geometry):
 
         return i, j
 
-    def _get_edges_from_grid(self):
+    def _get_adjacency_dict_from_grid(self):
         """
         Constructs a list of all pairs ((i, j), (k, l)) s.t.
         a 1 is connected to a neighbouring 1.
@@ -117,10 +120,12 @@ class DiscretizedGeometry(Geometry):
 
         pos_id = lambda i, j: i + (m * j)
         all_positions = list(product(range(n), range(m)))
-        graph_edges = []
+        adjacency_dict = {}
         for (i, j) in all_positions:
             if self.grid[i, j] != 1:
                 continue
+
+            adjacency_dict[(i, j)] = []
 
             neighbours = [
                 (i + 1, j),
@@ -135,31 +140,41 @@ class DiscretizedGeometry(Geometry):
                     continue
 
                 if self.grid[r, s] == 1:
-                    min_ = min(pos_id(i, j), pos_id(r, s))
-                    max_ = max(pos_id(i, j), pos_id(r, s))
-                    graph_edges.append((min_, max_))
-                    print(f"added {(min_, max_)} to graph")
+                    adjacency_dict[(i, j)].append((r, s))
 
-        # Removing duplicates
-        graph_edges = list(set(graph_edges))
+        return adjacency_dict
 
-        return graph_edges
-
-    def from_latent_code_to_graph_idx(self, latent_code: t.Tensor) -> t.Tensor:
+    def from_latent_code_to_graph_node(self, latent_code: t.Tensor) -> t.Tensor:
         # TODO: implement this to wrap up the bayesian optimization.
-        ...
+        _, idxs = self.interpolation.kd_tree.query(latent_code)
+        zs_in_the_grid = self.zs[idxs]
+        graph_nodes = t.Tensor(
+            [self.positions[(z1.item(), z2.item())] for (z1, z2) in zs_in_the_grid]
+        )
 
-    def from_graph_idx_to_latent_code(self, graph_idx: t.Tensor) -> t.Tensor:
-        # inverting the graph_idx to tuples of positions
-        positions = [self._graph_idx_to_position(idx) for idx in graph_idx]
+        return graph_nodes
 
-        # TODO: Will this work?
-        return self.zs[positions]
+    def from_graph_idx_to_latent_code(
+        self, graph_idx: Union[t.Tensor, int]
+    ) -> t.Tensor:
+        if isinstance(graph_idx, int):
+            return self.zs[graph_idx]
+        elif isinstance(graph_idx, t.Tensor):
+            # inverting the graph_idx to tuples of positions
+            positions = [self._graph_idx_to_position(idx) for idx in graph_idx]
+            # TODO: Will this work?
+            return self.zs[positions]
+        else:
+            raise ValueError(...)
 
     def to_graph(self) -> nx.Graph:
         """
         Uses the internal grid to construct a graph of
         all the connected ones.
         """
-        graph_edges = self._get_edges_from_grid()
-        return nx.Graph(graph_edges)
+        if self.graph is None:
+            adjacency = self._get_adjacency_dict_from_grid()
+            self.graph = nx.Graph(adjacency)
+            self.graph_nodes = list(self.graph.nodes())
+
+        return self.graph

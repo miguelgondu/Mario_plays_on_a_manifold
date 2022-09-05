@@ -47,6 +47,7 @@ class Geometry:
         self.playability_map = p_map
         self.exp_name = exp_name
         self.grid, self.positions = self._load_into_grid(p_map)
+        self.inverse_positions = {v: k for k, v in self.positions.items()}
         self.vae_path = vae_path
 
         self.zs = np.array([z for z in p_map.keys()])

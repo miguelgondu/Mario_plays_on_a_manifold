@@ -271,8 +271,10 @@ class GraphMaternKernel(gpytorch.kernels.Kernel):
         f_eigs = self.eigenvalues_function()[0]
 
         # Kernel = eigenvector * f(eigenvalues) * eigenvector.T
-        eigvecs1 = self.eigenvectors[x1_id, :]
-        eigvecs2 = self.eigenvectors[x2_id, :]
-        kernel = torch.matmul(torch.matmul(eigvecs1, torch.diag(f_eigs)), eigvecs2.T)
+        eigvecs1 = self.eigenvectors[x1_id.flatten(), :]
+        eigvecs2 = self.eigenvectors[x2_id.flatten(), :]
+        kernel = torch.matmul(
+            torch.matmul(eigvecs1, torch.diag(f_eigs)), eigvecs2.T
+        ).unsqueeze(0)
 
         return kernel
