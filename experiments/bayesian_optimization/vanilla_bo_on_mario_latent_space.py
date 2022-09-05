@@ -1,6 +1,6 @@
 """
-Implements Bayesian Optimization with unknown constraints
-[...] in the latent space of our SMB VAEs. For now, I will
+Implements vanilla Bayesian Optimization (without constraints)
+in the latent space of our SMB VAEs. For now, I will
 try to optimize for the number of jumps coming out of the
 simulator while constraining that the level should be playable.
 """
@@ -11,7 +11,6 @@ from matplotlib import pyplot as plt
 import torch as t
 import numpy as np
 
-import botorch
 from botorch.models import SingleTaskGP
 from botorch.fit import fit_gpytorch_model
 from botorch.acquisition import ExpectedImprovement
@@ -20,7 +19,6 @@ from botorch.optim import optimize_acqf
 from gpytorch.mlls import ExactMarginalLogLikelihood
 
 from utils.simulator.interface import (
-    test_level_from_decoded_tensor,
     test_level_from_int_tensor,
 )
 from utils.visualization.latent_space import plot_prediction

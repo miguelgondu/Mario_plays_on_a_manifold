@@ -1,6 +1,12 @@
 """
 Implements Bayesian Optimization with unknown constraints [ref],
-and runs it in the latent space of SMB.
+and runs it in the latent space of SMB, optimizing the number of
+jumps.
+
+TODO: other experiments we could perform are optimizing the number
+of gaps. In this one, the optimization should be pretty skewed
+towards unplayable levels, while the constrained/graph approach
+would work greatly!
 
 [ref]: ...
 """
@@ -28,7 +34,7 @@ from utils.visualization.latent_space import plot_prediction
 from utils.experiment import load_model
 from utils.gp_models.bernoulli_gp import GPClassificationModel
 
-from experiments.bayesian_optimization.unknown_constraints.vanilla_bo_on_mario_latent_space import (
+from experiments.bayesian_optimization.vanilla_bo_on_mario_latent_space import (
     run_first_samples,
 )
 
@@ -41,6 +47,7 @@ def bayesian_optimization_iteration(
 ) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
     """
     Runs a B.O. iteration and returns the next candidate and its value.
+    We use constrained Expected Improvement in this example.
     """
     vae = load_model()
 
@@ -48,19 +55,16 @@ def bayesian_optimization_iteration(
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)
 
-    # success_model = DirichletGPModel(latent_codes, playabilities)
     success_model = GPClassificationModel(latent_codes)
     optimizer = t.optim.Adam(success_model.parameters(), lr=0.1)
     mll_success = gpytorch.mlls.VariationalELBO(
         success_model.likelihood, success_model, playabilities.numel()
     )
 
+    # Training the success model
     for i in range(50):
-        # Zero backpropped gradients from previous iteration
         optimizer.zero_grad()
-        # Get predictive output
         output = success_model(latent_codes)
-        # Calc loss and backprop gradients
         loss = -mll_success(output, playabilities)
         loss.backward()
         print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))

@@ -15,10 +15,11 @@ class ConstrainedExpectedImprovement(ExpectedImprovement):
     def forward(self, X: torch.Tensor) -> torch.Tensor:
         ei = super().forward(X)
 
-        # The success model has a Dirichlet likelihood,
+        # The success model has a Bernoulli likelihood,
         # and so we need to be somewhat careful when predicting
         # probabilities of a given input X.
-        # See:
+        # A (more contemporary) alternative would be
+        # to use a Dirichlet one. See:
         # https://docs.gpytorch.ai/en/stable/examples/01_Exact_GPs/GP_Regression_on_Classification_Labels.html
         distr_of_success = self.success_model.likelihood(self.success_model(X))  # (?)
 
