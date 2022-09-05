@@ -32,11 +32,8 @@ from utils.acquisition.constrained_expected_improvement import (
 from utils.visualization.latent_space import plot_prediction
 
 from utils.experiment import load_model
+from utils.experiment.bayesian_optimization import run_first_samples
 from utils.gp_models.bernoulli_gp import GPClassificationModel
-
-from experiments.bayesian_optimization.vanilla_bo_on_mario_latent_space import (
-    run_first_samples,
-)
 
 
 def bayesian_optimization_iteration(

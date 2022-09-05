@@ -9,7 +9,6 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 
 import torch as t
-import numpy as np
 
 from botorch.models import SingleTaskGP
 from botorch.fit import fit_gpytorch_model
@@ -22,61 +21,10 @@ from utils.simulator.interface import (
     test_level_from_int_tensor,
 )
 from utils.visualization.latent_space import plot_prediction
-from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from utils.experiment import load_model
+from utils.experiment.bayesian_optimization import run_first_samples
 
 ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
-
-
-def load_model() -> VAEMarioHierarchical:
-    model_name = "vae_mario_hierarchical_id_0"
-    vae = VAEMarioHierarchical()
-    vae.load_state_dict(
-        t.load(f"./trained_models/ten_vaes/{model_name}.pt", map_location=vae.device)
-    )
-    vae.eval()
-
-    return vae
-
-
-# Run first samples
-def run_first_samples(
-    vae: VAEMarioHierarchical, n_samples: int = 10, force: bool = False
-) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
-    data_path = (
-        ROOT_DIR
-        / "data"
-        / "bayesian_optimization"
-        / "initial_traces"
-        / "playability_and_jumps.npz"
-    )
-    if not force and data_path.exists():
-        array = np.load(data_path)
-        latent_codes = t.from_numpy(array["zs"])
-        playability = t.from_numpy(array["playability"])
-        jumps = t.from_numpy(array["jumps"])
-
-        return latent_codes, playability, jumps
-
-    latent_codes = 5.0 * vae.p_z.sample((n_samples,))
-    levels = vae.decode(latent_codes).probs.argmax(dim=-1)
-
-    playability = []
-    jumps = []
-    for level in levels:
-        results = test_level_from_int_tensor(level, visualize=True)
-        playability.append(results["marioStatus"])
-        jumps.append(results["jumpActionsPerformed"])
-
-    # Saving the array
-    np.savez(
-        "./data/bayesian_optimization/initial_traces/playability_and_jumps.npz",
-        zs=latent_codes.detach().numpy(),
-        playability=np.array(playability),
-        jumps=np.array(jumps),
-    )
-
-    # Returning.
-    return latent_codes, t.Tensor(playability), t.Tensor(jumps)
 
 
 def bayesian_optimization_iteration(
@@ -124,7 +72,7 @@ def run_experiment():
     vae = load_model()
 
     # Get some first samples and save them.
-    latent_codes, playability, jumps = run_first_samples(vae)
+    latent_codes, _, jumps = run_first_samples(vae)
     jumps = jumps.type(t.float32).unsqueeze(1)
 
     # Initialize the GPR model for the predicted number

@@ -3,27 +3,112 @@ Loads one of the discretized geometries, builds
 a discrete graph from it and runs graph-based
 Bayesian Optimization.
 """
-
 from pathlib import Path
+
+import torch as t
+import networkx as nx
+
+import gpytorch
+
+from botorch.acquisition import ExpectedImprovement
+
 from geometries.discretized_geometry import DiscretizedGeometry
-from utils.experiment import load_csv_as_map
+
+from utils.experiment import load_csv_as_map, load_model
+from utils.experiment.bayesian_optimization import load_geometry, run_first_samples
+from utils.gp_models.graph_gp import GraphBasedGP
+from utils.simulator.interface import test_level_from_int_tensor
 
 
-def load_graph():
-    # Hyperparameters
-    vae_path = Path("./trained_models/ten_vaes/vae_mario_hierarchical_id_0.pt")
-    path_to_gt = (
-        Path("./data/array_simulation_results/ten_vaes/ground_truth")
-        / f"{vae_path.stem}.csv"
+def bayesian_optimization_iteration(
+    nodes: t.Tensor, jumps: t.Tensor, discretized_geometry: DiscretizedGeometry
+):
+    vae = load_model()
+    graph = discretized_geometry.to_graph()
+    adjacency_matrix = nx.adjacency_matrix(graph).todense().astype(float)
+
+    # TODO: these nodes should be ints... so we need to implement
+    # a transformation from R2 to the graph.
+    graph_gp = GraphBasedGP(nodes, jumps, adjacency_matrix)
+
+    # Training the GP
+    optimizer = t.optim.Adam(graph_gp.parameters(), lr=0.1)
+    mll_graph = gpytorch.mlls.ExactMarginalLogLikelihood(graph_gp.likelihood, graph_gp)
+
+    # Training the success model
+    for i in range(50):
+        optimizer.zero_grad()
+        output = graph_gp(nodes)
+        loss = -mll_graph(output, jumps)
+        loss.backward()
+        print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
+        optimizer.step()
+
+    EI = ExpectedImprovement(graph_gp, max(jumps))
+
+    # ooooh, how do we optimize the acquisition function?
+    # In this case we don't have any combinatorial explotion.
+    # We could just do a "grid search", evaluate in all nodes.
+    all_nodes = t.Tensor(graph.nodes)
+    grid_search = EI(all_nodes)
+    candidate = all_nodes[t.argmax(grid_search)]
+
+    # candidate, _ = optimize_acqf(
+    #     cEI,
+    #     bounds=bounds,
+    #     q=1,
+    #     num_restarts=5,
+    #     raw_samples=20,
+    # )
+
+    level = vae.decode(candidate).probs.argmax(dim=-1)
+    results = test_level_from_int_tensor(level, visualize=True)
+
+    # TODO: implement a visualization util that
+    # swallows the graph nodes and arranges them on the grid.
+    # if plot_latent_space:
+    #     fig, ax = plt.subplots(1, 1)
+    #     plot_prediction(model, ax)
+
+    #     ax.scatter(latent_codes[:, 0], latent_codes[:, 1], c="black", marker="x")
+    #     ax.scatter(candidate[:, 0], candidate[:, 1], c="red", marker="d")
+
+    #     plt.show()
+    #     plt.close(fig)
+
+    return (
+        candidate,
+        t.Tensor([[results["jumpActionsPerformed"]]]),
+        t.Tensor([results["marioStatus"]]),
     )
-    p_map = load_csv_as_map(path_to_gt)
 
-    dg = DiscretizedGeometry(p_map, "geometry_for_plotting_banner", vae_path)
 
-    return dg.to_graph()
+def run_experiment():
+    vae = load_model()
+    discretized_geoemtry = load_geometry()
+
+    # Get some first samples and save them.
+    latent_codes, playability, jumps = run_first_samples(vae)
+    jumps = jumps.type(t.float32).unsqueeze(1)
+
+    graph_idxs = discretized_geoemtry.from_latent_code_to_graph_idx(latent_codes)
+
+    # Initialize the GPR model for the predicted number
+    # of jumps.
+    for iteration in range(20):
+        if (iteration + 1) % 5 == 0:
+            plot_latent_space = True
+        else:
+            plot_latent_space = False
+
+        candidate, jump, p = bayesian_optimization_iteration(
+            latent_codes, jumps, discretized_geoemtry
+        )
+        print(f"tested {candidate} and got {jump}")
+        latent_codes = t.vstack((latent_codes, candidate))
+        jumps = t.vstack((jumps, jump))
+        playability = t.hstack((playability, p))
 
 
 if __name__ == "__main__":
-    G = load_graph()
-    print(G.edges)
-    print("done!")
+    run_experiment()

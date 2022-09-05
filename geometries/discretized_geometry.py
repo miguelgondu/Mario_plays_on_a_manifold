@@ -95,6 +95,18 @@ class DiscretizedGeometry(Geometry):
     def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor, t.Tensor]:
         return self.diffusion.run(z_0)
 
+    def _position_to_graph_index(self, i: int, j: int) -> int:
+        _, m = self.grid.shape
+
+        return i + (m * j)
+
+    def _graph_idx_to_position(self, idx: int) -> Tuple[int, int]:
+        _, m = self.grid.shape
+        i = idx % m
+        j = idx // m
+
+        return i, j
+
     def _get_edges_from_grid(self):
         """
         Constructs a list of all pairs ((i, j), (k, l)) s.t.
@@ -132,6 +144,17 @@ class DiscretizedGeometry(Geometry):
         graph_edges = list(set(graph_edges))
 
         return graph_edges
+
+    def from_latent_code_to_graph_idx(self, latent_code: t.Tensor) -> t.Tensor:
+        # TODO: implement this to wrap up the bayesian optimization.
+        ...
+
+    def from_graph_idx_to_latent_code(self, graph_idx: t.Tensor) -> t.Tensor:
+        # inverting the graph_idx to tuples of positions
+        positions = [self._graph_idx_to_position(idx) for idx in graph_idx]
+
+        # TODO: Will this work?
+        return self.zs[positions]
 
     def to_graph(self) -> nx.Graph:
         """
