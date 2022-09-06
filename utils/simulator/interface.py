@@ -38,7 +38,7 @@ def test_level_from_int_tensor(
     max_time: int = 45,
     visualize: bool = False,
 ) -> dict:
-    level = clean_level(level.detach().numpy())
+    level = clean_level(level.cpu().detach().numpy())
     level = str(level)
 
     return run_level(

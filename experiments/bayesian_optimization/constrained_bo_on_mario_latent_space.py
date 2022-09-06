@@ -14,6 +14,7 @@ from typing import Tuple
 from matplotlib import pyplot as plt
 
 import torch as t
+import numpy as np
 
 import gpytorch
 from gpytorch.mlls import ExactMarginalLogLikelihood
@@ -96,32 +97,45 @@ def bayesian_optimization_iteration(
     return (
         candidate,
         t.Tensor([[results["jumpActionsPerformed"]]]),
-        t.Tensor([results["marioStatus"]]),
+        t.Tensor([[results["marioStatus"]]]),
     )
 
 
 def run_experiment():
+    # Hyperparameters
+    n_iterations = 100
+
+    # Loading the model
     vae = load_model()
 
     # Get some first samples and save them.
     latent_codes, playability, jumps = run_first_samples(vae)
     jumps = jumps.type(t.float32).unsqueeze(1)
+    playability = playability.unsqueeze(1)
 
     # Initialize the GPR model for the predicted number
     # of jumps.
-    for iteration in range(20):
-        if (iteration + 1) % 5 == 0:
-            plot_latent_space = True
-        else:
-            plot_latent_space = False
+    for _ in range(n_iterations):
+        # if (iteration + 1) % 5 == 0:
+        #     plot_latent_space = True
+        # else:
+        #     plot_latent_space = False
 
         candidate, jump, p = bayesian_optimization_iteration(
-            latent_codes, jumps, playability, plot_latent_space=plot_latent_space
+            latent_codes, jumps, playability.squeeze(1), plot_latent_space=False
         )
-        print(f"tested {candidate} and got {jump}")
+        print(f"tested {candidate} and got {jump.item()} (p={p.item()})")
         latent_codes = t.vstack((latent_codes, candidate))
         jumps = t.vstack((jumps, jump))
-        playability = t.hstack((playability, p))
+        playability = t.vstack((playability, p))
+
+    # Saving the trace
+    np.savez(
+        "./data/bayesian_optimization/traces/constrained_bo.npz",
+        zs=latent_codes.detach().numpy(),
+        playability=playability.detach().numpy(),
+        jumps=jumps.detach().numpy(),
+    )
 
 
 if __name__ == "__main__":

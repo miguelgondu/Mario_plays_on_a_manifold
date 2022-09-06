@@ -9,6 +9,7 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 
 import torch as t
+import numpy as np
 
 from botorch.models import SingleTaskGP
 from botorch.fit import fit_gpytorch_model
@@ -29,7 +30,7 @@ ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
 
 def bayesian_optimization_iteration(
     latent_codes: t.Tensor, jumps: t.Tensor, plot_latent_space: bool = False
-) -> Tuple[t.Tensor, t.Tensor]:
+) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
     """
     Runs a B.O. iteration and returns the next candidate and its value.
     """
@@ -53,7 +54,7 @@ def bayesian_optimization_iteration(
     print(candidate)
     level = vae.decode(candidate).probs.argmax(dim=-1)
     print(level)
-    results = test_level_from_int_tensor(level[0], visualize=True)
+    results = test_level_from_int_tensor(level[0], visualize=False)
 
     if plot_latent_space:
         fig, ax = plt.subplots(1, 1)
@@ -65,30 +66,43 @@ def bayesian_optimization_iteration(
         plt.show()
         plt.close(fig)
 
-    return candidate, t.Tensor([[results["jumpActionsPerformed"]]])
+    return (
+        candidate,
+        t.Tensor([[results["marioStatus"]]]),
+        t.Tensor([[results["jumpActionsPerformed"]]]),
+    )
 
 
 def run_experiment():
+    # Hyperparameters
+    n_iterations = 100
+
+    # Loading the VAE
     vae = load_model()
 
     # Get some first samples and save them.
-    latent_codes, _, jumps = run_first_samples(vae)
+    latent_codes, playabilities, jumps = run_first_samples(vae)
     jumps = jumps.type(t.float32).unsqueeze(1)
+    playabilities = playabilities.unsqueeze(1)
 
     # Initialize the GPR model for the predicted number
     # of jumps.
-    for iteration in range(20):
-        if (iteration + 1) % 5 == 0:
-            plot_latent_space = True
-        else:
-            plot_latent_space = False
-
-        candidate, jump = bayesian_optimization_iteration(
-            latent_codes, jumps, plot_latent_space=plot_latent_space
+    for _ in range(n_iterations):
+        candidate, playability, jump = bayesian_optimization_iteration(
+            latent_codes, jumps, plot_latent_space=False
         )
-        print(f"tested {candidate} and got {jump}")
+        print(f"tested {candidate} and got {jump} (p={playability})")
         latent_codes = t.vstack((latent_codes, candidate))
         jumps = t.vstack((jumps, jump))
+        playabilities = t.vstack((playabilities, playability))
+
+    # Saving the trace
+    np.savez(
+        "./data/bayesian_optimization/traces/vanilla_bo.npz",
+        zs=latent_codes.detach().numpy(),
+        playability=playabilities.detach().numpy(),
+        jumps=jumps.detach().numpy(),
+    )
 
 
 if __name__ == "__main__":

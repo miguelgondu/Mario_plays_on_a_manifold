@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from geoml.curve import CubicSpline
-from geoml.discretized_manifold import DiscretizedManifold, StatisticalManifold
+from geoml.discretized_manifold import DiscretizedManifold
 import torch as t
 import numpy as np
 
