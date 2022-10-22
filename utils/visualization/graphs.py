@@ -2,13 +2,15 @@
 A suite of tools for visualizing the graph
 discretization in latent space.
 """
+from typing import Callable
 import matplotlib.pyplot as plt
+import networkx as nx
 
 from utils.gp_models.graph_gp import GraphBasedGP
 from geometries.discretized_geometry import DiscretizedGeometry
 
 
-def visualize_graph_gp_in_ax(
+def visualize_discretized_graph_gp_in_ax(
     ax: plt.Axes,
     graph_gp: GraphBasedGP,
     discretized_geometry: DiscretizedGeometry,
@@ -37,3 +39,27 @@ def visualize_graph_gp_in_ax(
         c=predictions.detach().numpy(),
         **scatter_kwargs
     )
+
+
+def visualize_graph_gp_in_ax(
+    ax: plt.Axes,
+    graph_gp: GraphBasedGP,
+    graph: nx.Graph,
+    from_graph_idx_to_node: Callable[[int], int] = lambda x: x,
+    **scatter_kwargs
+):
+    """
+    A more generic function that plots a graph using networkx's tools
+    and colors the nodes according to the graph GP predictions.
+    """
+    # The indices of the graph
+    if graph_gp.training:
+        graph_gp.eval()
+
+    graph_indices = graph_gp.train_inputs[0]
+    posterior = graph_gp(graph_indices)
+    predictions = posterior.mean
+
+    # This assumes that the nodes are ordered in graph_indices.
+    # Is that the case?
+    nx.draw(graph, ax=ax, node_color=predictions.detach().numpy())

@@ -2,6 +2,7 @@
 This is a small graph GP example, trying to use the kernels
 provided by Noémie and Leonel.
 """
+from matplotlib import pyplot as plt
 import torch as t
 import numpy as np
 import networkx as nx
@@ -10,6 +11,7 @@ import gpytorch
 from gpytorch import settings
 
 from utils.gp_models.graph_gp import GraphBasedGP
+from utils.visualization.graphs import visualize_graph_gp_in_ax
 
 t.set_default_dtype(t.float64)
 
@@ -41,6 +43,10 @@ def fit_a_simple_graph() -> GraphBasedGP:
             loss.backward()
             print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
             optimizer.step()
+
+        _, ax = plt.subplots(1, 1)
+        visualize_graph_gp_in_ax(ax, graph_based_gp, graph)
+        plt.show()
 
 
 if __name__ == "__main__":
