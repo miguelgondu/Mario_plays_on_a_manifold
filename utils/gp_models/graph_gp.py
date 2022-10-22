@@ -16,14 +16,26 @@ from gpytorch.kernels import ScaleKernel
 from gpytorch.means import ConstantMean
 from gpytorch.distributions import MultivariateNormal
 
+from gpytorch.variational import CholeskyVariationalDistribution
+from gpytorch.variational import VariationalStrategy
 
-class GraphBasedGP(gpytorch.models.ExactGP):
+
+class GraphBasedGP(gpytorch.models.ApproximateGP):
     def __init__(self, train_inputs, train_targets, adjacency_matrix):
-        kernel = ScaleKernel(GraphMaternKernel(adjacency_matrix))
+        kernel = GraphMaternKernel(adjacency_matrix)
         mean = ConstantMean()
         likelihood = GaussianLikelihood()
 
-        super().__init__(train_inputs, train_targets, likelihood)
+        variational_distribution = CholeskyVariationalDistribution(len(train_inputs))
+
+        variational_strategy = VariationalStrategy(
+            self, train_inputs, variational_distribution, learn_inducing_locations=False
+        )
+
+        super().__init__(variational_strategy=variational_strategy)
+        self.train_targets = train_targets
+        self.train_inputs = (train_inputs,)
+        self.likelihood = likelihood
         self.mean = mean
         self.kernel = kernel
 
@@ -31,6 +43,7 @@ class GraphBasedGP(gpytorch.models.ExactGP):
         # TODO: Where do these inputs live? Are they nodes of the
         # graph? I should read Slava's paper or check Noémie's code.
         mean_x = self.mean(inputs)
+        # covar_x = self.kernel(inputs).evaluate()[0]
         covar_x = self.kernel(inputs)
 
         return MultivariateNormal(mean_x, covar_x)
@@ -271,10 +284,13 @@ class GraphMaternKernel(gpytorch.kernels.Kernel):
         f_eigs = self.eigenvalues_function()[0]
 
         # Kernel = eigenvector * f(eigenvalues) * eigenvector.T
-        eigvecs1 = self.eigenvectors[x1_id.flatten(), :]
-        eigvecs2 = self.eigenvectors[x2_id.flatten(), :]
+        eigvecs1 = self.eigenvectors[x1_id.flatten().type(torch.long), :]
+        eigvecs2 = self.eigenvectors[x2_id.flatten().type(torch.long), :]
         kernel = torch.matmul(
             torch.matmul(eigvecs1, torch.diag(f_eigs)), eigvecs2.T
         ).unsqueeze(0)
+
+        if diag:
+            kernel = torch.diagonal(kernel, dim1=-2, dim2=-1)[0]
 
         return kernel
