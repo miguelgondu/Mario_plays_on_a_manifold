@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import DefaultDict, Dict, Tuple, Union
+from typing import DefaultDict, Dict, Tuple, Union, List
 from itertools import product
 
 import torch as t
@@ -98,7 +98,7 @@ class DiscretizedGeometry(Geometry):
     def diffuse(self, z_0: t.Tensor) -> Tuple[t.Tensor, t.Tensor]:
         return self.diffusion.run(z_0)
 
-    def _position_to_graph_index(self, i: int, j: int) -> int:
+    def _position_to_graph_idx(self, i: int, j: int) -> int:
         _, m = self.grid.shape
 
         return i + (m * j)
@@ -108,7 +108,10 @@ class DiscretizedGeometry(Geometry):
         i = idx % m
         j = idx // m
 
-        return i, j
+        assert i == int(i)
+        assert j == int(j)
+
+        return int(i), int(j)
 
     def _get_adjacency_dict_from_grid(self):
         """
@@ -154,16 +157,33 @@ class DiscretizedGeometry(Geometry):
 
         return graph_nodes
 
-    def from_graph_idx_to_latent_code(
-        self, graph_idx: Union[t.Tensor, int]
+    def from_graph_node_to_latent_code(
+        self, node: Union[Tuple[int, int], List[Tuple[int, int]]]
     ) -> t.Tensor:
+        if isinstance(node, tuple) and isinstance(node[0], (int, float)):
+            node_idx = self._position_to_graph_idx(*node)
+            return self.from_graph_idx_to_latent_code(node_idx)
+        elif isinstance(node, (list, t.Tensor, np.ndarray)):
+            node_idxs = [self._position_to_graph_idx(n[0], n[1]) for n in node]
+            return self.from_graph_idx_to_latent_code(node_idxs)
+        ...
+
+    def from_graph_idx_to_latent_code(
+        self, graph_idx: Union[t.Tensor, np.ndarray, List, int]
+    ) -> np.ndarray:
         if isinstance(graph_idx, int):
             return self.zs[graph_idx]
         elif isinstance(graph_idx, t.Tensor):
             # inverting the graph_idx to tuples of positions
-            positions = [self._graph_idx_to_position(idx) for idx in graph_idx]
+            # positions = [
+            #     self._graph_idx_to_position(idx.item()) for idx in graph_idx.flatten()
+            # ]
             # TODO: Will this work?
-            return self.zs[positions]
+            return self.zs[graph_idx.type(t.long).flatten()]
+        elif isinstance(graph_idx, np.ndarray):
+            return self.zs[graph_idx.astype(int).flatten()]
+        elif isinstance(graph_idx, list):
+            return self.zs[np.array(graph_idx).astype(int).flatten()]
         else:
             raise ValueError(...)
 

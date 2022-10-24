@@ -6,6 +6,7 @@ Bayesian Optimization.
 from pathlib import Path
 
 import torch as t
+import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -22,7 +23,11 @@ from utils.experiment.bayesian_optimization import (
 )
 from utils.gp_models.graph_gp import GraphBasedGP
 from utils.simulator.interface import test_level_from_int_tensor
-from utils.visualization.graphs import visualize_graph_gp_in_ax
+from utils.visualization.graphs import (
+    visualize_discretized_graph_gp_in_ax,
+    visualize_discretized_graph_nodes_and_values_in_ax,
+    visualize_graph_gp_in_ax,
+)
 
 t.set_default_dtype(t.float64)
 
@@ -53,10 +58,14 @@ def bayesian_optimization_iteration(
     # TODO: How are the kernels expecting the inputs? Are they
     # just a list of integers?
     print("Building the GP")
-    graph_gp = GraphBasedGP(graph_idxs, jumps, adjacency_matrix)
+    graph_gp = GraphBasedGP(graph_idxs.type(t.float64), jumps, adjacency_matrix)
 
-    _, ax = plt.subplots(1, 1)
-    visualize_graph_gp_in_ax(ax, graph_gp, discretized_geometry)
+    _, (ax, ax2) = plt.subplots(1, 2)
+    # Visualize GP in the graph
+    visualize_discretized_graph_gp_in_ax(ax, graph_gp, discretized_geometry)
+    visualize_discretized_graph_nodes_and_values_in_ax(
+        ax2, np.zeros(len(discretized_geometry.to_graph().nodes)), discretized_geometry
+    )
     plt.show()
     plt.close()
     # Training the GP

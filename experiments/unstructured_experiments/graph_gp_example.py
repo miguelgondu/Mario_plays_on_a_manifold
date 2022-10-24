@@ -17,9 +17,10 @@ t.set_default_dtype(t.float64)
 
 
 def fit_a_simple_graph() -> GraphBasedGP:
-    graph = nx.erdos_renyi_graph(10, 0.5)
+    graph = nx.erdos_renyi_graph(10, 1.0)
     graph_idxs = t.from_numpy(np.array(graph.nodes)).type(t.float64)
-    function_to_predict = t.randn((len(graph_idxs),)).type(t.float64)
+    function_to_predict = t.ones((len(graph_idxs),)).type(t.float64)
+    # function_to_predict = t.arange(len(graph_idxs)).type(t.float64)
 
     graph_based_gp = GraphBasedGP(
         graph_idxs,
@@ -35,18 +36,18 @@ def fit_a_simple_graph() -> GraphBasedGP:
     )
 
     # Training the success model
-    with settings.lazily_evaluate_kernels(False):
-        for i in range(50):
-            optimizer.zero_grad()
-            output = graph_based_gp(*graph_based_gp.train_inputs)
-            loss = -mll(output, graph_based_gp.train_targets).mean()
-            loss.backward()
-            print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
-            optimizer.step()
+    # with settings.lazily_evaluate_kernels(False):
+    for i in range(150):
+        optimizer.zero_grad()
+        output = graph_based_gp(graph_based_gp.train_inputs[0].type(t.long))
+        loss = -mll(output, graph_based_gp.train_targets).mean()
+        loss.backward()
+        print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
+        optimizer.step()
 
-        _, ax = plt.subplots(1, 1)
-        visualize_graph_gp_in_ax(ax, graph_based_gp, graph)
-        plt.show()
+    _, ax = plt.subplots(1, 1)
+    visualize_graph_gp_in_ax(ax, graph_based_gp, graph)
+    plt.show()
 
 
 if __name__ == "__main__":

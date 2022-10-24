@@ -12,11 +12,13 @@ import networkx as nx
 
 import gpytorch
 from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.kernels import ScaleKernel
 from gpytorch.means import ConstantMean
 from gpytorch.distributions import MultivariateNormal
 
-from gpytorch.variational import CholeskyVariationalDistribution
+from gpytorch.variational import (
+    CholeskyVariationalDistribution,
+    MeanFieldVariationalDistribution,
+)
 from gpytorch.variational import VariationalStrategy
 
 
@@ -26,7 +28,7 @@ class GraphBasedGP(gpytorch.models.ApproximateGP):
         mean = ConstantMean()
         likelihood = GaussianLikelihood()
 
-        variational_distribution = CholeskyVariationalDistribution(len(train_inputs))
+        variational_distribution = MeanFieldVariationalDistribution(len(train_inputs))
 
         variational_strategy = VariationalStrategy(
             self, train_inputs, variational_distribution, learn_inducing_locations=False
@@ -40,10 +42,7 @@ class GraphBasedGP(gpytorch.models.ApproximateGP):
         self.kernel = kernel
 
     def forward(self, inputs: torch.Tensor) -> MultivariateNormal:
-        # TODO: Where do these inputs live? Are they nodes of the
-        # graph? I should read Slava's paper or check Noémie's code.
         mean_x = self.mean(inputs)
-        # covar_x = self.kernel(inputs).evaluate()[0]
         covar_x = self.kernel(inputs)
 
         return MultivariateNormal(mean_x, covar_x)
@@ -160,8 +159,8 @@ class GraphGaussianKernel(gpytorch.kernels.Kernel):
         f_eigs = self.eigenvalues_function()[0]
 
         # Kernel = eigenvector * f(eigenvalues) * eigenvector.T
-        eigvecs1 = self.eigenvectors[x1_id, :]
-        eigvecs2 = self.eigenvectors[x2_id, :]
+        eigvecs1 = self.eigenvectors[x1_id.type(torch.long), :]
+        eigvecs2 = self.eigenvectors[x2_id.type(torch.long), :]
         kernel = torch.matmul(torch.matmul(eigvecs1, torch.diag(f_eigs)), eigvecs2.T)
 
         return kernel
@@ -284,13 +283,11 @@ class GraphMaternKernel(gpytorch.kernels.Kernel):
         f_eigs = self.eigenvalues_function()[0]
 
         # Kernel = eigenvector * f(eigenvalues) * eigenvector.T
-        eigvecs1 = self.eigenvectors[x1_id.flatten().type(torch.long), :]
-        eigvecs2 = self.eigenvectors[x2_id.flatten().type(torch.long), :]
-        kernel = torch.matmul(
-            torch.matmul(eigvecs1, torch.diag(f_eigs)), eigvecs2.T
-        ).unsqueeze(0)
+        eigvecs1 = self.eigenvectors[x1_id.type(torch.long), :]
+        eigvecs2 = self.eigenvectors[x2_id.type(torch.long), :]
+        kernel = torch.matmul(torch.matmul(eigvecs1, torch.diag(f_eigs)), eigvecs2.T)
 
-        if diag:
-            kernel = torch.diagonal(kernel, dim1=-2, dim2=-1)[0]
+        # if diag:
+        #     kernel = torch.diagonal(kernel, dim1=-2, dim2=-1)[0]
 
         return kernel
