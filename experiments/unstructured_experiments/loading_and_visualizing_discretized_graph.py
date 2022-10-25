@@ -12,7 +12,10 @@ import torch as t
 import gpytorch
 
 from utils.experiment import load_model
-from utils.experiment.bayesian_optimization import load_geometry
+from utils.experiment.bayesian_optimization import (
+    load_geometry,
+    run_first_samples_from_graph,
+)
 from utils.gp_models.graph_gp import GraphBasedGP
 
 ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
@@ -21,6 +24,7 @@ path_to_graph_laplacians.mkdir(exist_ok=True)
 
 
 def main():
+    vae = load_model()
     dg = load_geometry()
 
     graph = dg.to_graph()
@@ -30,20 +34,31 @@ def main():
         [dg.from_graph_node_to_latent_code(n).unsqueeze(0) for n in graph.nodes]
     )
 
+    latent_codes, _, jumps = run_first_samples_from_graph(vae, dg)
+    jumps = jumps.type(t.float64)
+
+    print("Querying to graph ids:")
+    nodes = dg.from_latent_code_to_graph_node(latent_codes)
+    node_idxs = t.Tensor(
+        [
+            dg.node_to_graph_idx[tuple(n)]
+            for n in list(nodes.type(t.int).detach().numpy())
+        ]
+    ).type(t.float)
+
     gp = GraphBasedGP(
-        t.Tensor([100, 200]),
-        t.Tensor([1.0, 1.0]),
+        node_idxs,
+        jumps,
         graph,
         path_to_laplacian=path_to_graph_laplacians / "example.npz",
         force_compute_laplacian=False,
     )
     node_idx = t.arange(len(dg.graph_nodes))
 
-    optimizer = t.optim.Adam(gp.parameters(), lr=0.1)
-    mll = gpytorch.mlls.VariationalELBO(gp.likelihood, gp, gp.train_targets)
-
     # Training the success model
     # with settings.lazily_evaluate_kernels(False):
+    optimizer = t.optim.Adam(gp.parameters(), lr=0.1)
+    mll = gpytorch.mlls.VariationalELBO(gp.likelihood, gp, gp.train_targets)
     for i in range(10):
         optimizer.zero_grad()
         output = gp(gp.train_inputs[0].type(t.long))
@@ -52,8 +67,8 @@ def main():
         print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
         optimizer.step()
 
+    # gp.kernel._set_lengthscale(t.Tensor([5.0]))
     gp.eval()
-    # gp.kernel._set_lengthscale(t.Tensor([10.0]))
     dist_ = gp(node_idx)
     predictions = dist_.mean
     stds = dist_.stddev
@@ -68,6 +83,7 @@ def main():
         latent_codes[:, 0].detach().numpy(),
         latent_codes[:, 1].detach().numpy(),
         c=stds.detach().numpy(),
+        cmap="Blues",
     )
     plt.colorbar(plot)
 
