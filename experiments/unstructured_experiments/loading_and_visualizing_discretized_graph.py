@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch as t
 
+import gpytorch
+
 from utils.experiment import load_model
 from utils.experiment.bayesian_optimization import load_geometry
 from utils.gp_models.graph_gp import GraphBasedGP
@@ -37,15 +39,37 @@ def main():
     )
     node_idx = t.arange(len(dg.graph_nodes))
 
-    gp.eval()
-    predictions = gp(node_idx).mean
+    optimizer = t.optim.Adam(gp.parameters(), lr=0.1)
+    mll = gpytorch.mlls.VariationalELBO(gp.likelihood, gp, gp.train_targets)
 
-    _, (ax, ax2) = plt.subplots(1, 2)
-    ax.scatter(
+    # Training the success model
+    # with settings.lazily_evaluate_kernels(False):
+    for i in range(10):
+        optimizer.zero_grad()
+        output = gp(gp.train_inputs[0].type(t.long))
+        loss = -mll(output, gp.train_targets).mean()
+        loss.backward()
+        print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
+        optimizer.step()
+
+    gp.eval()
+    # gp.kernel._set_lengthscale(t.Tensor([10.0]))
+    dist_ = gp(node_idx)
+    predictions = dist_.mean
+    stds = dist_.stddev
+
+    _, (ax1, ax2) = plt.subplots(1, 2)
+    plot = ax1.scatter(
         latent_codes[:, 0].detach().numpy(),
         latent_codes[:, 1].detach().numpy(),
         c=predictions.detach().numpy(),
     )
+    ax2.scatter(
+        latent_codes[:, 0].detach().numpy(),
+        latent_codes[:, 1].detach().numpy(),
+        c=stds.detach().numpy(),
+    )
+    plt.colorbar(plot)
 
     plt.show()
     plt.close()

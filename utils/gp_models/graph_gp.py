@@ -39,6 +39,7 @@ class GraphBasedGP(gpytorch.models.ApproximateGP):
             graph,
             path_to_laplacian=path_to_laplacian,
             force_compute_laplacian=force_compute_laplacian,
+            lengthscale_prior=gpytorch.priors.GammaPrior(10.0, 1.0),
         )
         mean = ConstantMean()
         likelihood = GaussianLikelihood()
