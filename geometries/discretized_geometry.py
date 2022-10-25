@@ -35,6 +35,11 @@ class DiscretizedGeometry(Geometry):
     ) -> None:
         self.graph = None
         self.graph_nodes = None
+        self.node_to_graph_idx = None
+        self.graph_idx_to_node = None
+        self.x_lims = x_lims
+        self.y_lims = y_lims
+        self.n_grid = n_grid
 
         metric_vol_folder = Path(f"./data/processed/metric_volumes/{exp_name}/")
         metric_vol_folder.mkdir(exist_ok=True, parents=True)
@@ -160,30 +165,39 @@ class DiscretizedGeometry(Geometry):
     def from_graph_node_to_latent_code(
         self, node: Union[Tuple[int, int], List[Tuple[int, int]]]
     ) -> t.Tensor:
-        if isinstance(node, tuple) and isinstance(node[0], (int, float)):
-            node_idx = self._position_to_graph_idx(*node)
-            return self.from_graph_idx_to_latent_code(node_idx)
+        x_domain = t.linspace(*self.x_lims, self.n_grid)
+        y_domain = t.linspace(*self.y_lims, self.n_grid)
+
+        if isinstance(node, tuple) and isinstance(node[0], (int)):
+            return t.Tensor([x_domain[node[0]], y_domain[node[1]]])
+
         elif isinstance(node, (list, t.Tensor, np.ndarray)):
-            node_idxs = [self._position_to_graph_idx(n[0], n[1]) for n in node]
-            return self.from_graph_idx_to_latent_code(node_idxs)
-        ...
+            return t.Tensor([[x_domain[n[0]], y_domain[n[1]]] for n in node])
 
     def from_graph_idx_to_latent_code(
         self, graph_idx: Union[t.Tensor, np.ndarray, List, int]
-    ) -> np.ndarray:
+    ) -> t.Tensor:
+        # Transform it to a node first, and then to a latent code.
         if isinstance(graph_idx, int):
-            return self.zs[graph_idx]
+            return self.from_graph_node_to_latent_code(
+                self.graph_idx_to_node[graph_idx]
+            )
+        elif isinstance(graph_idx, (list, np.ndarray)):
+            return t.Tensor(
+                [
+                    self.from_graph_node_to_latent_code(self.graph_idx_to_node[id_])
+                    for id_ in graph_idx
+                ]
+            )
         elif isinstance(graph_idx, t.Tensor):
-            # inverting the graph_idx to tuples of positions
-            # positions = [
-            #     self._graph_idx_to_position(idx.item()) for idx in graph_idx.flatten()
-            # ]
-            # TODO: Will this work?
-            return self.zs[graph_idx.type(t.long).flatten()]
-        elif isinstance(graph_idx, np.ndarray):
-            return self.zs[graph_idx.astype(int).flatten()]
-        elif isinstance(graph_idx, list):
-            return self.zs[np.array(graph_idx).astype(int).flatten()]
+            return t.Tensor(
+                [
+                    self.from_graph_node_to_latent_code(
+                        self.graph_idx_to_node[id_.item()]
+                    )
+                    for id_ in graph_idx
+                ]
+            )
         else:
             raise ValueError(...)
 
@@ -196,5 +210,9 @@ class DiscretizedGeometry(Geometry):
             adjacency = self._get_adjacency_dict_from_grid()
             self.graph = nx.Graph(adjacency)
             self.graph_nodes = list(self.graph.nodes())
+            self.node_to_graph_idx = {
+                node: j for j, node in enumerate(self.graph_nodes)
+            }
+            self.graph_idx_to_node = {v: k for k, v in self.node_to_graph_idx.items()}
 
         return self.graph
