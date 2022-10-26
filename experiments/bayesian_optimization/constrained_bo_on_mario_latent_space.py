@@ -103,7 +103,7 @@ def bayesian_optimization_iteration(
 
 def run_experiment():
     # Hyperparameters
-    n_iterations = 100
+    n_iterations = 50
 
     # Loading the model
     vae = load_model()

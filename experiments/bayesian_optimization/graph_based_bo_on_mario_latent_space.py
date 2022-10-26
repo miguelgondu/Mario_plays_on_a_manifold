@@ -1,4 +1,11 @@
 """
+DEPRECATED: getting the GP to work properly on
+graphs is a little bit of a nightmare. See
+./restricted_domain_bo_..._.py for an alternative
+in which we optimize the acq. function over the
+restricted domain.
+
+Old description:
 Loads one of the discretized geometries, builds
 a discrete graph from it and runs graph-based
 Bayesian Optimization.

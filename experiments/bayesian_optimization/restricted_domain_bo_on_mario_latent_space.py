@@ -1,8 +1,6 @@
 """
-Implements vanilla Bayesian Optimization (without constraints)
-in the latent space of our SMB VAEs. For now, I will
-try to optimize for the number of jumps coming out of the
-simulator while constraining that the level should be playable.
+Implements Bayesian Optimization on a restricted domain
+of the latent space of our SMB VAEs.
 """
 from typing import Tuple
 from pathlib import Path
@@ -11,13 +9,12 @@ from matplotlib import pyplot as plt
 import torch as t
 import numpy as np
 
-import gpytorch
-
 from botorch.models import SingleTaskGP
 from botorch.fit import fit_gpytorch_model
 from botorch.acquisition import ExpectedImprovement, UpperConfidenceBound
 from botorch.optim import optimize_acqf
 
+import gpytorch
 from gpytorch.mlls import ExactMarginalLogLikelihood
 
 from utils.simulator.interface import (
@@ -25,11 +22,11 @@ from utils.simulator.interface import (
 )
 from utils.visualization.latent_space import plot_prediction
 from utils.experiment import load_model
-from utils.experiment.bayesian_optimization import run_first_samples
+from utils.experiment.bayesian_optimization import run_first_samples, load_geometry, run_first_samples_from_graph
 
 ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
 
-gpytorch.settings.cholesky_jitter(float=1e-3, double=1e-4)
+gpytorch.settings.cholesky_jitter(float=1e-3, double=1e-3)
 
 
 def bayesian_optimization_iteration(
@@ -39,22 +36,16 @@ def bayesian_optimization_iteration(
     Runs a B.O. iteration and returns the next candidate and its value.
     """
     vae = load_model()
+    discrete_geometry = load_geometry()
+    restricted_domain = discrete_geometry.restricted_domain
 
     model = SingleTaskGP(latent_codes, jumps / 10.0)
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)
 
-    model.eval()
-    EI = UpperConfidenceBound(model, beta=3.0)
-
-    bounds = t.stack([t.Tensor([-5, -5]), t.Tensor([5, 5])])
-    candidate, _ = optimize_acqf(
-        EI,
-        bounds=bounds,
-        q=1,
-        num_restarts=5,
-        raw_samples=20,
-    )
+    acq_function = ExpectedImprovement(model, jumps.max() / 10.0)
+    acq_on_restricted_domain = acq_function(restricted_domain.unsqueeze(1))
+    candidate = restricted_domain[acq_on_restricted_domain.argmax()]
 
     print(candidate)
     level = vae.decode(candidate).probs.argmax(dim=-1)
@@ -84,9 +75,10 @@ def run_experiment():
 
     # Loading the VAE
     vae = load_model()
+    dg = load_geometry()
 
     # Get some first samples and save them.
-    latent_codes, playabilities, jumps = run_first_samples(vae)
+    latent_codes, playabilities, jumps = run_first_samples_from_graph(vae, dg)
     jumps = jumps.type(t.float32).unsqueeze(1)
     playabilities = playabilities.unsqueeze(1)
 
@@ -103,7 +95,7 @@ def run_experiment():
 
     # Saving the trace
     np.savez(
-        "./data/bayesian_optimization/traces/vanilla_bo_ucf.npz",
+        "./data/bayesian_optimization/traces/restricted_bo.npz",
         zs=latent_codes.detach().numpy(),
         playability=playabilities.detach().numpy(),
         jumps=jumps.detach().numpy(),

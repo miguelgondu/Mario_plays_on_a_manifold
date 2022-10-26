@@ -97,6 +97,9 @@ class DiscretizedGeometry(Geometry):
             self.vae_path, self.playability_map, inner_steps=inner_steps_diff
         )
 
+        # New approach: just optimize the acq. function over this restricted domain.
+        self.restricted_domain = t.from_numpy(zs[p == 1.0])
+
     def interpolate(self, z: t.Tensor, z_prime: t.Tensor) -> Tuple[t.Tensor]:
         return self.interpolation.interpolate(z, z_prime)
 
