@@ -115,23 +115,33 @@ def run_experiment():
 
     # Initialize the GPR model for the predicted number
     # of jumps.
-    for _ in range(n_iterations):
-        # if (iteration + 1) % 5 == 0:
-        #     plot_latent_space = True
-        # else:
-        #     plot_latent_space = False
+    try:
+        for i in range(n_iterations):
+            # if (iteration + 1) % 5 == 0:
+            #     plot_latent_space = True
+            # else:
+            #     plot_latent_space = False
 
-        candidate, jump, p = bayesian_optimization_iteration(
-            latent_codes, jumps, playability.squeeze(1), plot_latent_space=False
-        )
-        print(f"tested {candidate} and got {jump.item()} (p={p.item()})")
-        latent_codes = t.vstack((latent_codes, candidate))
-        jumps = t.vstack((jumps, jump))
-        playability = t.vstack((playability, p))
+            candidate, jump, p = bayesian_optimization_iteration(
+                latent_codes, jumps, playability.squeeze(1), plot_latent_space=False
+            )
+            print(
+                f"(Iteration {i+1}) tested {candidate} and got {jump.item()} (p={p.item()})"
+            )
+
+            if p == 0.0:
+                jump = t.zeros_like(jump)
+
+            latent_codes = t.vstack((latent_codes, candidate))
+            jumps = t.vstack((jumps, jump))
+            playability = t.vstack((playability, p))
+    except Exception as e:
+        print(f"Couldn't continue. Stopped at iteration {i+1}")
+        print(e)
 
     # Saving the trace
     np.savez(
-        "./data/bayesian_optimization/traces/constrained_bo.npz",
+        "./data/bayesian_optimization/traces/constrained_bo_third.npz",
         zs=latent_codes.detach().numpy(),
         playability=playability.detach().numpy(),
         jumps=jumps.detach().numpy(),

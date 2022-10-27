@@ -70,7 +70,7 @@ class DiscretizedGeometry(Geometry):
 
             zs = t.Tensor([[x, y] for x in z1 for y in z2])
             metric_volumes = []
-            metrics = vae.metric(zs)
+            metrics = vae.metric(zs.to(vae.device))
             for Mz in metrics:
                 detMz = t.det(Mz).item()
                 if detMz < 0:
@@ -78,7 +78,7 @@ class DiscretizedGeometry(Geometry):
                 else:
                     metric_volumes.append(np.log(detMz))
 
-            zs = zs.detach().numpy()
+            zs = zs.cpu().detach().numpy()
             metric_volumes = np.array(metric_volumes)
 
             np.savez(metric_vol_path, zs=zs, metric_volumes=metric_volumes)

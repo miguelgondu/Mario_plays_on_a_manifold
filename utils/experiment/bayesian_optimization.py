@@ -100,7 +100,11 @@ def run_first_samples_from_graph(
     )
 
     # Returning.
-    return latent_codes, t.Tensor(playability), t.Tensor(jumps)
+    return (
+        latent_codes.to(vae.device),
+        t.Tensor(playability).to(vae.device),
+        t.Tensor(jumps).to(vae.device),
+    )
 
 
 def load_geometry():

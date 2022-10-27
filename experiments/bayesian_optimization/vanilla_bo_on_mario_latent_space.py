@@ -92,18 +92,28 @@ def run_experiment():
 
     # Initialize the GPR model for the predicted number
     # of jumps.
-    for _ in range(n_iterations):
-        candidate, playability, jump = bayesian_optimization_iteration(
-            latent_codes, jumps, plot_latent_space=False
-        )
-        print(f"tested {candidate} and got {jump} (p={playability})")
-        latent_codes = t.vstack((latent_codes, candidate))
-        jumps = t.vstack((jumps, jump))
-        playabilities = t.vstack((playabilities, playability))
+    try:
+        for i in range(n_iterations):
+            candidate, playability, jump = bayesian_optimization_iteration(
+                latent_codes, jumps, plot_latent_space=False
+            )
+            print(
+                f"(Iteration {i+1}) tested {candidate} and got {jump} (p={playability})"
+            )
+
+            if playability == 0.0:
+                jump = t.zeros_like(jump)
+
+            latent_codes = t.vstack((latent_codes, candidate))
+            jumps = t.vstack((jumps, jump))
+            playabilities = t.vstack((playabilities, playability))
+    except Exception as e:
+        print(f"Couldn't continue. Stopped at iteration {i+1}")
+        print(e)
 
     # Saving the trace
     np.savez(
-        "./data/bayesian_optimization/traces/vanilla_bo_ucf.npz",
+        "./data/bayesian_optimization/traces/vanilla_bo_fourth.npz",
         zs=latent_codes.detach().numpy(),
         playability=playabilities.detach().numpy(),
         jumps=jumps.detach().numpy(),

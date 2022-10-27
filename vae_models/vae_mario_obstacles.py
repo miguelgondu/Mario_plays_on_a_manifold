@@ -59,7 +59,7 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
         """
         Updates the points to avoid.
         """
-        self.obstacles = obstacles
+        self.obstacles = obstacles.to(self.device)
         self.translated_sigmoid = TranslatedSigmoid(beta=beta)
 
     def min_distance(self, z: t.Tensor) -> t.Tensor:

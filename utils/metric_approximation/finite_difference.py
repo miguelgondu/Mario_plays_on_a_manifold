@@ -17,7 +17,7 @@ def fd_jacobian(function, x, h=1e-4, input_size=14 * 14 * 11):
     B, D = x.shape
 
     # Compute finite differences
-    E = h * torch.eye(D)
+    E = h * torch.eye(D, device=x.device)
     Jnum = torch.cat(
         [
             (
