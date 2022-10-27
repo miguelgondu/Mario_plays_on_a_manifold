@@ -26,6 +26,7 @@ class DiscretizedGeometry(Geometry):
         vae_path: Path,
         exp_folder: str = "ten_vaes",
         beta: float = -5.5,
+        mean_scale: float = 1.0,
         n_grid: int = 100,
         inner_steps_diff: int = 25,
         x_lims=(-5, 5),
@@ -37,6 +38,8 @@ class DiscretizedGeometry(Geometry):
         self.graph_nodes = None
         self.node_to_graph_idx = None
         self.graph_idx_to_node = None
+
+        self.mean_scale = mean_scale
         self.x_lims = x_lims
         self.y_lims = y_lims
         self.n_grid = n_grid
@@ -87,7 +90,7 @@ class DiscretizedGeometry(Geometry):
         self.metric_volumes = metric_volumes
 
         # build interpolation and diffusion with that new p_map
-        p = (metric_volumes < metric_volumes.mean()).astype(int)
+        p = (metric_volumes < (self.mean_scale * metric_volumes.mean())).astype(int)
 
         new_p_map = load_arrays_as_map(zs, p)
         super().__init__(new_p_map, exp_name, vae_path, exp_folder=exp_folder)

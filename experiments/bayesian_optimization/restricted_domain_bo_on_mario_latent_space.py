@@ -42,15 +42,15 @@ def bayesian_optimization_iteration(
     Runs a B.O. iteration and returns the next candidate and its value.
     """
     vae = load_model()
-    discrete_geometry = load_geometry()
+    discrete_geometry = load_geometry(mean_scale=0.7)
     restricted_domain = discrete_geometry.restricted_domain.to(vae.device)
 
     model = SingleTaskGP(latent_codes, jumps / 10.0)
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)
 
-    # acq_function = ExpectedImprovement(model, jumps.max() / 10.0)
-    acq_function = UpperConfidenceBound(model, beta=3.0)
+    acq_function = ExpectedImprovement(model, jumps.max() / 10.0)
+    # acq_function = UpperConfidenceBound(model, beta=3.0)
     acq_on_restricted_domain = acq_function(restricted_domain.unsqueeze(1))
     candidate = restricted_domain[acq_on_restricted_domain.argmax()]
 
@@ -117,7 +117,7 @@ def run_experiment():
 
     # Saving the trace
     np.savez(
-        "./data/bayesian_optimization/traces/restricted_bo_fourth.npz",
+        "./data/bayesian_optimization/traces/restricted_bo_fifth.npz",
         zs=latent_codes.cpu().detach().numpy(),
         playability=playabilities.cpu().detach().numpy(),
         jumps=jumps.cpu().detach().numpy(),

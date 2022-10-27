@@ -107,7 +107,9 @@ def run_first_samples_from_graph(
     )
 
 
-def load_geometry():
+def load_geometry(
+    beta: float = -5.5, mean_scale: float = 1.0, name="geometry_for_plotting_banner"
+):
     """
     Loads a discretized geometry as a graph.
     """
@@ -118,6 +120,19 @@ def load_geometry():
     )
     p_map = load_csv_as_map(path_to_gt)
 
-    dg = DiscretizedGeometry(p_map, "geometry_for_plotting_banner", vae_path)
+    dg = DiscretizedGeometry(p_map, name, vae_path, beta=beta, mean_scale=mean_scale)
 
     return dg
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    mean_scales = [0.5, 0.6, 0.7, 0.8, 1.0]
+    _, axes = plt.subplots(1, len(mean_scales))
+    for ax, mean_scale in zip(axes, mean_scales):
+        dg = load_geometry(mean_scale=mean_scale, name=f"geometry_with_-5.5")
+        ax.imshow(dg.grid)
+        ax.set_title(r"$\lambda = " + f"{mean_scale}$")
+
+    plt.show()

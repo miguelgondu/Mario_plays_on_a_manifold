@@ -45,7 +45,8 @@ def bayesian_optimization_iteration(
     fit_gpytorch_model(mll)
 
     model.eval()
-    EI = UpperConfidenceBound(model, beta=3.0)
+    # EI = UpperConfidenceBound(model, beta=3.0)
+    EI = ExpectedImprovement(model, jumps.max() / 10.0)
 
     bounds = t.stack([t.Tensor([-5, -5]), t.Tensor([5, 5])])
     candidate, _ = optimize_acqf(
@@ -113,7 +114,7 @@ def run_experiment():
 
     # Saving the trace
     np.savez(
-        "./data/bayesian_optimization/traces/vanilla_bo_fourth.npz",
+        "./data/bayesian_optimization/traces/vanilla_bo_EI.npz",
         zs=latent_codes.detach().numpy(),
         playability=playabilities.detach().numpy(),
         jumps=jumps.detach().numpy(),
