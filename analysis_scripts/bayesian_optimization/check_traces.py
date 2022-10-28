@@ -23,7 +23,9 @@ if __name__ == "__main__":
         # "restricted_bo_third",
         # "restricted_bo_fourth",
         "restricted_bo_fifth",
-        "vanilla_bo_EI"
+        "restricted_bo_sixth",
+        "restricted_bo_ucf",
+        "vanilla_bo_EI",
     ]
     for trace_name in trace_names:
         if "restricted" in trace_name:

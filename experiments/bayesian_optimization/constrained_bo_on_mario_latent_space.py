@@ -60,12 +60,12 @@ def bayesian_optimization_iteration(
     )
 
     # Training the success model
-    for i in range(50):
+    for i in range(100):
         optimizer.zero_grad()
         output = success_model(latent_codes)
         loss = -mll_success(output, playabilities)
         loss.backward()
-        print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
+        # print("Iter %d/%d - Loss: %.3f" % (i + 1, 50, loss.item()))
         optimizer.step()
 
     cEI = ConstrainedExpectedImprovement(model, success_model, max(jumps))
@@ -101,7 +101,7 @@ def bayesian_optimization_iteration(
     )
 
 
-def run_experiment():
+def run_experiment(exp_id: int = 0):
     # Hyperparameters
     n_iterations = 50
 
@@ -141,7 +141,7 @@ def run_experiment():
 
     # Saving the trace
     np.savez(
-        "./data/bayesian_optimization/traces/constrained_bo_third.npz",
+        f"./data/bayesian_optimization/traces/constrained_bo_{exp_id}.npz",
         zs=latent_codes.detach().numpy(),
         playability=playability.detach().numpy(),
         jumps=jumps.detach().numpy(),
@@ -149,4 +149,5 @@ def run_experiment():
 
 
 if __name__ == "__main__":
-    run_experiment()
+    for exp_id in range(10):
+        run_experiment(exp_id)

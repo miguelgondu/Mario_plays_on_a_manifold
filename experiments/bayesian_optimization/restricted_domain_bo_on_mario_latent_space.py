@@ -50,7 +50,7 @@ def bayesian_optimization_iteration(
     fit_gpytorch_model(mll)
 
     acq_function = ExpectedImprovement(model, jumps.max() / 10.0)
-    # acq_function = UpperConfidenceBound(model, beta=3.0)
+    # acq_function = UpperConfidenceBound(model, beta=1.0)
     acq_on_restricted_domain = acq_function(restricted_domain.unsqueeze(1))
     candidate = restricted_domain[acq_on_restricted_domain.argmax()]
 
@@ -76,7 +76,7 @@ def bayesian_optimization_iteration(
     )
 
 
-def run_experiment():
+def run_experiment(exp_id: int = 0):
     # Hyperparameters
     n_iterations = 50
 
@@ -117,7 +117,7 @@ def run_experiment():
 
     # Saving the trace
     np.savez(
-        "./data/bayesian_optimization/traces/restricted_bo_fifth.npz",
+        f"./data/bayesian_optimization/traces/restricted_bo_{exp_id}.npz",
         zs=latent_codes.cpu().detach().numpy(),
         playability=playabilities.cpu().detach().numpy(),
         jumps=jumps.cpu().detach().numpy(),
@@ -125,4 +125,5 @@ def run_experiment():
 
 
 if __name__ == "__main__":
-    run_experiment()
+    for exp_id in range(10):
+        run_experiment(exp_id=exp_id)
