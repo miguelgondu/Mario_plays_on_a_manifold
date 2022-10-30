@@ -14,19 +14,24 @@ if __name__ == "__main__":
         "./data/bayesian_optimization/initial_traces/playability_and_jumps_from_graph.npz"
     )["jumps"]
 
-    trace_names = [
-        # "vanilla_bo",
-        # "vanilla_bo_third",
-        # "vanilla_bo_fourth",
-        # "constrained_bo_third",
-        # "restricted_bo",
-        # "restricted_bo_third",
-        # "restricted_bo_fourth",
-        "restricted_bo_fifth",
-        "restricted_bo_sixth",
-        "restricted_bo_ucf",
-        "vanilla_bo_EI",
-    ]
+    # trace_names = [
+    #     # "vanilla_bo",
+    #     # "vanilla_bo_third",
+    #     # "vanilla_bo_fourth",
+    #     # "constrained_bo_third",
+    #     # "restricted_bo",
+    #     # "restricted_bo_third",
+    #     # "restricted_bo_fourth",
+    #     "restricted_bo_fifth",
+    #     "restricted_bo_sixth",
+    #     "restricted_bo_ucf",
+    #     "vanilla_bo_EI",
+    # ]
+    trace_names = (
+        [f"vanilla_bo_{i}" for i in range(10)]
+        + [f"constrained_bo_{i}" for i in range(10)]
+        + [f"restricted_bo_{i}" for i in range(10)]
+    )
     for trace_name in trace_names:
         if "restricted" in trace_name:
             initial_amount = len(initial_trace_graph)
