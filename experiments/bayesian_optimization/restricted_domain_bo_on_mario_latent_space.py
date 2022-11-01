@@ -48,7 +48,7 @@ def bayesian_optimization_iteration(
     """
     vae = load_model(model_id=model_id)
     discrete_geometry = load_geometry(
-        mean_scale=0.7, model_id=model_id, name=f"bo_for_model_{model_id}"
+        mean_scale=1.0, model_id=model_id, name=f"bo_for_model_{model_id}_scale_1"
     )
     restricted_domain = discrete_geometry.restricted_domain.to(vae.device)
 
@@ -72,11 +72,21 @@ def bayesian_optimization_iteration(
         plot_acquisition(acq_function, ax_acq)
         # ax_acq.imshow(acq_values.cpu().detach().numpy().reshape(100, 100))
 
-        ax.scatter(latent_codes[:, 0], latent_codes[:, 1], c="black", marker="x")
-        ax.scatter([candidate[0]], [candidate[1]], c="red", marker="d")
+        ax.scatter(
+            latent_codes[:, 0].cpu().detach().numpy(),
+            latent_codes[:, 1].cpu().detach().numpy(),
+            c="black",
+            marker="x",
+        )
+        ax.scatter([candidate[0].cpu()], [candidate[1].cpu()], c="red", marker="d")
 
-        ax.scatter(latent_codes[:, 0], latent_codes[:, 1], c="black", marker="x")
-        ax.scatter([candidate[0]], [candidate[1]], c="red", marker="d")
+        ax.scatter(
+            latent_codes[:, 0].cpu().detach().numpy(),
+            latent_codes[:, 1].cpu().detach().numpy(),
+            c="black",
+            marker="x",
+        )
+        ax.scatter([candidate[0].cpu()], [candidate[1].cpu()], c="red", marker="d")
 
         if img_save_folder is not None:
             img_save_folder.mkdir(exist_ok=True, parents=True)
