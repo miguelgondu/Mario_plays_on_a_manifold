@@ -27,7 +27,7 @@ from utils.visualization.latent_space import plot_prediction, plot_acquisition
 from utils.experiment import load_model
 from utils.experiment.bayesian_optimization import run_first_samples
 
-ROOT_DIR = Path(__file__).parent.parent.parent.parent.resolve()
+ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 
 gpytorch.settings.cholesky_jitter(float=1e-3, double=1e-4)
 
@@ -119,10 +119,20 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
     # Initialize the GPR model for the predicted number
     # of jumps.
     # try:
-    img_save_folder = ROOT_DIR / "data" / "plots" / "bayesian_optimization" / f"vanilla_bo_{model_id}_{exp_id}"
+    img_save_folder = (
+        ROOT_DIR
+        / "data"
+        / "plots"
+        / "bayesian_optimization"
+        / f"vanilla_bo_{model_id}_{exp_id}"
+    )
     for i in range(n_iterations):
         candidate, playability, jump = bayesian_optimization_iteration(
-            latent_codes, jumps, plot_latent_space=True, iteration=i, img_save_folder=img_save_folder
+            latent_codes,
+            jumps,
+            plot_latent_space=True,
+            iteration=i,
+            img_save_folder=img_save_folder,
         )
         print(f"(Iteration {i+1}) tested {candidate} and got {jump} (p={playability})")
 
