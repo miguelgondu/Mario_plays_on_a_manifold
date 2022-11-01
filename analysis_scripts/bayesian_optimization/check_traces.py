@@ -38,6 +38,7 @@ if __name__ == "__main__":
         + [f"random_samples_1_{i}" for i in range(10)]
     )
     rows = []
+    rows_all_jumps = []
     for trace_name in trace_names:
         if "restricted" in trace_name:
             initial_amount = len(initial_trace_graph)
@@ -56,6 +57,9 @@ if __name__ == "__main__":
         valid_jumps = arr["jumps"][initial_amount:][p == 1]
         print(f"valid jumps max: {max(valid_jumps)}, position: {valid_jumps.argmax()}")
 
+        for j in valid_jumps:
+            rows_all_jumps.append({"experiment": name, "jumps": j})
+
         row = {
             "experiment": name,
             "percentage playable": sum(p) / len(p),
@@ -67,3 +71,7 @@ if __name__ == "__main__":
     # df = pd.DataFrame(rows)
     # sns.violinplot(data=df, x="experiment", y="max valid jump")
     # plt.show()
+
+    df2 = pd.DataFrame(rows_all_jumps)
+    sns.violinplot(data=df2, x="experiment", y="jumps")
+    plt.show()
