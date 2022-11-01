@@ -4,7 +4,6 @@ from typing import Tuple
 import torch as t
 from torch.distributions import Uniform
 import numpy as np
-import networkx as nx
 
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
@@ -21,7 +20,7 @@ def run_first_samples(
     n_samples: int = 50,
     force: bool = False,
     save_path: Path = None,
-    model_id: int = 0
+    model_id: int = 0,
 ) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
     if save_path is None:
         save_path = (
@@ -39,15 +38,15 @@ def run_first_samples(
 
         return latent_codes, playability, jumps
 
-    latent_codes = Uniform(t.Tensor([-5.0, -5.0]), t.Tensor([5.0, 5.0])).sample_n(
-        n_samples
+    latent_codes = Uniform(t.Tensor([-5.0, -5.0]), t.Tensor([5.0, 5.0])).sample(
+        (n_samples,)
     )
     levels = vae.decode(latent_codes).probs.argmax(dim=-1)
 
     playability = []
     jumps = []
     for i, level in enumerate(levels):
-        results = test_level_from_int_tensor(level, visualize=True)
+        results = test_level_from_int_tensor(level, visualize=False)
         playability.append(results["marioStatus"])
         jumps.append(results["jumpActionsPerformed"])
         print(

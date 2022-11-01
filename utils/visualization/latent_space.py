@@ -12,6 +12,7 @@ import numpy as np
 
 import gpytorch
 from gpytorch.models import ExactGP
+from botorch.acquisition import AcquisitionFunction
 
 
 def _image_from_values(
@@ -52,7 +53,8 @@ def plot_prediction(model: ExactGP, ax: plt.Axes):
         [
             [x, y]
             for x, y in product(
-                torch.linspace(-5, 5, 75), reversed(torch.linspace(-5, 5, 75))
+                torch.linspace(-5, 5, n_points_in_grid),
+                torch.linspace(-5, 5, n_points_in_grid),
             )
         ]
     )
@@ -61,4 +63,27 @@ def plot_prediction(model: ExactGP, ax: plt.Axes):
     means = predicted_distribution.mean
     means_as_img = _image_from_values(means, limits, n_points_in_grid)
 
-    ax.imshow(means_as_img, extent=[*limits, *limits], cmap="Blues")
+    plot = ax.imshow(means_as_img, extent=[*limits, *limits], cmap="Blues")
+    plt.colorbar(plot, ax=ax)
+
+
+def plot_acquisition(acq_function: AcquisitionFunction, ax: plt.Axes):
+    limits = [-5, 5]
+    n_points_in_grid = 75
+
+    fine_grid_in_latent_space = torch.Tensor(
+        [
+            [x, y]
+            for x, y in product(
+                torch.linspace(-5, 5, n_points_in_grid),
+                torch.linspace(-5, 5, n_points_in_grid),
+            )
+        ]
+    ).unsqueeze(1)
+
+    acq_values = acq_function(fine_grid_in_latent_space)
+    acq_values_as_img = _image_from_values(acq_values, limits, n_points_in_grid)
+
+    plot = ax.imshow(acq_values_as_img, extent=[*limits, *limits], cmap="Blues")
+    plt.colorbar(plot, ax=ax)
+    ...

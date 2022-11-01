@@ -69,9 +69,9 @@ if __name__ == "__main__":
         }
         rows.append(row)
 
-    # df = pd.DataFrame(rows)
-    # sns.violinplot(data=df, x="experiment", y="max valid jump")
-    # plt.show()
+    df = pd.DataFrame(rows)
+    sns.violinplot(data=df, x="experiment", y="max valid jump")
+    plt.show()
 
     # df2 = pd.DataFrame(rows_all_jumps)
     # sns.violinplot(data=df2, x="experiment", y="jumps")
