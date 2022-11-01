@@ -172,8 +172,8 @@ def intersection(
     return res
 
 
-def load_model() -> VAEMarioHierarchical:
-    model_name = "vae_mario_hierarchical_id_0"
+def load_model(model_id: int = 0) -> VAEMarioHierarchical:
+    model_name = f"vae_mario_hierarchical_id_{model_id}"
     vae = VAEMarioHierarchical()
     vae.load_state_dict(
         t.load(f"./trained_models/ten_vaes/{model_name}.pt", map_location=vae.device)

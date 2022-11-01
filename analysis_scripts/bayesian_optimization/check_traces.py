@@ -31,10 +31,11 @@ if __name__ == "__main__":
     #     "vanilla_bo_EI",
     # ]
     trace_names = (
-        [f"vanilla_bo_{i}" for i in range(10)]
+        []
+        # [f"vanilla_bo_{i}" for i in range(10)]
         # + [f"constrained_bo_{i}" for i in range(10)]
-        + [f"restricted_bo_{i}" for i in range(10)]
-        + [f"random_samples_{i}" for i in range(10)]
+        + [f"restricted_bo_1_{i}" for i in range(10)]
+        + [f"random_samples_1_{i}" for i in range(10)]
     )
     rows = []
     for trace_name in trace_names:
@@ -63,6 +64,6 @@ if __name__ == "__main__":
         }
         rows.append(row)
 
-    df = pd.DataFrame(rows)
-    sns.violinplot(data=df, x="experiment", y="max valid jump")
-    plt.show()
+    # df = pd.DataFrame(rows)
+    # sns.violinplot(data=df, x="experiment", y="max valid jump")
+    # plt.show()

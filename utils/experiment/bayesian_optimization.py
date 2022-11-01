@@ -21,6 +21,7 @@ def run_first_samples(
     n_samples: int = 50,
     force: bool = False,
     save_path: Path = None,
+    model_id: int = 0
 ) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
     if save_path is None:
         save_path = (
@@ -28,7 +29,7 @@ def run_first_samples(
             / "data"
             / "bayesian_optimization"
             / "initial_traces"
-            / f"playabilities_and_jumps.npz"
+            / f"playabilities_and_jumps_{model_id}.npz"
         )
     if not force and save_path.exists():
         array = np.load(save_path)
@@ -49,12 +50,19 @@ def run_first_samples(
         results = test_level_from_int_tensor(level, visualize=True)
         playability.append(results["marioStatus"])
         jumps.append(results["jumpActionsPerformed"])
-        print("i:", i, "p:", results["marioStatus"], "jumps:", results["jumpActionsPerformed"])
+        print(
+            "i:",
+            i,
+            "p:",
+            results["marioStatus"],
+            "jumps:",
+            results["jumpActionsPerformed"],
+        )
 
     # Saving the array
     np.savez(
         save_path,
-        zs=latent_codes.detach().numpy(),
+        zs=latent_codes.cpu().detach().numpy(),
         playability=np.array(playability),
         jumps=np.array(jumps),
     )
@@ -68,13 +76,14 @@ def run_first_samples_from_graph(
     discretized_geometry: DiscretizedGeometry,
     n_samples: int = 50,
     force: bool = False,
+    model_id: int = 0,
 ):
     data_path = (
         ROOT_DIR
         / "data"
         / "bayesian_optimization"
         / "initial_traces"
-        / "playability_and_jumps_from_graph.npz"
+        / f"playability_and_jumps_from_graph_{model_id}.npz"
     )
     if not force and data_path.exists():
         array = np.load(data_path)
@@ -102,7 +111,7 @@ def run_first_samples_from_graph(
     # Saving the array
     np.savez(
         data_path,
-        zs=latent_codes.detach().numpy(),
+        zs=latent_codes.cpu().detach().numpy(),
         playability=np.array(playability),
         jumps=np.array(jumps),
     )
@@ -116,12 +125,17 @@ def run_first_samples_from_graph(
 
 
 def load_geometry(
-    beta: float = -5.5, mean_scale: float = 1.0, name="geometry_for_plotting_banner"
+    beta: float = -5.5,
+    mean_scale: float = 1.0,
+    name="geometry_for_plotting_banner",
+    model_id: int = 0,
 ):
     """
     Loads a discretized geometry as a graph.
     """
-    vae_path = Path("./trained_models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+    vae_path = Path(
+        f"./trained_models/ten_vaes/vae_mario_hierarchical_id_{model_id}.pt"
+    )
     path_to_gt = (
         Path("./data/array_simulation_results/ten_vaes/ground_truth")
         / f"{vae_path.stem}.csv"

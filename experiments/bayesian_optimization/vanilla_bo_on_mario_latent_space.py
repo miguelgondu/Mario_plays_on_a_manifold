@@ -79,15 +79,15 @@ def bayesian_optimization_iteration(
     )
 
 
-def run_experiment(exp_id: int = 0):
+def run_experiment(exp_id: int = 0, model_id: int = 0):
     # Hyperparameters
     n_iterations = 50
 
     # Loading the VAE
-    vae = load_model()
+    vae = load_model(model_id=model_id)
 
     # Get some first samples and save them.
-    latent_codes, playabilities, jumps = run_first_samples(vae)
+    latent_codes, playabilities, jumps = run_first_samples(vae, model_id=model_id)
     jumps = jumps.type(t.float32).unsqueeze(1)
     playabilities = playabilities.unsqueeze(1)
 
@@ -114,7 +114,7 @@ def run_experiment(exp_id: int = 0):
 
     # Saving the trace
     np.savez(
-        f"./data/bayesian_optimization/traces/vanilla_bo_{exp_id}.npz",
+        f"./data/bayesian_optimization/traces/vanilla_bo_{model_id}_{exp_id}.npz",
         zs=latent_codes.detach().numpy(),
         playability=playabilities.detach().numpy(),
         jumps=jumps.detach().numpy(),
