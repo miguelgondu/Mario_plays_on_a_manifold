@@ -3,18 +3,24 @@ Given traces of Vanilla, Constrained and Graph-based Bayesian Optimization,
 this script loads them and checks metrics regarding nr. of playable levels
 and best playable level.
 """
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
+
 if __name__ == "__main__":
+    model_id = 1
+
+    initial_trace_path = ROOT_DIR / "data" / "bayesian_optimization" / "initial_traces"
     initial_trace = np.load(
-        "./data/bayesian_optimization/initial_traces/playability_and_jumps.npz"
+        initial_trace_path / f"playabilities_and_jumps_{model_id}.npz"
     )["jumps"]
     initial_trace_graph = np.load(
-        "./data/bayesian_optimization/initial_traces/playability_and_jumps_from_graph.npz"
+        initial_trace_path / f"playability_and_jumps_from_graph_{model_id}.npz"
     )["jumps"]
 
     # trace_names = [
