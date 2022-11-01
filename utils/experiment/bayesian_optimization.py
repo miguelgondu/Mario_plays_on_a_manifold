@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Tuple
 
 import torch as t
+from torch.distributions import Uniform
 import numpy as np
 import networkx as nx
 
@@ -16,14 +17,17 @@ ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 
 # Run first samples
 def run_first_samples(
-    vae: VAEMarioHierarchical, n_samples: int = 10, force: bool = False
+    vae: VAEMarioHierarchical,
+    n_samples: int = 50,
+    force: bool = False,
+    name: str = "playability_and_jumps",
 ) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
     data_path = (
         ROOT_DIR
         / "data"
         / "bayesian_optimization"
         / "initial_traces"
-        / "playability_and_jumps.npz"
+        / f"{name}.npz"
     )
     if not force and data_path.exists():
         array = np.load(data_path)
@@ -33,7 +37,9 @@ def run_first_samples(
 
         return latent_codes, playability, jumps
 
-    latent_codes = 5.0 * vae.p_z.sample((n_samples,))
+    latent_codes = Uniform(t.Tensor([-5.0, -5.0]), t.Tensor([5.0, 5.0])).sample_n(
+        n_samples
+    )
     levels = vae.decode(latent_codes).probs.argmax(dim=-1)
 
     playability = []

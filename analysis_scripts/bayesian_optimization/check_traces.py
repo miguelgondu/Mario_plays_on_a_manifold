@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # ]
     trace_names = (
         [f"vanilla_bo_{i}" for i in range(10)]
-        + [f"constrained_bo_{i}" for i in range(10)]
+        # + [f"constrained_bo_{i}" for i in range(10)]
         + [f"restricted_bo_{i}" for i in range(10)]
     )
     for trace_name in trace_names:
