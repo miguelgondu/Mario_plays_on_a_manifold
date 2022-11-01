@@ -34,8 +34,9 @@ if __name__ == "__main__":
         []
         # [f"vanilla_bo_{i}" for i in range(10)]
         # + [f"constrained_bo_{i}" for i in range(10)]
-        + [f"restricted_bo_1_{i}" for i in range(10)]
         + [f"random_samples_1_{i}" for i in range(10)]
+        + [f"vanilla_bo_1_{i}" for i in range(10)]
+        + [f"restricted_bo_1_{i}" for i in range(10)]
     )
     rows = []
     rows_all_jumps = []
@@ -72,6 +73,6 @@ if __name__ == "__main__":
     # sns.violinplot(data=df, x="experiment", y="max valid jump")
     # plt.show()
 
-    df2 = pd.DataFrame(rows_all_jumps)
-    sns.violinplot(data=df2, x="experiment", y="jumps")
-    plt.show()
+    # df2 = pd.DataFrame(rows_all_jumps)
+    # sns.violinplot(data=df2, x="experiment", y="jumps")
+    # plt.show()

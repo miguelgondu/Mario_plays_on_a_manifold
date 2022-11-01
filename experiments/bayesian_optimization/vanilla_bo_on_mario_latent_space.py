@@ -33,20 +33,23 @@ gpytorch.settings.cholesky_jitter(float=1e-3, double=1e-4)
 
 
 def bayesian_optimization_iteration(
-    latent_codes: t.Tensor, jumps: t.Tensor, plot_latent_space: bool = False
+    latent_codes: t.Tensor,
+    jumps: t.Tensor,
+    plot_latent_space: bool = False,
+    model_id: int = 0,
 ) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
     """
     Runs a B.O. iteration and returns the next candidate and its value.
     """
-    vae = load_model()
+    vae = load_model(model_id=model_id)
 
     model = SingleTaskGP(latent_codes, jumps / 10.0)
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)
 
     model.eval()
-    # EI = UpperConfidenceBound(model, beta=3.0)
-    EI = ExpectedImprovement(model, jumps.max() / 10.0)
+    EI = UpperConfidenceBound(model, beta=3.0)
+    # EI = ExpectedImprovement(model, jumps.max() / 10.0)
 
     bounds = t.stack([t.Tensor([-5, -5]), t.Tensor([5, 5])])
     candidate, _ = optimize_acqf(
@@ -122,5 +125,7 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
 
 
 if __name__ == "__main__":
+    model_id = 1
+
     for exp_id in range(10):
-        run_experiment(exp_id=exp_id)
+        run_experiment(exp_id=exp_id, model_id=model_id)
