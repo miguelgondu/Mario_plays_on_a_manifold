@@ -20,17 +20,18 @@ def run_first_samples(
     vae: VAEMarioHierarchical,
     n_samples: int = 50,
     force: bool = False,
-    name: str = "playability_and_jumps",
+    save_path: Path = None,
 ) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
-    data_path = (
-        ROOT_DIR
-        / "data"
-        / "bayesian_optimization"
-        / "initial_traces"
-        / f"{name}.npz"
-    )
-    if not force and data_path.exists():
-        array = np.load(data_path)
+    if save_path is None:
+        save_path = (
+            ROOT_DIR
+            / "data"
+            / "bayesian_optimization"
+            / "initial_traces"
+            / f"playabilities_and_jumps.npz"
+        )
+    if not force and save_path.exists():
+        array = np.load(save_path)
         latent_codes = t.from_numpy(array["zs"])
         playability = t.from_numpy(array["playability"])
         jumps = t.from_numpy(array["jumps"])
@@ -44,14 +45,15 @@ def run_first_samples(
 
     playability = []
     jumps = []
-    for level in levels:
+    for i, level in enumerate(levels):
         results = test_level_from_int_tensor(level, visualize=True)
         playability.append(results["marioStatus"])
         jumps.append(results["jumpActionsPerformed"])
+        print("i:", i, "p:", results["marioStatus"], "jumps:", results["jumpActionsPerformed"])
 
     # Saving the array
     np.savez(
-        "./data/bayesian_optimization/initial_traces/playability_and_jumps.npz",
+        save_path,
         zs=latent_codes.detach().numpy(),
         playability=np.array(playability),
         jumps=np.array(jumps),

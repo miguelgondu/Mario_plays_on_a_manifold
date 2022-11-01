@@ -5,6 +5,9 @@ and best playable level.
 """
 
 import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     initial_trace = np.load(
@@ -31,16 +34,35 @@ if __name__ == "__main__":
         [f"vanilla_bo_{i}" for i in range(10)]
         # + [f"constrained_bo_{i}" for i in range(10)]
         + [f"restricted_bo_{i}" for i in range(10)]
+        + [f"random_samples_{i}" for i in range(10)]
     )
+    rows = []
     for trace_name in trace_names:
         if "restricted" in trace_name:
             initial_amount = len(initial_trace_graph)
+            name = "restricted"
+        elif "random" in trace_name:
+            initial_amount = 0
+            name = "random"
         else:
             initial_amount = len(initial_trace)
+            name = "vanilla"
 
         print("-" * 30, trace_name, "-" * 30)
         arr = np.load(f"./data/bayesian_optimization/traces/{trace_name}.npz")
         p = arr["playability"][initial_amount:]
         print(f"Playable percentage: {sum(p)}/{len(p)} ({sum(p)/len(p)})")
         valid_jumps = arr["jumps"][initial_amount:][p == 1]
-        print(f"valid jumps max: {max(valid_jumps)}")
+        print(f"valid jumps max: {max(valid_jumps)}, position: {valid_jumps.argmax()}")
+
+        row = {
+            "experiment": name,
+            "percentage playable": sum(p) / len(p),
+            "max valid jump": max(valid_jumps),
+            "position of max": valid_jumps.argmax(),
+        }
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+    sns.violinplot(data=df, x="experiment", y="max valid jump")
+    plt.show()
