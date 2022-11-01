@@ -167,7 +167,7 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
 
 
 if __name__ == "__main__":
-    model_id = 1
+    model_id = 0
 
     for exp_id in range(10):
         run_experiment(exp_id=exp_id, model_id=model_id)

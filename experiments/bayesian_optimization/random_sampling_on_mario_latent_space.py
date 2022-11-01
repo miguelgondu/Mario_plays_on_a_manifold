@@ -5,7 +5,7 @@ from utils.experiment import load_model
 ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 
 if __name__ == "__main__":
-    model_id = 1
+    model_id = 0
     vae = load_model(model_id=model_id)
     data_dir = ROOT_DIR / "data" / "bayesian_optimization" / "traces"
     for exp_id in range(10):
