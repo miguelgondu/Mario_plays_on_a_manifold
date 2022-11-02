@@ -44,9 +44,9 @@ if __name__ == "__main__":
         []
         # [f"vanilla_bo_{i}" for i in range(10)]
         # + [f"constrained_bo_{i}" for i in range(10)]
-        + [f"random_samples_1_{i}" for i in range(10)]
-        + [f"vanilla_bo_1_{i}" for i in range(10)]
-        + [f"restricted_bo_1_{i}" for i in range(10)]
+        + [f"random_samples_0_{i}" for i in range(10)]
+        + [f"vanilla_bo_0_{i}" for i in range(10)]
+        + [f"restricted_bo_0_{i}" for i in range(10)]
     )
     rows = []
     rows_all_jumps = []

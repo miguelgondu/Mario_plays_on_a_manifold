@@ -11,7 +11,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from analysis_scripts.utils import get_mean_diversities, get_mean_diversities_of_levels
+from analysis_scripts.other_utils import (
+    get_mean_diversities,
+    get_mean_diversities_of_levels,
+)
 
 
 def load_experiment(exp_name: str, id_: int) -> Tuple[List[Path]]:
