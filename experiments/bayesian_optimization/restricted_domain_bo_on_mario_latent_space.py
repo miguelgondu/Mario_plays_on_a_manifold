@@ -16,6 +16,7 @@ from botorch.optim import optimize_acqf
 
 import gpytorch
 from gpytorch.mlls import ExactMarginalLogLikelihood
+from gpytorch.kernels import RBFKernel, ScaleKernel, MaternKernel
 
 from utils.simulator.interface import (
     test_level_from_int_tensor,
@@ -35,6 +36,10 @@ if t.cuda.is_available():
     t.set_default_tensor_type(t.cuda.FloatTensor)
 
 
+def fitness_function(jumps: t.Tensor):
+    return -((jumps - 8.0) ** 2) / 10.0
+
+
 def bayesian_optimization_iteration(
     latent_codes: t.Tensor,
     jumps: t.Tensor,
@@ -52,11 +57,13 @@ def bayesian_optimization_iteration(
     )
     restricted_domain = discrete_geometry.restricted_domain.to(vae.device)
 
-    model = SingleTaskGP(latent_codes, jumps / 10.0)
+    # kernel = ScaleKernel(MaternKernel())
+    kernel = None
+    model = SingleTaskGP(latent_codes, fitness_function(jumps), covar_module=kernel)
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)
 
-    acq_function = ExpectedImprovement(model, jumps.max() / 10.0)
+    acq_function = ExpectedImprovement(model, fitness_function(jumps).max())
     # acq_function = UpperConfidenceBound(model, beta=3.0)
     acq_on_restricted_domain = acq_function(restricted_domain.unsqueeze(1))
     candidate = restricted_domain[acq_on_restricted_domain.argmax()]
@@ -114,10 +121,12 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
     #     vae, dg, model_id=model_id, n_samples=10, force=False
     # )
     latent_codes, playabilities, jumps = run_first_samples(
-        vae, model_id=model_id, n_samples=10, force=False
+        vae, model_id=model_id, n_samples=2, force=True
     )
     jumps = jumps.type(t.float32).unsqueeze(1)
     playabilities = playabilities.unsqueeze(1)
+
+    jumps[playabilities == 0.0] = 0.0
 
     latent_codes = latent_codes.to(vae.device)
     jumps = jumps.to(vae.device)

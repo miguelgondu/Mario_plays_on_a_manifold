@@ -19,6 +19,7 @@ from botorch.acquisition import ExpectedImprovement, UpperConfidenceBound
 from botorch.optim import optimize_acqf
 
 from gpytorch.mlls import ExactMarginalLogLikelihood
+from gpytorch.kernels import MaternKernel, ScaleKernel
 
 from utils.simulator.interface import (
     test_level_from_int_tensor,
@@ -26,6 +27,10 @@ from utils.simulator.interface import (
 from utils.visualization.latent_space import plot_prediction, plot_acquisition
 from utils.experiment import load_model
 from utils.experiment.bayesian_optimization import run_first_samples
+
+from experiments.bayesian_optimization.restricted_domain_bo_on_mario_latent_space import (
+    fitness_function,
+)
 
 ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 
@@ -45,13 +50,15 @@ def bayesian_optimization_iteration(
     """
     vae = load_model(model_id=model_id)
 
-    model = SingleTaskGP(latent_codes, jumps / 10.0)
+    # kernel = ScaleKernel(MaternKernel())
+    kernel = None
+    model = SingleTaskGP(latent_codes, fitness_function(jumps), covar_module=kernel)
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)
 
     model.eval()
     # acq_function = UpperConfidenceBound(model, beta=3.0)
-    acq_function = ExpectedImprovement(model, jumps.max() / 10.0)
+    acq_function = ExpectedImprovement(model, fitness_function(jumps).max())
 
     zs = t.Tensor(
         [
@@ -83,11 +90,31 @@ def bayesian_optimization_iteration(
         plot_acquisition(acq_function, ax_acq)
         # ax_acq.imshow(acq_values.cpu().detach().numpy().reshape(100, 100))
 
-        ax.scatter(latent_codes[:, 0], latent_codes[:, 1], c="black", marker="x")
-        ax.scatter([candidate[0]], [candidate[1]], c="red", marker="d")
+        ax.scatter(
+            latent_codes[:, 0].cpu().detach().numpy(),
+            latent_codes[:, 1].cpu().detach().numpy(),
+            c="black",
+            marker="x",
+        )
+        ax.scatter(
+            [candidate[0].cpu().detach().numpy()],
+            [candidate[1].cpu().detach().numpy()],
+            c="red",
+            marker="d",
+        )
 
-        ax.scatter(latent_codes[:, 0], latent_codes[:, 1], c="black", marker="x")
-        ax.scatter([candidate[0]], [candidate[1]], c="red", marker="d")
+        ax.scatter(
+            latent_codes[:, 0].cpu().detach().numpy(),
+            latent_codes[:, 1].cpu().detach().numpy(),
+            c="black",
+            marker="x",
+        )
+        ax.scatter(
+            [candidate[0].cpu().detach().numpy()],
+            [candidate[1].cpu().detach().numpy()],
+            c="red",
+            marker="d",
+        )
 
         if img_save_folder is not None:
             img_save_folder.mkdir(exist_ok=True, parents=True)
@@ -111,14 +138,15 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
 
     # Get some first samples and save them.
     latent_codes, playabilities, jumps = run_first_samples(
-        vae, model_id=model_id, n_samples=10, force=False
+        vae, model_id=model_id, n_samples=2, force=True
     )
     jumps = jumps.type(t.float32).unsqueeze(1)
     playabilities = playabilities.unsqueeze(1)
 
+    jumps[playabilities == 0.0] = 0.0
+
     # Initialize the GPR model for the predicted number
     # of jumps.
-    # try:
     img_save_folder = (
         ROOT_DIR
         / "data"
@@ -126,37 +154,38 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
         / "bayesian_optimization"
         / f"vanilla_bo_{model_id}_{exp_id}"
     )
-    for i in range(n_iterations):
-        candidate, playability, jump = bayesian_optimization_iteration(
-            latent_codes,
-            jumps,
-            plot_latent_space=True,
-            iteration=i,
-            img_save_folder=img_save_folder,
-        )
-        print(f"(Iteration {i+1}) tested {candidate} and got {jump} (p={playability})")
+    try:
+        for i in range(n_iterations):
+            candidate, playability, jump = bayesian_optimization_iteration(
+                latent_codes,
+                jumps,
+                plot_latent_space=True,
+                iteration=i,
+                img_save_folder=img_save_folder,
+            )
+            print(f"(Iteration {i+1}) tested {candidate} and got {jump} (p={playability})")
 
-        if playability == 0.0:
-            jump = t.zeros_like(jump)
+            if playability == 0.0:
+                jump = t.zeros_like(jump)
 
-        latent_codes = t.vstack((latent_codes, candidate))
-        jumps = t.vstack((jumps, jump))
-        playabilities = t.vstack((playabilities, playability))
-    # except Exception as e:
-    #     print(f"Couldn't continue. Stopped at iteration {i+1}")
-    #     print(e)
+            latent_codes = t.vstack((latent_codes, candidate))
+            jumps = t.vstack((jumps, jump))
+            playabilities = t.vstack((playabilities, playability))
+    except Exception as e:
+        print(f"Couldn't continue. Stopped at iteration {i+1}")
+        print(e)
 
     # Saving the trace
     np.savez(
         f"./data/bayesian_optimization/traces/vanilla_bo_{model_id}_{exp_id}.npz",
-        zs=latent_codes.detach().numpy(),
-        playability=playabilities.detach().numpy(),
-        jumps=jumps.detach().numpy(),
+        zs=latent_codes.cpu().detach().numpy(),
+        playability=playabilities.cpu().detach().numpy(),
+        jumps=jumps.cpu().detach().numpy(),
     )
 
 
 if __name__ == "__main__":
-    model_id = 0
+    model_id = 1
 
     for exp_id in range(10):
         run_experiment(exp_id=exp_id, model_id=model_id)

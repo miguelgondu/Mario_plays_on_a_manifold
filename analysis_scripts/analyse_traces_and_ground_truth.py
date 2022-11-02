@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import WhiteKernel, Matern
 
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 from evolving_playability import get_ground_truth
 from analysis_scripts.utils import zs_and_playabilities
@@ -104,8 +104,8 @@ def verify_length_of_all_traces():
 
 
 def save_video_for_all_traces():
-    traces = Path("./data/evolution_traces/five_vaes").glob("*.npz")
-    videos_path = Path("./data/plots/five_vaes/AL_for_videos")
+    traces = Path("./data/evolution_traces/ten_vaes").glob("*.npz")
+    videos_path = Path("./data/plots/ten_vaes/AL_for_videos")
     videos_path.mkdir(exist_ok=True, parents=True)
 
     for f in traces:
@@ -160,5 +160,5 @@ def save_video_for_all_traces():
 if __name__ == "__main__":
     # plot_all_ground_truths()
     # plot_all_grids()
-    verify_length_of_all_traces()
-    # save_video_for_all_traces()
+    # verify_length_of_all_traces()
+    save_video_for_all_traces()
