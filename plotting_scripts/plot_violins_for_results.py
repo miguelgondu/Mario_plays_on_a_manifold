@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from analysis_scripts.utils import (
+from analysis_scripts.other_utils import (
     get_mean,
     get_mean_diversities,
     get_mean_diversities_of_levels,

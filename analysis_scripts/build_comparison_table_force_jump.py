@@ -6,7 +6,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from analysis_scripts.utils import (
+from analysis_scripts.other_utils import (
     get_mean_playability,
     get_mean_diversities,
     get_mean,

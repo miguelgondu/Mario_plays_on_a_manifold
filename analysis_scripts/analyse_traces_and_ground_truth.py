@@ -10,8 +10,8 @@ from sklearn.gaussian_process.kernels import WhiteKernel, Matern
 
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
-from evolving_playability import get_ground_truth
-from analysis_scripts.utils import zs_and_playabilities
+# from evolving_playability import get_ground_truth
+from analysis_scripts.other_utils import zs_and_playabilities
 
 
 def load_trace(path) -> Tuple[np.ndarray]:

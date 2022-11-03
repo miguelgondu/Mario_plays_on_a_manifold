@@ -16,9 +16,9 @@ import pandas as pd
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import WhiteKernel, Matern
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from simulate_array import _simulate_array
-from simulator import test_level_from_decoded_tensor
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from utils.simulator.simulate_array import _simulate_array
+from utils.simulator.interface import test_level_from_decoded_tensor
 
 
 def load_vae(model_name) -> VAEMarioHierarchical:

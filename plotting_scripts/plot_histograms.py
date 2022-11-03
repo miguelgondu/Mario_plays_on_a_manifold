@@ -11,7 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from analysis_scripts.utils import load_experiment_csv_paths
+from analysis_scripts.other_utils import load_experiment_csv_paths
 
 
 def get_all_values(files: List[Path], column: str):
