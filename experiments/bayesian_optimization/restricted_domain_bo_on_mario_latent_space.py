@@ -37,7 +37,7 @@ if t.cuda.is_available():
 
 
 def fitness_function(jumps: t.Tensor):
-    return -((jumps - 8.0) ** 2) / 10.0
+    return jumps / 10.0
 
 
 def bayesian_optimization_iteration(
