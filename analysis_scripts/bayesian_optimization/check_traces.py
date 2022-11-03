@@ -44,9 +44,9 @@ if __name__ == "__main__":
         []
         # [f"vanilla_bo_{i}" for i in range(10)]
         # + [f"constrained_bo_{i}" for i in range(10)]
-        + [f"random_samples_0_{i}" for i in range(10)]
-        + [f"vanilla_bo_0_{i}" for i in range(10)]
-        + [f"restricted_bo_0_{i}" for i in range(10)]
+        + [f"random_samples_1_{i}" for i in range(10)]
+        + [f"vanilla_bo_1_{i}" for i in range(20)]
+        + [f"restricted_bo_1_{i}" for i in range(20)]
     )
     rows = []
     rows_all_jumps = []
@@ -77,15 +77,17 @@ if __name__ == "__main__":
 
         row = {
             "experiment": name,
-            "percentage playable": sum(p) / len(p),
-            "max valid jump fitness func": max(valid_jumps_fitness_func),
+            "percentage playable": p.sum() / len(p),
+            "max valid jump fitness func": int(max(valid_jumps_fitness_func) * 10),
             "position of max": valid_jumps_fitness_func.argmax(),
         }
         rows.append(row)
 
-    # df = pd.DataFrame(rows)
-    # sns.violinplot(data=df, x="experiment", y="max valid jump")
-    # plt.show()
+    _, (ax_jumps, ax_safety) = plt.subplots(1, 2)
+    df = pd.DataFrame(rows)
+    sns.stripplot(data=df, x="experiment", y="max valid jump fitness func", ax=ax_jumps)
+    sns.stripplot(data=df, x="experiment", y="percentage playable", ax=ax_safety)
+    plt.show()
 
     # df2 = pd.DataFrame(rows_all_jumps)
     # sns.violinplot(data=df2, x="experiment", y="jumps")
