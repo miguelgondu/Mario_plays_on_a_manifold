@@ -38,13 +38,13 @@ if __name__ == "__main__":
     #     "restricted_bo_fifth",
     #     "restricted_bo_sixth",
     #     "restricted_bo_ucf",
-    #     "vanilla_bo_EI",
+    #     "vanilla_bo_EI",  rm vanilla_bo_10.npz vanilla_bo_1_11.npz vanilla_bo_1_12.npz vanilla_bo_1_13.npz vanilla_bo_1_14.npz vanilla_bo_1_15.npz vanilla_bo_1_16.npz vanilla_bo_1_17.npz vanilla_bo_1_18.npz vanilla_bo_1_19.npz
     # ]
     trace_names = (
         []
         # [f"vanilla_bo_{i}" for i in range(10)]
         # + [f"constrained_bo_{i}" for i in range(10)]
-        + [f"random_samples_1_{i}" for i in range(10)]
+        + [f"random_samples_1_{i}" for i in range(20)]
         + [f"vanilla_bo_1_{i}" for i in range(20)]
         + [f"restricted_bo_1_{i}" for i in range(20)]
     )
@@ -53,13 +53,13 @@ if __name__ == "__main__":
     for trace_name in trace_names:
         if "restricted" in trace_name:
             initial_amount = len(initial_trace)
-            name = "restricted"
+            name = "Restricted B.O."
         elif "random" in trace_name:
             initial_amount = 0
-            name = "random"
+            name = "Random"
         else:
             initial_amount = len(initial_trace)
-            name = "vanilla"
+            name = "Vanilla B.O."
 
         print("-" * 30, trace_name, "-" * 30)
         arr = np.load(f"./data/bayesian_optimization/traces/{trace_name}.npz")
@@ -77,16 +77,18 @@ if __name__ == "__main__":
 
         row = {
             "experiment": name,
-            "percentage playable": p.sum() / len(p),
-            "max valid jump fitness func": int(max(valid_jumps_fitness_func) * 10),
+            "Avg. playabilities": p.sum() / len(p),
+            "Max. jump": int(max(valid_jumps_fitness_func) * 10) // 2,
             "position of max": valid_jumps_fitness_func.argmax(),
         }
         rows.append(row)
 
     _, (ax_jumps, ax_safety) = plt.subplots(1, 2)
     df = pd.DataFrame(rows)
-    sns.stripplot(data=df, x="experiment", y="max valid jump fitness func", ax=ax_jumps)
-    sns.stripplot(data=df, x="experiment", y="percentage playable", ax=ax_safety)
+    sns.stripplot(data=df, x="experiment", y="Max. jump", ax=ax_jumps, size=10)
+    sns.stripplot(
+        data=df, x="experiment", y="Avg. playabilities", ax=ax_safety, size=10
+    )
     plt.show()
 
     # df2 = pd.DataFrame(rows_all_jumps)
