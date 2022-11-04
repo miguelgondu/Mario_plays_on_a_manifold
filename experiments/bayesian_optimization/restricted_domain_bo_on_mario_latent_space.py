@@ -53,7 +53,7 @@ def bayesian_optimization_iteration(
     """
     vae = load_model(model_id=model_id)
     discrete_geometry = load_geometry(
-        mean_scale=0.9, model_id=model_id, name=f"bo_for_model_{model_id}_scale_09"
+        mean_scale=0.75, model_id=model_id, name=f"bo_for_model_{model_id}_scale_075"
     )
     restricted_domain = discrete_geometry.restricted_domain.to(vae.device)
 
@@ -178,5 +178,5 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
 if __name__ == "__main__":
     model_id = 1
 
-    for exp_id in range(10):
+    for exp_id in range(20):
         run_experiment(exp_id=exp_id, model_id=model_id)
