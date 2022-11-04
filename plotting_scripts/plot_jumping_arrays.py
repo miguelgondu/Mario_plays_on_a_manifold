@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from utils.experiment import intersection, load_csv_as_map
 from geometries import DiscretizedGeometry, NormalGeometry, BaselineGeometry
-from plotting_scripts.utils import load_and_order_results
+from plotting_scripts.plotting_utils import load_and_order_results
 
 if __name__ == "__main__":
     vae_path = Path("./models/ten_vaes/vae_mario_hierarchical_id_0.pt")

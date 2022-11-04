@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from geometries import BaselineGeometry
 
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 from utils.experiment import load_csv_as_map
 
 SMALL_SIZE = 8
@@ -25,10 +25,14 @@ plt.rc("ytick", labelsize=SMALL_SIZE)
 plt.rc("legend", fontsize=SMALL_SIZE)
 plt.rc("figure", titlesize=BIGGER_SIZE)
 
-
-vae_path = Path("./models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+ROOT_DIR = Path(__file__).parent.parent.resolve()
+vae_path = ROOT_DIR / "trained_models" / "ten_vaes" / "vae_mario_hierarchical_id_0.pt"
 path_to_gt = (
-    Path("./data/array_simulation_results/ten_vaes/ground_truth")
+    ROOT_DIR
+    / "data"
+    / "array_simulation_results"
+    / "ten_vaes"
+    / "ground_truth"
     / f"{vae_path.stem}.csv"
 )
 
