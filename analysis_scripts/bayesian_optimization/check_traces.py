@@ -99,7 +99,7 @@ if __name__ == "__main__":
     #     "restricted_bo_fifth",
     #     "restricted_bo_sixth",
     #     "restricted_bo_ucf",
-    #     "vanilla_bo_EI",  rm vanilla_bo_10.npz vanilla_bo_1_11.npz vanilla_bo_1_12.npz vanilla_bo_1_13.npz vanilla_bo_1_14.npz vanilla_bo_1_15.npz vanilla_bo_1_16.npz vanilla_bo_1_17.npz vanilla_bo_1_18.npz vanilla_bo_1_19.npz
+    #     "vanilla_bo_EI",
     # ]
     trace_names = (
         []

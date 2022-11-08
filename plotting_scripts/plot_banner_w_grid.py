@@ -26,7 +26,7 @@ plt.rc("legend", fontsize=SMALL_SIZE)
 plt.rc("figure", titlesize=BIGGER_SIZE)
 
 ROOT_DIR = Path(__file__).parent.parent.resolve()
-vae_path = ROOT_DIR / "trained_models" / "ten_vaes" / "vae_mario_hierarchical_id_0.pt"
+vae_path = ROOT_DIR / "trained_models" / "ten_vaes" / "vae_mario_hierarchical_id_1.pt"
 path_to_gt = (
     ROOT_DIR
     / "data"
@@ -37,13 +37,16 @@ path_to_gt = (
 )
 
 p_map = load_csv_as_map(path_to_gt)
-bg = BaselineGeometry(p_map, "baseline_for_plotting", vae_path)
+bg = BaselineGeometry(p_map, "baseline_for_plotting_journal_version", vae_path)
 
 vae = VAEMarioHierarchical()
 vae.load_state_dict(t.load(vae_path, map_location=vae.device))
 
 
 def plot_grid_and_levels():
+    PLOTS_PATH = ROOT_DIR / "data" / "plots" / "journal_version" / "banner"
+    PLOTS_PATH.mkdir(exist_ok=True, parents=True)
+
     # Plotting the grid of levels
     fig, ax = plt.subplots(1, 1, figsize=(7, 7))
     _, imgs = vae.plot_grid(n_rows=10, n_cols=10, ax=ax, return_imgs=True)
@@ -60,7 +63,7 @@ def plot_grid_and_levels():
         vmax=1.0,
     )
     fig.savefig(
-        "./data/plots/ten_vaes/paper_ready/banner_grid_w_mask.png",
+        PLOTS_PATH / "banner_grid_w_mask_journal_version.png",
         dpi=120,
         bbox_inches="tight",
     )
@@ -74,7 +77,7 @@ def plot_grid_and_levels():
     ax1.axis("off")
     # ax1.set_title("Not functional", fontsize=BIGGER_SIZE)
     fig1.savefig(
-        "./data/plots/ten_vaes/paper_ready/banner_not_playable.png",
+        PLOTS_PATH / "banner_not_playable_journal_version.png",
         dpi=100,
         bbox_inches="tight",
     )

@@ -5,6 +5,7 @@ TODO: For each experiment get
 - example interpolations
 - example diffusions.
 """
+from typing import List
 from pathlib import Path
 
 import torch as t
@@ -14,27 +15,36 @@ import numpy as np
 from geometries import BaselineGeometry, DiscretizedGeometry
 from plotting_scripts.plot_before_and_after_calibrating import BIGGER_SIZE
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from vae_mario_obstacles import VAEWithObstacles
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_obstacles import VAEWithObstacles
 from utils.experiment import grid_from_map, load_arrays_as_map, load_csv_as_map
-from vae_zelda_hierachical import VAEZeldaHierarchical
+from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 
-def plot_metric_volume_in_3d(with_obstacles=True):
-    vae_path = Path("./models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+def plot_metric_volume_in_3d(
+    with_obstacles: bool = True,
+    mean_scale: float = 1.0,
+    plot_plane: bool = False,
+    angle: float = None,
+    z_lims: List[float] = None,
+):
+    model_id = 0
+    vae_path = Path(
+        f"./trained_models/ten_vaes/vae_mario_hierarchical_id_{model_id}.pt"
+    )
     path_to_gt = (
         Path("./data/array_simulation_results/ten_vaes/ground_truth")
         / f"{vae_path.stem}.csv"
     )
     p_map = load_csv_as_map(path_to_gt)
-    obstacles = grid_from_map(p_map)
 
     dg = DiscretizedGeometry(
         p_map,
-        "geometry_for_plotting_animations",
+        f"geometry_for_plotting_animations_{model_id}_w_obstacles_{with_obstacles}",
         vae_path,
+        mean_scale=mean_scale,
         with_obstacles=with_obstacles,
-        force=not with_obstacles,
+        force=False,
     )
 
     vae = VAEMarioHierarchical()
@@ -51,16 +61,38 @@ def plot_metric_volume_in_3d(with_obstacles=True):
 
     X, Y = np.linspace(-5, 5, 100), np.linspace(-5, 5, 100)
     X, Y = np.meshgrid(X, Y)
+
+    # if plot_plane:
+    #     calibrated[calibrated > dg.threshold] = np.NaN
+
     ax.plot_surface(X, Y, calibrated)
+
+    if plot_plane:
+        ax.plot_surface(X, Y, dg.threshold * np.ones_like(X), alpha=0.5)
+
+    if z_lims is not None:
+        ax.set_zlim(z_lims)
     ax.axis("off")
 
     name = "obstacles" if with_obstacles else "normal"
+    name += "_with_plane" if plot_plane else ""
+    name += f"{model_id}"
 
-    for angle in range(0, 360):
+    PLOTS_DIR = Path("./data/plots/journal_version/calibrating_the_decoder")
+    PLOTS_DIR.mkdir(exist_ok=True, parents=True)
+
+    if angle is None:
+        print("saving all angles")
+        for angle in range(0, 360):
+            print(f"Plotting {name} in {angle}/360")
+            ax.view_init(40, angle)
+            fig.tight_layout()
+            fig.savefig(PLOTS_DIR / f"{name}_{angle:03d}.png", bbox_inches="tight")
+    else:
         print(f"Plotting {name} in {angle}/360")
         ax.view_init(40, angle)
         fig.tight_layout()
-        fig.savefig(f"./data/plots/metric_volume_surfaces/{name}_{angle:03d}.png")
+        fig.savefig(PLOTS_DIR / f"{name}_{angle:03d}.png", bbox_inches="tight")
 
     # rotate the axes and update
     # for angle in range(0, 360):
@@ -72,10 +104,16 @@ def plot_metric_volume_in_3d(with_obstacles=True):
     # plt.show()
     plt.close()
 
+    return ax.get_zlim()
+
 
 if __name__ == "__main__":
-    # plot_metric_volume_in_3d(with_obstacles=True)
-    plot_metric_volume_in_3d(with_obstacles=False)
+
+    plot_metric_volume_in_3d(
+        with_obstacles=True, plot_plane=True, angle=10, mean_scale=1.5
+    )
+    # plot_metric_volume_in_3d(with_obstacles=False, angle=10)
+    # plot_metric_volume_in_3d(with_obstacles=True, angle=10)
 
 
 # ffmpeg -framerate 18 -i obstacles_%03d.png -c:v libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -pix_fmt yuv420p -crf 5 video_obstacles.mp4
