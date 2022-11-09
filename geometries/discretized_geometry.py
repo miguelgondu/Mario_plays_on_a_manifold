@@ -90,7 +90,8 @@ class DiscretizedGeometry(Geometry):
         self.metric_volumes = metric_volumes
 
         # build interpolation and diffusion with that new p_map
-        p = (metric_volumes < (self.mean_scale * metric_volumes.mean())).astype(int)
+        self.threshold = self.mean_scale * metric_volumes.mean()
+        p = (metric_volumes < (self.threshold)).astype(int)
 
         new_p_map = load_arrays_as_map(zs, p)
         super().__init__(new_p_map, exp_name, vae_path, exp_folder=exp_folder)
