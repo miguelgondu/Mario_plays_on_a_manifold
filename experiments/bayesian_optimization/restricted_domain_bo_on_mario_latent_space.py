@@ -47,13 +47,16 @@ def bayesian_optimization_iteration(
     model_id: int = 0,
     iteration: int = 0,
     img_save_folder: Path = None,
-) -> Tuple[t.Tensor, t.Tensor, t.Tensor]:
+    mean_scale: float = 1.3,
+) -> Tuple[t.Tensor, t.Tensor, t.Tensor, t.Tensor]:
     """
     Runs a B.O. iteration and returns the next candidate and its value.
     """
     vae = load_model(model_id=model_id)
     discrete_geometry = load_geometry(
-        mean_scale=0.75, model_id=model_id, name=f"bo_for_model_{model_id}_scale_075"
+        mean_scale=mean_scale,
+        model_id=model_id,
+        name=f"bo_for_model_{model_id}_scale_{int(mean_scale*100)}",
     )
     restricted_domain = discrete_geometry.restricted_domain.to(vae.device)
 
@@ -105,16 +108,17 @@ def bayesian_optimization_iteration(
         candidate.to(vae.device),
         t.Tensor([[results["marioStatus"]]]).to(vae.device),
         t.Tensor([[results["jumpActionsPerformed"]]]).to(vae.device),
+        level.to(vae.device),
     )
 
 
-def run_experiment(exp_id: int = 0, model_id: int = 0):
+def run_experiment(exp_id: int = 0, model_id: int = 0, mean_scale: float = 1.0):
     # Hyperparameters
     n_iterations = 50
 
     # Loading the VAE
     vae = load_model(model_id=model_id)
-    dg = load_geometry(model_id=model_id)
+    # dg = load_geometry(model_id=model_id)
 
     # Get some first samples and save them.
     # latent_codes, playabilities, jumps = run_first_samples_from_graph(
@@ -134,6 +138,7 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
 
     # Initialize the GPR model for the predicted number
     # of jumps.
+    levels = []
     img_save_folder = (
         ROOT_DIR
         / "data"
@@ -143,13 +148,14 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
     )
     try:
         for i in range(n_iterations):
-            candidate, playability, jump = bayesian_optimization_iteration(
+            candidate, playability, jump, level = bayesian_optimization_iteration(
                 latent_codes,
                 jumps,
                 plot_latent_space=True,
                 model_id=model_id,
                 iteration=i,
                 img_save_folder=img_save_folder,
+                mean_scale=mean_scale,
             )
             print(
                 f"(Iteration {i+1}) tested {candidate} and got {jump} (p={playability})"
@@ -161,6 +167,7 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
 
             jumps = t.vstack((jumps, jump))
             playabilities = t.vstack((playabilities, playability))
+            levels.append(level)
     except Exception as e:
         print(f"Couldn't continue. Stopped at iteration {i+1}")
         print(e)
@@ -168,15 +175,17 @@ def run_experiment(exp_id: int = 0, model_id: int = 0):
 
     # Saving the trace
     np.savez(
-        f"./data/bayesian_optimization/traces/restricted_bo_{model_id}_{exp_id}.npz",
+        f"./data/bayesian_optimization/traces/restricted_bo_{int(mean_scale*100)}_{model_id}_{exp_id}.npz",
         zs=latent_codes.cpu().detach().numpy(),
         playability=playabilities.cpu().detach().numpy(),
         jumps=jumps.cpu().detach().numpy(),
+        levels=t.cat([lvl.unsqueeze(0) for lvl in levels]).cpu().detach().numpy(),
     )
 
 
 if __name__ == "__main__":
     model_id = 1
+    mean_scale = 1.3
 
     for exp_id in range(20):
-        run_experiment(exp_id=exp_id, model_id=model_id)
+        run_experiment(exp_id=exp_id, model_id=model_id, mean_scale=mean_scale)
