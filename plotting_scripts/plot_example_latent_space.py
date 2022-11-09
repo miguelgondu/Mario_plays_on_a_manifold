@@ -11,7 +11,7 @@ import torch as t
 import matplotlib.pyplot as plt
 
 from geometries import DiscreteGeometry
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 
 def plot_ground_truth(grid):

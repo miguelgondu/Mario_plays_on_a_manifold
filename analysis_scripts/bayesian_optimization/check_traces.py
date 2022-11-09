@@ -34,6 +34,8 @@ def load_traces(model_id: int = 1) -> Tuple[pd.DataFrame, pd.DataFrame]:
         [f"random_samples_1_{i}" for i in range(20)]
         + [f"vanilla_bo_1_{i}" for i in range(20)]
         + [f"restricted_bo_1_{i}" for i in range(20)]
+        + [f"restricted_bo_110_1_{i}" for i in range(20)]
+        + [f"restricted_bo_130_1_{i}" for i in range(20)]
     )
 
     rows = []
@@ -41,7 +43,16 @@ def load_traces(model_id: int = 1) -> Tuple[pd.DataFrame, pd.DataFrame]:
     for trace_name in trace_names:
         if "restricted" in trace_name:
             initial_amount = len(initial_trace)
-            name = "Restricted B.O."
+            name = "R.B.O."
+            if "110" in trace_name:
+                name += "\n" + " ($s=1.1$)"
+                # name += " ($s=1.1$)"
+            elif "130" in trace_name:
+                name += "\n" + " ($s=1.3$)"
+                # name += " ($s=1.3$)"
+            else:
+                name += "\n" + " ($s=1$)"
+                # name += " ($s=1$)"
         elif "random" in trace_name:
             initial_amount = 0
             name = "Random"

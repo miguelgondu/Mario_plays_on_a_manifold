@@ -1,9 +1,5 @@
 """
-TODO: For each experiment get
-- a p_map plot
-- the approximated manifold (using ddg)
-- example interpolations
-- example diffusions.
+This script plots an example approximation for Zelda.
 """
 from pathlib import Path
 
@@ -13,14 +9,17 @@ import numpy as np
 from geometries import BaselineGeometry, DiscretizedGeometry
 from plotting_scripts.plot_before_and_after_calibrating import BIGGER_SIZE
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from vae_mario_obstacles import VAEWithObstacles
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_obstacles import VAEWithObstacles
 from utils.experiment import grid_from_map, load_arrays_as_map, load_csv_as_map
-from vae_zelda_hierachical import VAEZeldaHierarchical
+from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 
-def plot_example():
-    vae_path = Path("./models/zelda/zelda_hierarchical_final_0.pt")
+def plot_example(model_id: int = 0):
+    plots_dir = Path(f"./data/plots/journal_version/example_approximation_{model_id}")
+    plots_dir.mkdir(exist_ok=True, parents=True)
+
+    vae_path = Path(f"./trained_models/zelda/zelda_hierarchical_final_{model_id}.pt")
     a = np.load(f"./data/processed/zelda/grammar_checks/{vae_path.stem}.npz")
     zs = a["zs"]
     p = a["playabilities"]
@@ -29,7 +28,7 @@ def plot_example():
 
     ddg = DiscretizedGeometry(
         p_map,
-        "zelda_ddg_for_plotting",
+        f"zelda_ddg_for_plotting_{model_id}",
         vae_path,
         n_grid=100,
         x_lims=(-4, 4),
@@ -39,7 +38,7 @@ def plot_example():
     approximation = ddg.grid
 
     a_mv = np.load(
-        f"./data/processed/metric_volumes/zelda_ddg_for_plotting/{vae_path.stem}.npz"
+        f"./data/processed/metric_volumes/zelda_ddg_for_plotting_{model_id}/{vae_path.stem}.npz"
     )
     zs_mv = a_mv["zs"]
     mv = a_mv["metric_volumes"]
@@ -55,7 +54,7 @@ def plot_example():
     # ax.set_title("Functional regions", fontsize=BIGGER_SIZE)
     ax.axis("off")
     fig.savefig(
-        "./data/plots/ten_vaes/paper_ready/example_approximation/obstacles.png",
+        plots_dir / "obstacles.png",
         dpi=100,
         bbox_inches="tight",
     )
@@ -68,7 +67,7 @@ def plot_example():
     # ax.set_title("Metric volume", fontsize=BIGGER_SIZE)
     ax.axis("off")
     fig.savefig(
-        "./data/plots/ten_vaes/paper_ready/example_approximation/metric_volume.png",
+        plots_dir / "metric_volume.png",
         dpi=100,
         bbox_inches="tight",
     )
@@ -80,7 +79,7 @@ def plot_example():
     # ax.set_title("Graph approximation", fontsize=BIGGER_SIZE)
     ax.axis("off")
     fig.savefig(
-        "./data/plots/ten_vaes/paper_ready/example_approximation/approximation.png",
+        plots_dir / "approximation.png",
         dpi=100,
         bbox_inches="tight",
     )
@@ -92,7 +91,7 @@ def plot_example():
     # ax.set_title("Decoded levels", fontsize=BIGGER_SIZE)
     ax.axis("off")
     fig.savefig(
-        "./data/plots/ten_vaes/paper_ready/example_approximation/grid.png",
+        plots_dir / "grid.png",
         dpi=100,
         bbox_inches="tight",
     )
@@ -100,4 +99,5 @@ def plot_example():
 
 
 if __name__ == "__main__":
-    plot_example()
+    for model_id in [3]:
+        plot_example(model_id=model_id)

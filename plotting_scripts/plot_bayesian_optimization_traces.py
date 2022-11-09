@@ -42,7 +42,7 @@ def plot_bayesian_optimization_traces():
 
     # Set up label sizes
     # x ticks
-    ax_safety.tick_params(axis="x", labelsize=BIGGER_SIZE)
+    ax_safety.tick_params(axis="x", labelsize=12)
 
     # y labels
     ax_jumps.set_ylabel("Max. jump", fontsize=12)
@@ -56,16 +56,14 @@ def plot_bayesian_optimization_traces():
     fig.savefig(PLOTS_DIR / "bayesian_optimization_traces.png", dpi=120)
 
     print("Summary:")
-    print("Random experiment:")
-    print(df[df["Experiment"] == "Random"]["Max. jump"].mean())
-    print(df[df["Experiment"] == "Random"]["Max. jump"].std())
-    print("\nB.O. experiment:")
-    print(df[df["Experiment"] == "B.O."]["Max. jump"].mean())
-    print(df[df["Experiment"] == "B.O."]["Max. jump"].std())
-    print("\nRestricted B.O. experiment:")
-    print(df[df["Experiment"] == "Restricted B.O."]["Max. jump"].mean())
-    print(df[df["Experiment"] == "Restricted B.O."]["Max. jump"].std())
-
+    for experiment in df["Experiment"].unique():
+        print(experiment)
+        print(
+            "mean", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 50).mean()
+        )
+        print("std", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 50).std())
+        print("max", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 50).max())
+        print()
     # plt.show()
 
 
