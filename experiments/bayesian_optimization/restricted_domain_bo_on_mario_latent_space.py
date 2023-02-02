@@ -100,6 +100,7 @@ def bayesian_optimization_iteration(
 
         if img_save_folder is not None:
             img_save_folder.mkdir(exist_ok=True, parents=True)
+            fig.tight_layout()
             fig.savefig(img_save_folder / f"{iteration:04d}.png")
         # plt.show()
         plt.close(fig)

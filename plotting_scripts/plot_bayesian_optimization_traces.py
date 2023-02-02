@@ -48,6 +48,12 @@ def plot_bayesian_optimization_traces():
     ax_jumps.set_ylabel("Max. jump", fontsize=12)
     ax_safety.set_ylabel("Avg. playabilities", fontsize=12)
 
+    # Set up limits
+    ax_jumps.set_ylim([0, 52])
+
+    # Drawing a red line at the max of random
+    # ax_jumps.axhline(df[df["Experiment"] == "Random"]["Max. jump"].max())
+
     # Cleaning x-labels
     for ax in [ax_jumps, ax_safety]:
         ax.set_xlabel("")
@@ -59,11 +65,16 @@ def plot_bayesian_optimization_traces():
     for experiment in df["Experiment"].unique():
         print(experiment)
         print(
-            "mean", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 50).mean()
+            "mean", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 300).mean()
         )
-        print("std", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 50).std())
-        print("max", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 50).max())
+        print("std", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 300).std())
+        print("max", df[df["Experiment"] == experiment]["Max. jump"].clip(0, 300).max())
+        print(
+            "nr. of fully playable",
+            sum(df[df["Experiment"] == experiment]["Avg. playabilities"] == 1.0),
+        )
         print()
+
     # plt.show()
 
 
