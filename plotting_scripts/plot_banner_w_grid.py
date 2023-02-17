@@ -43,7 +43,7 @@ vae = VAEMarioHierarchical()
 vae.load_state_dict(t.load(vae_path, map_location=vae.device))
 
 
-def plot_grid_and_levels():
+def plot_grid_and_levels_for_mario():
     PLOTS_PATH = ROOT_DIR / "data" / "plots" / "journal_version" / "banner"
     PLOTS_PATH.mkdir(exist_ok=True, parents=True)
 
@@ -105,4 +105,4 @@ def plot_all_levels():
 
 
 if __name__ == "__main__":
-    plot_grid_and_levels()
+    plot_grid_and_levels_for_mario()

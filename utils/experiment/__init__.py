@@ -2,7 +2,7 @@
 Some utils for computing all the arrays in experiment.py
 """
 from pathlib import Path
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Union
 from itertools import product
 import json
 
@@ -16,6 +16,7 @@ from geoml.discretized_manifold import DiscretizedManifold
 
 from vae_models.vae_mario_obstacles import VAEWithObstacles
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 
 def load_csv_as_arrays(path: Path, column="marioStatus") -> Tuple[np.ndarray]:
@@ -179,5 +180,24 @@ def load_model(model_id: int = 0) -> VAEMarioHierarchical:
         t.load(f"./trained_models/ten_vaes/{model_name}.pt", map_location=vae.device)
     )
     vae.eval()
+
+    return vae
+
+
+def load_model_from_path(
+    vae_path: Path,
+) -> Union[VAEMarioHierarchical, VAEZeldaHierarchical]:
+    if "mario" in vae_path.stem:
+        vae = VAEMarioHierarchical()
+        vae.load_state_dict(t.load(vae_path, map_location=vae.device))
+        vae.eval()
+    elif "zelda" in vae_path.stem:
+        vae = VAEZeldaHierarchical()
+        vae.load_state_dict(t.load(vae_path, map_location=vae.device))
+        vae.eval()
+    else:
+        raise ValueError(
+            f"Unexpected vae path (w.o. mario or zelda) in {vae_path.stem}"
+        )
 
     return vae

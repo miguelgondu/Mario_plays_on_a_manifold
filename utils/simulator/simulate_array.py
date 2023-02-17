@@ -8,7 +8,7 @@ import click
 import numpy as np
 import pandas as pd
 
-from simulator import test_level_from_int_array
+from .interface import test_level_from_int_array
 
 
 def test_level(

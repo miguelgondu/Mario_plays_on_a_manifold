@@ -186,9 +186,9 @@ class VAEGeometryHierarchical(VAEMarioHierarchical, Manifold):
 
 
 if __name__ == "__main__":
-    model_name = "hierarchical_final_playable_final"
+    path_to_model = "/Users/migd/Projects/mario_geometry_project/MarioVAE/trained_models/ten_vaes/vae_mario_hierarchical_id_0.pt"
     vae = VAEGeometryHierarchical()
-    vae.load_state_dict(torch.load(f"./models/{model_name}.pt", map_location="cpu"))
+    vae.load_state_dict(torch.load(path_to_model, map_location="cpu"))
     beta = -3.5
     vae.update_cluster_centers(beta=beta, n_clusters=500)
     # _, (ax1, ax2) = plt.subplots(1, 2)
