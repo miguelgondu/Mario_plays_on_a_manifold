@@ -45,7 +45,9 @@ def approximate_metric(function, z, h=0.01, input_size=14 * 14 * 11):
         return J.T @ J
 
 
-def plot_approximation(model, function=None, ax=None, x_lims=(-5, 5), y_lims=(-5, 5)):
+def plot_approximation(
+    model, function=None, ax=None, x_lims=(-5, 5), y_lims=(-5, 5), cmap="Blues"
+):
     if function is None:
         function = model.decode
 
@@ -71,16 +73,16 @@ def plot_approximation(model, function=None, ax=None, x_lims=(-5, 5), y_lims=(-5
         if detMz < 0:
             metric_volume[i, j] = np.nan
         else:
-            metric_volume[i, j] = np.log(detMz)
+            metric_volume[i, j] = np.sqrt(detMz)
 
     if ax is not None:
-        plot = ax.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
+        plot = ax.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap=cmap)
         plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
     else:
         _, (ax1, ax2) = plt.subplots(1, 2)
         model.plot_latent_space(ax=ax1, plot_points=False)
 
-        ax2.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="Blues")
+        ax2.imshow(metric_volume, extent=[*x_lims, *y_lims], cmap="inferno")
 
         ax1.set_title("Latent space w. Entropy")
         ax2.set_title("Numerical approximation of the metric")

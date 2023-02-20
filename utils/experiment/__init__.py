@@ -19,7 +19,9 @@ from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 
-def load_csv_as_arrays(path: Path, column="marioStatus") -> Tuple[np.ndarray]:
+def load_csv_as_arrays(
+    path: Path, column="marioStatus"
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Takes path to csv (result of simulating an array) and
     returns the zs alongside the mean of {column}. By default,
@@ -71,6 +73,13 @@ def load_trace_as_map(path_to_trace: Path, n_iterations: int) -> Dict[tuple, flo
 def load_csv_as_map(path: Path, column="marioStatus"):
     zs, p = load_csv_as_arrays(path, column=column)
     return load_arrays_as_map(zs, p)
+
+
+def load_csv_as_grid(path: Path, column="marioStatus"):
+    """..."""
+    # first as map
+    p_map = load_csv_as_map(path, column=column)
+    return grid_from_map(p_map)
 
 
 def positions_from_map(p_map: Dict[tuple, float]) -> Dict[tuple, tuple]:

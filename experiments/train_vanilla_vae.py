@@ -10,7 +10,7 @@ from torch.optim import Optimizer
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 
-from vae_models.vae import VAEMario, load_data
+from vae_models.vae_vanilla_mario import VAEMario, load_data
 
 ROOT_DIR = Path(__file__).parent.parent.resolve()
 MODELS_PATH = ROOT_DIR / "trained_models" / "vanilla_vae"

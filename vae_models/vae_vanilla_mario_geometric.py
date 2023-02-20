@@ -1,8 +1,14 @@
+"""
+This shows the dual of Nicki's trick, but only for
+the usual extrapolation-to-1/C for the trick
+"""
+
 import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.distributions import Categorical, Normal
-from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_vanilla_mario import VAEMario
+from sklearn.cluster import KMeans
 
 from geoml.nnj import TranslatedSigmoid
 from geoml.manifold import Manifold
@@ -13,7 +19,7 @@ from utils.metric_approximation.finite_difference import (
 )
 
 
-class VAEWithObstacles(VAEMarioHierarchical, Manifold):
+class VAEWithCenters(VAEMario, Manifold):
     """
     The dual of nicki's trick.
     """
@@ -28,38 +34,47 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
     ):
         super().__init__(w, h, z_dim, n_sprites=n_sprites, device=device)
         self.translated_sigmoid = None
-        self.obstacles = []
+        self.cluster_centers = []
+        self.encodings = []
 
     # This method overwrites the decode of the vanilla one.
     def decode(self, z: t.Tensor, reweight: bool = True) -> Categorical:
-        if reweight and len(self.obstacles) > 0:
-            dist_to_obst = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-            intermediate_normal = self._intermediate_distribution(z)
-
-            dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
-            reweighted_std = (dist_to_obst) * dec_std + (1 - dist_to_obst) * (
-                10.0 * t.ones_like(dec_std)
+        if reweight and len(self.cluster_centers) > 0:
+            dist_to_centers = self.translated_sigmoid(self.min_distance(z)).view(
+                -1, 1, 1, 1
             )
-            reweighted_normal = Normal(dec_mu, reweighted_std)
-            samples = reweighted_normal.rsample()
+            original_categorical = super().decode(z)
 
-            p_x_given_z = Categorical(
-                logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
-            )
+            original_probs = original_categorical.probs
+
+            reweighted_probs = (1 - dist_to_centers) * original_probs + (
+                dist_to_centers
+            ) * ((1 / self.n_sprites) * t.ones_like(original_probs))
+            p_x_given_z = Categorical(probs=reweighted_probs)
         else:
             p_x_given_z = super().decode(z)
 
         return p_x_given_z
 
-    def update_obstacles(
+    def update_centers(
         self,
-        obstacles: t.Tensor,
+        # obstacles: t.Tensor,
         beta: float = -3.0,
+        n_clusters: int = 550,
     ):
         """
         Updates the points to avoid.
         """
-        self.obstacles = obstacles.to(self.device)
+        training_data = self.train_data
+        encodings = self.encode(training_data).mean
+        self.encodings = encodings
+
+        self.kmeans = KMeans(n_clusters=n_clusters)
+        self.kmeans.fit(encodings.cpu().detach().numpy())
+        cluster_centers = self.kmeans.cluster_centers_
+
+        self.cluster_centers = t.from_numpy(cluster_centers).type(t.float32)
+
         self.translated_sigmoid = TranslatedSigmoid(beta=beta)
 
     def min_distance(self, z: t.Tensor) -> t.Tensor:
@@ -71,9 +86,9 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
         z = z.view(-1, z.shape[-1])  # Nx(zdim)
 
         z_norm = (z ** 2).sum(1, keepdim=True)  # Nx1
-        center_norm = (self.obstacles ** 2).sum(1).view(1, -1)  # 1x(num_clusters)
+        center_norm = (self.cluster_centers ** 2).sum(1).view(1, -1)  # 1x(num_clusters)
         d2 = (
-            z_norm + center_norm - 2.0 * t.mm(z, self.obstacles.transpose(0, 1))
+            z_norm + center_norm - 2.0 * t.mm(z, self.cluster_centers.transpose(0, 1))
         )  # Nx(num_clusters)
         d2.clamp_(min=0.0)  # Nx(num_clusters)
         min_dist, _ = d2.min(dim=1)  # N
@@ -127,42 +142,14 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
 
         if plot_points:
             ax.scatter(
-                self.obstacles[:, 0],
-                self.obstacles[:, 1],
-                marker="x",
-                c="k",
+                self.encodings[:, 0],
+                self.encodings[:, 1],
+                # marker="x",
+                # c="k",
             )
         ax.imshow(entropy_K, extent=[*x_lims, *y_lims], cmap="Blues")
         # plt.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
         # cbar.ax.set_yticklabels([entropy_K.min(), entropy_K.max()])
-
-    def plot_w_geodesics(self, ax=None, plot_points=True, n_geodesics=10):
-        if ax is None:
-            _, ax = plt.subplots(1, 1)
-
-        self.plot_latent_space(ax=ax, plot_points=plot_points)
-
-        data = t.Tensor(
-            [
-                [-4.0, -4.0],
-                [-4.0, 4.0],
-                [3.0, -4.0],
-                # [4.0, 4.0],
-                [0.0, -4.0],
-                [0.0, 0.0],
-                [2.0, 4.0],
-                [-2.0, 4.0],
-                [3.5, 3.5],
-            ]
-        )
-        N = data.shape[0]
-        for _ in range(n_geodesics):
-            idx = t.randint(N, (2,))
-            try:
-                c, _ = self.connecting_geodesic(data[idx[0]], data[idx[1]])
-                c.plot(ax=ax, c="red", linewidth=2.0)
-            except Exception as e:
-                print(f"Couldn't, got {e}")
 
     def plot_metric_volume(self, ax=None, x_lims=(-5, 5), y_lims=(-5, 5), cmap="Blues"):
         plot_approximation(self, ax=ax, x_lims=x_lims, y_lims=y_lims, cmap=cmap)

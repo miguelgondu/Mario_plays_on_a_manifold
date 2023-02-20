@@ -1,8 +1,14 @@
+"""
+This is a VAE manifold that uses the usual
+K-means on the support to extrapolate.
+"""
+from itertools import product
+
 import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.distributions import Categorical, Normal
-from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_vanilla_mario import VAEMario
 
 from geoml.nnj import TranslatedSigmoid
 from geoml.manifold import Manifold
@@ -12,8 +18,10 @@ from utils.metric_approximation.finite_difference import (
     plot_approximation,
 )
 
+from utils.mario.plotting import get_img_from_level
 
-class VAEWithObstacles(VAEMarioHierarchical, Manifold):
+
+class VAEVanillaMarioObstacles(VAEMario, Manifold):
     """
     The dual of nicki's trick.
     """
@@ -33,19 +41,17 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
     # This method overwrites the decode of the vanilla one.
     def decode(self, z: t.Tensor, reweight: bool = True) -> Categorical:
         if reweight and len(self.obstacles) > 0:
-            dist_to_obst = self.translated_sigmoid(self.min_distance(z)).unsqueeze(-1)
-            intermediate_normal = self._intermediate_distribution(z)
-
-            dec_mu, dec_std = intermediate_normal.mean, intermediate_normal.scale
-            reweighted_std = (dist_to_obst) * dec_std + (1 - dist_to_obst) * (
-                10.0 * t.ones_like(dec_std)
+            dist_to_obst = self.translated_sigmoid(self.min_distance(z)).view(
+                -1, 1, 1, 1
             )
-            reweighted_normal = Normal(dec_mu, reweighted_std)
-            samples = reweighted_normal.rsample()
+            original_categorical = super().decode(z)
 
-            p_x_given_z = Categorical(
-                logits=samples.reshape(-1, self.h, self.w, self.n_sprites)
+            original_probs = original_categorical.probs
+
+            reweighted_probs = (dist_to_obst) * original_probs + (1 - dist_to_obst) * (
+                (1 / self.n_sprites) * t.ones_like(original_probs)
             )
+            p_x_given_z = Categorical(probs=reweighted_probs)
         else:
             p_x_given_z = super().decode(z)
 
@@ -166,3 +172,54 @@ class VAEWithObstacles(VAEMarioHierarchical, Manifold):
 
     def plot_metric_volume(self, ax=None, x_lims=(-5, 5), y_lims=(-5, 5), cmap="Blues"):
         plot_approximation(self, ax=ax, x_lims=x_lims, y_lims=y_lims, cmap=cmap)
+
+    def plot_grid(
+        self,
+        x_lims=(-5, 5),
+        y_lims=(-5, 5),
+        n_rows=10,
+        n_cols=10,
+        sample=False,
+        ax=None,
+        return_imgs=False,
+        return_probs=False,
+    ):
+        z1 = np.linspace(*x_lims, n_cols)
+        z2 = np.linspace(*y_lims, n_rows)
+
+        zs = np.array([[a, b] for a, b in product(z1, z2)])
+
+        images_dist = self.decode(t.from_numpy(zs).type(t.float))
+        if sample:
+            images = images_dist.sample()
+        else:
+            images = images_dist.probs.argmax(dim=-1)
+
+        images = np.array(
+            [get_img_from_level(im) for im in images.cpu().detach().numpy()]
+        )
+        img_dict = {(z[0], z[1]): img for z, img in zip(zs, images)}
+
+        positions = {
+            (x, y): (i, j) for j, x in enumerate(z1) for i, y in enumerate(reversed(z2))
+        }
+
+        pixels = 16 * 14
+        final_img = np.zeros((n_cols * pixels, n_rows * pixels, 3))
+        for z, (i, j) in positions.items():
+            final_img[
+                i * pixels : (i + 1) * pixels, j * pixels : (j + 1) * pixels
+            ] = img_dict[z]
+
+        final_img = final_img.astype(int)
+
+        if ax is not None:
+            ax.imshow(final_img, extent=[*x_lims, *y_lims])
+
+        if return_probs:
+            return final_img, images_dist.probs
+
+        if return_imgs:
+            return final_img, images
+
+        return final_img

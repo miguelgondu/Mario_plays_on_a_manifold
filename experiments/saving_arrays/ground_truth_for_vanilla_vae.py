@@ -10,7 +10,7 @@ from pandas import array
 import torch
 import numpy as np
 
-from vae_models.vae import VAEMario
+from vae_models.vae_vanilla_mario import VAEMario
 
 from utils.simulator.simulate_array import _simulate_array
 
