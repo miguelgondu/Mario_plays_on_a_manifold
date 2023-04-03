@@ -8,31 +8,11 @@ from typing import Dict, Tuple
 
 import numpy as np
 import torch as t
-import matplotlib.pyplot as plt
 from utils.experiment import (
     grid_from_map,
-    load_arrays_as_map,
-    load_csv_as_map,
     positions_from_map,
     get_random_pairs,
 )
-
-from interpolations.discrete_interpolation import DiscreteInterpolation
-from interpolations.geodesic_interpolation import GeodesicInterpolation
-from interpolations.linear_interpolation import LinearInterpolation
-from diffusions.continuous_diffusion import ContinuousDiffusion
-from diffusions.discrete_diffusion import DiscreteDiffusion
-
-from diffusions.baseline_diffusion import BaselineDiffusion
-from diffusions.normal_diffusion import NormalDiffusion
-
-from geoml.discretized_manifold import DiscretizedManifold
-
-from vae_models.vae_mario_obstacles import VAEWithObstacles
-from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
-
-from utils.zelda.grammar import grammar_check
-from vae_models.vae_zelda_obstacles import VAEZeldaWithObstacles
 
 
 class Geometry:

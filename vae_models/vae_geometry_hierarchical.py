@@ -5,11 +5,11 @@ from torch.distributions import Categorical, Normal
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 from sklearn.cluster import KMeans
-from geoml.nnj import TranslatedSigmoid
-from geoml.manifold import Manifold
+from stochman.nnj import TranslatedSigmoid
+from stochman.manifold import Manifold
 from vae_models.vae_mario_hierarchical import load_data
 
-from geoml.discretized_manifold import DiscretizedManifold
+from stochman.discretized_manifold import DiscretizedManifold
 from utils.metric_approximation.finite_difference import (
     approximate_metric,
     plot_approximation,

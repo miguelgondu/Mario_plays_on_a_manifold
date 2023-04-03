@@ -12,7 +12,7 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import WhiteKernel, Matern
 
-from geoml.discretized_manifold import DiscretizedManifold
+from stochman.discretized_manifold import DiscretizedManifold
 
 from vae_models.vae_mario_obstacles import VAEWithObstacles
 from vae_models.vae_mario_hierarchical import VAEMarioHierarchical

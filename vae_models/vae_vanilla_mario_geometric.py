@@ -10,8 +10,8 @@ from torch.distributions import Categorical, Normal
 from vae_models.vae_vanilla_mario import VAEMario
 from sklearn.cluster import KMeans
 
-from geoml.nnj import TranslatedSigmoid
-from geoml.manifold import Manifold
+from stochman.nnj import TranslatedSigmoid
+from stochman.manifold import Manifold
 
 from utils.metric_approximation.finite_difference import (
     approximate_metric,

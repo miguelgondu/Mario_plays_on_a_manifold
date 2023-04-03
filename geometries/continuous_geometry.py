@@ -6,7 +6,7 @@ import torch as t
 from interpolations.geodesic_interpolation import GeodesicInterpolation
 from diffusions.continuous_diffusion import ContinuousDiffusion
 
-from geoml.discretized_manifold import DiscretizedManifold
+from stochman.discretized_manifold import DiscretizedManifold
 
 from .geometry import Geometry
 

@@ -11,10 +11,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils.experiment import load_arrays_as_map
 
-from vae_zelda_hierachical import VAEZeldaHierarchical
+from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 from geometries import BaselineGeometry, DiscretizedGeometry, Geometry, NormalGeometry
-from grammar_zelda import grammar_check
+from utils.zelda.grammar import grammar_check
 
 
 def load_grammar_p_map(vae_path) -> Dict[tuple, float]:

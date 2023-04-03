@@ -5,7 +5,7 @@ data/processed/*.npz
 data/processed/sequences_*.json
 data/processed/playability_experiment
 data/processed/interpolation_experiment
-data/processed/zelda/grammar_checks
+data/processed/zelda/grammar_checks/*.npz
 data/processed/metric_volumes
 data/arrays/
 data/processed/ground_truth/
@@ -152,3 +152,8 @@ venv.bak/
 # PyCharm
 .idea
 *.iml
+
+!data/processed/all_playable_levels_onehot.npz
+!data/processed/all_levels_onehot.npz
+!data/processed/zelda_onehot.npz
+!data/processed/zelda/onehot.npz

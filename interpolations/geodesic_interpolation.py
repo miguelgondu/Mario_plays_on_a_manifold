@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Dict, Tuple
 
-from geoml.curve import CubicSpline
-from geoml.discretized_manifold import DiscretizedManifold
+from stochman.curve import CubicSpline
+from stochman.discretized_manifold import DiscretizedManifold
 import torch as t
 import numpy as np
 

@@ -18,7 +18,7 @@ from utils.zelda.plotting import encoding, get_img_from_level
 def load_data() -> t.Tensor:
     training_percentage = 0.9
 
-    levels = np.load("./data/processed/zelda/onehot.npz")["levels"]
+    levels = np.load("./data/processed/zelda_onehot.npz")["levels"]
     levels = np.array([l for l in levels if grammar_check(l.argmax(axis=-1))])
     np.random.shuffle(levels)
 
