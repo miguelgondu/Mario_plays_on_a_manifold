@@ -4,12 +4,12 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 
-from vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 # from vae_dirichlet import VAEMarioDirichlet
 
-from mario_utils.levels import onehot_to_levels
-from mario_utils.plotting import get_img_from_level
+from utils.mario.levels import onehot_to_levels
+from utils.mario.plotting import get_img_from_level
 
 
 def plot_grid(vae, ax, x_lims, y_lims, n_rows=10, n_cols=10, title=""):

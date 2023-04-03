@@ -7,7 +7,7 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geometry import (
+from geometries import (
     BaselineGeometry,
     DiscreteGeometry,
     DiscretizedGeometry,
@@ -15,7 +15,7 @@ from geometry import (
     NormalGeometry,
     ContinuousGeometry,
 )
-from experiment_utils import load_csv_as_map, load_trace_as_map, intersection
+from utils.experiment import load_csv_as_map, load_trace_as_map, intersection
 
 
 def inspect_interpolations(geometry: Geometry):

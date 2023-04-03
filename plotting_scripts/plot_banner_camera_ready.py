@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.patheffects as pe
 import numpy as np
-from geometry import BaselineGeometry, DiscretizedGeometry
+from geometries import BaselineGeometry, DiscretizedGeometry
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from experiment_utils import load_csv_as_map
-from mario_utils.plotting import get_img_from_level, save_level_from_array
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from utils.experiment import load_csv_as_map
+from utils.mario.plotting import get_img_from_level, save_level_from_array
 
 SMALL_SIZE = 8
 MEDIUM_SIZE = 10
@@ -28,16 +28,21 @@ plt.rc("ytick", labelsize=SMALL_SIZE)
 plt.rc("legend", fontsize=SMALL_SIZE)
 plt.rc("figure", titlesize=BIGGER_SIZE)
 
+ROOT_DIR = Path(__file__).parent.parent.resolve()
 
-vae_path = Path("./models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+MODEL_ID = 2
+
+vae_path = Path(f"./trained_models/ten_vaes/vae_mario_hierarchical_id_{MODEL_ID}.pt")
 path_to_gt = (
     Path("./data/array_simulation_results/ten_vaes/ground_truth")
     / f"{vae_path.stem}.csv"
 )
 
 p_map = load_csv_as_map(path_to_gt)
-bg = BaselineGeometry(p_map, "baseline_for_plotting", vae_path)
-dg = DiscretizedGeometry(p_map, "geometry_for_plotting_banner", vae_path)
+bg = BaselineGeometry(p_map, "baseline_for_plotting_journal_version", vae_path)
+dg = DiscretizedGeometry(
+    p_map, "geometry_for_plotting_banner_journal_version", vae_path, force=True
+)
 
 # Getting more levels for plotting.
 bg.interpolation.n_points_in_line = 100
@@ -47,10 +52,27 @@ vae = VAEMarioHierarchical()
 vae.load_state_dict(t.load(vae_path, map_location=vae.device))
 
 
-def plot_grid_and_levels():
+def save_img(img, name):
+    IMGS_PATH = ROOT_DIR / "data" / "plots" / "journal_version" / "all_levels"
+    IMGS_PATH.mkdir(exist_ok=True, parents=True)
+    fig, ax = plt.subplots(1, 1)
+    ax.axis("off")
+    ax.imshow(img)
+    fig.savefig(IMGS_PATH / "data" f"{name}.png")
+    plt.close(fig)
+
+
+def plot_grid_and_levels(save_images: bool = True):
+    PLOTS_PATH = ROOT_DIR / "data" / "plots" / "journal_version" / "banner"
+    PLOTS_PATH.mkdir(exist_ok=True, parents=True)
+
     # Plotting the grid of levels
     fig, ax = plt.subplots(1, 1, figsize=(7, 7))
     _, imgs = vae.plot_grid(n_rows=20, n_cols=20, ax=ax, return_imgs=True)
+    # if save_images:
+    #     for i, img in imgs:
+    #         save_img(img, f"{i:05d}")
+
     # ax.set_title("Latent Space of Super Mario Bros", fontsize=BIGGER_SIZE)
     ax.axis("off")
 
@@ -95,15 +117,15 @@ def plot_grid_and_levels():
         edgecolors="k",
         zorder=3,
     )
-    ax.set_xlim((-5, -1.0))
-    ax.set_ylim((-5, 0))
+    ax.set_xlim((-5, 5))
+    ax.set_ylim((-5, 5))
     # handles, labels = plt.gca().get_legend_handles_labels()
     # red_patch = mpatches.Patch(color="red", label="Non-functional")
     # handles.extend([red_patch])
     # plt.legend(handles=[red_patch])
     ax.legend(prop={"size": 12})
     fig.savefig(
-        "./data/plots/ten_vaes/paper_ready/banner_grid_w_mask_camera_ready.png",
+        PLOTS_PATH / "banner_grid_w_mask_camera_ready.png",
         dpi=120,
         bbox_inches="tight",
     )
@@ -113,6 +135,9 @@ def plot_grid_and_levels():
 
     # Lvl 78 is a good example of non-solvable.
     imgs = [get_img_from_level(lvl.detach().numpy()) for lvl in levels]
+    if save_images:
+        for i, img in enumerate(imgs):
+            save_img(img, f"{i:05}")
 
     beginning = imgs[0]
     end = imgs[-1]
@@ -159,4 +184,4 @@ def save_levels(levels: np.ndarray):
 
 
 if __name__ == "__main__":
-    plot_grid_and_levels()
+    plot_grid_and_levels(save_images=False)

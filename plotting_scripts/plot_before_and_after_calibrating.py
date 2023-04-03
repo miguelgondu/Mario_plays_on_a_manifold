@@ -3,11 +3,11 @@ from pathlib import Path
 import torch as t
 import matplotlib.pyplot as plt
 import numpy as np
-from geometry import BaselineGeometry, DiscretizedGeometry
+from geometries import BaselineGeometry, DiscretizedGeometry
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from vae_mario_obstacles import VAEWithObstacles
-from experiment_utils import grid_from_map, load_csv_as_map
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_obstacles import VAEWithObstacles
+from utils.experiment import grid_from_map, load_csv_as_map
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -25,7 +25,7 @@ plt.rc("ytick", labelsize=SMALL_SIZE)
 plt.rc("legend", fontsize=SMALL_SIZE)
 plt.rc("figure", titlesize=BIGGER_SIZE)
 
-vae_path = Path("./models/ten_vaes/vae_mario_hierarchical_id_0.pt")
+vae_path = Path("./trained_models/ten_vaes/vae_mario_hierarchical_id_0.pt")
 path_to_gt = (
     Path("./data/array_simulation_results/ten_vaes/ground_truth")
     / f"{vae_path.stem}.csv"

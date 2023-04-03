@@ -9,8 +9,8 @@ import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
 
-from grammar_zelda import grammar_check
-from vae_zelda_hierachical import VAEZeldaHierarchical
+from utils.zelda import grammar_check
+from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 
 force = True

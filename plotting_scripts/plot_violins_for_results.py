@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from analysis_scripts.utils import (
+from analysis_scripts.other_utils import (
     get_mean,
     get_mean_diversities,
     get_mean_diversities_of_levels,
@@ -109,7 +109,7 @@ def plot_violins(
     ax_diff_p,
     ax_interp_d,
     ax_diff_d,
-    points=False,
+    points=True,
     palette="Blues",
 ):
     rows_interps = []
@@ -152,9 +152,11 @@ def plot_violins(
     p_diff = pd.DataFrame(rows_diffs)
 
     if points:
-        function_that_plots = sns.pointplot
+        function_that_plots = sns.stripplot
+        kwargs = {"size": 5, "edgecolor": "black", "linewidth": 1.1}
     else:
         function_that_plots = sns.violinplot
+        kwargs = {"cut": 1.0}
 
     # _, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(7 * 2, 7 * 2), sharey=True)
     function_that_plots(
@@ -162,32 +164,32 @@ def plot_violins(
         x="experiment",
         y="playability",
         ax=ax_interp_p,
-        cut=1.0,
         palette=palette,
+        **kwargs,
     )
     function_that_plots(
         data=p_diff,
         x="experiment",
         y="playability",
         ax=ax_diff_p,
-        cut=1.0,
         palette=palette,
+        **kwargs,
     )
     function_that_plots(
         data=p_interp,
         x="experiment",
         y="diversity",
         ax=ax_interp_d,
-        cut=0.0,
         palette=palette,
+        **kwargs,
     )
     function_that_plots(
         data=p_diff,
         x="experiment",
         y="diversity",
         ax=ax_diff_d,
-        cut=0.0,
         palette=palette,
+        **kwargs,
     )
 
     for ax in [ax_interp_p, ax_interp_d, ax_diff_d, ax_diff_p]:
@@ -277,7 +279,7 @@ def plot_all_violins():
     # fig_p.savefig("./data/plots/ten_vaes/paper_ready/violin_plots_playability.png")
     # fig_d.savefig("./data/plots/ten_vaes/paper_ready/violin_plots_diversity.png")
     fig.tight_layout()
-    fig.savefig("./violin_plots_for_presentation.png", dpi=120)
+    fig.savefig("./strip_plots.png", dpi=120)
     # plt.show()
 
 
@@ -318,5 +320,5 @@ if __name__ == "__main__":
     #     ("zelda", "zelda_normal_grammar_gt"),
     # ]
     # plot_violins_for_dataviz_course(experiments, [0, 3, 5, 6])
-    # plot_all_violins()
-    plot_violins_for_cog_presentation()
+    plot_all_violins()
+    # plot_violins_for_cog_presentation()

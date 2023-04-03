@@ -10,13 +10,13 @@ from pathlib import Path
 import torch as t
 import matplotlib.pyplot as plt
 import numpy as np
-from geometry import BaselineGeometry, DiscretizedGeometry
+from geometries import BaselineGeometry, DiscretizedGeometry
 from plotting_scripts.plot_before_and_after_calibrating import BIGGER_SIZE
 
-from vae_mario_hierarchical import VAEMarioHierarchical
-from vae_mario_obstacles import VAEWithObstacles
-from experiment_utils import grid_from_map, load_arrays_as_map, load_csv_as_map
-from vae_zelda_hierachical import VAEZeldaHierarchical
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
+from vae_models.vae_mario_obstacles import VAEWithObstacles
+from utils.experiment import grid_from_map, load_arrays_as_map, load_csv_as_map
+from vae_models.vae_zelda_hierachical import VAEZeldaHierarchical
 
 
 def plot_example_of_approximation():

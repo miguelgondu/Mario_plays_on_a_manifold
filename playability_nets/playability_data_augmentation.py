@@ -10,9 +10,9 @@ From experimentation:
 import random
 from typing import List, Tuple
 import numpy as np
-from mario_utils.levels import clean_level
+from utils.mario.levels import clean_level
 
-from simulator import run_level
+from utils.simulator.interface import run_level
 
 # Taken from the cookbook in itertools' documentation
 def random_combination(iterable, r):

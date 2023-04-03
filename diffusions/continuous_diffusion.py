@@ -5,7 +5,7 @@ import torch as t
 import numpy as np
 from torch.distributions import MultivariateNormal
 
-from vae_mario_obstacles import VAEWithObstacles
+from vae_models.vae_mario_obstacles import VAEWithObstacles
 
 from .base_diffusion import BaseDiffusion
 

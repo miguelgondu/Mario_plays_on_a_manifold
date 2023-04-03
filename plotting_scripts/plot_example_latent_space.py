@@ -5,13 +5,13 @@ grid of levels, interpolations and diffusions.
 
 from pathlib import Path
 
-from experiment_utils import load_csv_as_map, load_experiment
+from utils.experiment import load_csv_as_map, load_experiment
 
 import torch as t
 import matplotlib.pyplot as plt
 
-from geometry import DiscreteGeometry
-from vae_mario_hierarchical import VAEMarioHierarchical
+from geometries import DiscreteGeometry
+from vae_models.vae_mario_hierarchical import VAEMarioHierarchical
 
 
 def plot_ground_truth(grid):

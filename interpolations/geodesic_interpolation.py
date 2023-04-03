@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from geoml.curve import CubicSpline
-from geoml.discretized_manifold import DiscretizedManifold, StatisticalManifold
+from geoml.discretized_manifold import DiscretizedManifold
 import torch as t
 import numpy as np
 
-from vae_mario_obstacles import VAEWithObstacles
+from vae_models.vae_mario_obstacles import VAEWithObstacles
 
 from .base_interpolation import BaseInterpolation
 
