@@ -1,5 +1,5 @@
 """
-Given traces of Vanilla, Constrained and Graph-based Bayesian Optimization,
+Given traces of Random, Vanilla and Restricted Bayesian Optimization,
 this script loads them and checks metrics regarding nr. of playable levels
 and best playable level.
 """

@@ -142,5 +142,5 @@ if __name__ == "__main__":
     # all_levels_encoded = np.load("./data/processed/all_levels_encoded.npz")["levels"]
     # print("Amount of levels: ")
     # print(all_levels_encoded.shape)
-    # process_zelda()
-    plot_all_levels()
+    process_zelda()
+    # plot_all_levels()
